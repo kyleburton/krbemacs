@@ -53,3 +53,86 @@
          ))
   (insert "/* <== END: generated code */\n"))
 
+
+(defun krb-insert-date ()
+  "Inserts a date into the current buffer."
+  (interactive)
+  (insert (shell-command-to-string "date"))
+  (backward-delete-char 1))
+
+
+(defun krb-join-lines (num)
+  (interactive (list (read-string "Num Lines: " 1)))
+  (if (> num 0)
+      (progn
+        (join-line 1)
+        (krb-join-lines (- num 1)))))
+
+(defun krb-java-insert-log (level)
+  "Insert a log call statement into the buffer."
+  (interactive "sLevel: ")
+  (beginning-of-line)
+  (c-indent-command)
+  (insert "if ( LOG.is" level "Enabled() ) {\n")
+  (search-backward-regexp level)
+  (capitalize-word 1)
+  (search-backward-regexp "enabled")
+  (capitalize-word 1)
+
+  (forward-line 1)
+  (beginning-of-line)
+  (c-indent-command)
+  (insert "LOG." level "(\"\");\n")
+  (c-indent-command)
+  (insert "}")
+  (c-indent-command)
+  (insert "\n")
+  (search-backward-regexp "\\\");"))
+
+(defun krb-java-insert-println (writer)
+  (interactive)
+  (beginning-of-line)
+  (c-indent-command)
+  (insert writer ".println(\"\");")
+  (backward-char 3))
+
+(defun krb-java-insert-out-println ()
+  "Insert a System.out.println statement at the point."
+  (interactive)
+  (krb-java-insert-println "System.out"))
+
+(defun krb-java-insert-err-println ()
+  "Insert a System.out.println statement at the point."
+  (interactive)
+  (krb-java-insert-println "System.err"))
+
+
+(defun krb-java-wrap-log-conditional ()
+"Wrap the LOG.x statement on the current line with a conditional."
+  (interactive)
+  (beginning-of-line)
+  (let ((start))
+    (search-forward-regexp "LOG\\.")
+    (setq start (point))
+    (search-forward-regexp "(")
+    (backward-char 1)
+    (setq end (point))
+    (setq logname (buffer-substring start (point)))
+    (beginning-of-line)
+
+    (c-indent-command)
+    (insert "if ( LOG.is" logname "Enabled() ) {\n")
+    (c-indent-command)
+    (search-backward-regexp logname)
+    (capitalize-word 1)
+    (search-backward-regexp "enabled")
+    (capitalize-word 1)
+    (search-forward-regexp ");")
+    (insert "\n")
+    (c-indent-command)
+    (insert "}")
+    (c-indent-command)
+    (insert "\n")
+    (c-indent-command)
+  ))
+
