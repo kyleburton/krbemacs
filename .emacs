@@ -180,7 +180,7 @@
 (add-hook 'clojure-mode-hook
           'krb-set-clojure-bindings)
 
-(krb-push-file-ext-and-mode-binding 'archive-mode "\\.clj$")
+(krb-push-file-ext-and-mode-binding 'clojure-mode "\\.clj$")
 
 (let ((sbcl-binary (expand-file-name "~/local/bin/sbcl")))
   (unless (file-exists-p sbcl-binary)
@@ -198,12 +198,10 @@
 (add-hook
  'paredit-mode-hook
  '(lambda ()
-    (local-set-key "\C-xw" paredit-mode-map)
     (local-set-key "\M-Oa" 'paredit-splice-sexp-killing-backward)
     (local-set-key "\M-Ob" 'paredit-splice-sexp-killing-forward)
     (local-set-key "\M-Oc" 'paredit-forward-slurp-sexp)
     (local-set-key "\M-Od" 'paredit-forward-barf-sexp)))
-
 
 (setenv "SBCL_HOME" "/home/mortis/local/lib/sbcl")
 (setq inferior-lisp-program "sbcl")
@@ -212,6 +210,9 @@
        '((sbcl ("sbcl")))
        slime-lisp-implementations))
 
+(add-hook 'lisp-mode-hook
+          (lambda ()
+             (paredit-mode +1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; end Lisp and Clojure
