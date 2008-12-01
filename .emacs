@@ -76,8 +76,8 @@
 ;; Confluence Mode Settings
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(load (expand-file-name "~/personal/projects/confluence-el/xml-rpc.el"))
-(load (expand-file-name "~/personal/projects/confluence-el/confluence.el"))
+(load (expand-file-name "~/personal/projects/krbemacs/confluence-el/xml-rpc.el"))
+(load (expand-file-name "~/personal/projects/krbemacs/confluence-el/confluence.el"))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -182,14 +182,50 @@
 
 (krb-push-file-ext-and-mode-binding 'clojure-mode "\\.clj$")
 
-(let ((sbcl-binary (expand-file-name "~/local/bin/sbcl")))
-  (unless (file-exists-p sbcl-binary)
+(defvar sbcl-binary nil)
+
+;; find the sbcl binary
+(let ((locations
+       (mapcar #'expand-file-name
+               (list "~/local/bin/sbcl"
+                     "~/local/sbcl/bin/sbcl")))
+      (found nil))
+  (loop for location in locations
+        while (not found)
+        do
+        (message "finding sbcl: %s => %s" location (file-exists-p location))
+        (when (file-exists-p location)
+          (setq inferior-lisp-program location
+                sbcl-binary location
+                found t)
+          (message "found sbcl: %s %s" inferior-lisp-program found)))
+  (unless found
     (error "Can't find the sbcl binary for slime, tried: %s,
-    locate it or disable slime in this environment."
-    sbcl-binary))
-  (setq inferior-lisp-program "/home/mortis/local/bin/sbcl")
-  (require 'slime)
-  (slime-setup))
+    please locate it or disable slime in this environment."
+           locations)))
+
+;; ;; find SBCL_HOME...
+;; (let ((locations
+;;        (mapcar #'expand-file-name
+;;                (list "~/local/lib/sbcl"
+;;                      "~/local/sbcl/lib/sbcl")))
+;;       (found nil))
+;;   (loop for location in locations
+;;         while (not found)
+;;         do
+;;         (let ((file (format "%s/sbcl.core" location)))
+;;           (message "finding sbcl_home: %s => %s" file (file-exists-p file))
+;;           (when (file-exists-p file)
+;;             (setq found t)
+;;             (setenv "SBCL_HOME" location)
+;;             (message "found sbcl: %s %s" inferior-lisp-program found))))
+;;   (unless found
+;;     (error "Can't determine SBCL_HOME, tried: %s, please locate
+;;     it or disable slime in this environment."  locations)))
+
+
+(require 'slime)
+(slime-setup)
 
 (setq swank-clojure-binary "clojure")
 (require 'clojure-auto)
@@ -203,11 +239,10 @@
     (local-set-key "\M-Oc" 'paredit-forward-slurp-sexp)
     (local-set-key "\M-Od" 'paredit-forward-barf-sexp)))
 
-(setenv "SBCL_HOME" "/home/mortis/local/lib/sbcl")
-(setq inferior-lisp-program "sbcl")
 (setq slime-lisp-implementations
       (append
        '((sbcl ("sbcl")))
+       ;; (list (list 'sbcl (list sbcl-binary)))
        slime-lisp-implementations))
 
 (add-hook 'lisp-mode-hook
