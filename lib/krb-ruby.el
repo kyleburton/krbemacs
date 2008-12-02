@@ -39,23 +39,15 @@
   :group 'krb-ruby
   :type 'string)
 
-;; (defcustom krb-ruby-... nil
-;;   "description"
-;;   :group 'krb-ruby
-;;   :type 'string)
-
 ;;; Hooks:
 
 ;; (defvar krb-ruby-before-eventXYZ-hook nil
 ;;    "...description...")
 
-;; do we want/need a sparse-keymap?
-;; (defvar krb-ruby-prefix-map
-;;   (let ((map (make-sparse-keymap)))
-;;     (define-key map "\C-k")
-;; ))
+;;; Keybindings:
     
 (defun krb-ruby-apply-keybindings ()
+  "Set local keybindings for the extensions."
   (local-set-key "\C-k"           'krb-ruby-kill)
   (local-set-key "\M-Oc"          'ruby-forward-sexp)
   (local-set-key "\M-Od"          'ruby-backward-sexp)
@@ -69,12 +61,15 @@
   (local-set-key "\C-d"           'krb-ruby-del-right)
   (local-set-key (kbd "ESC DEL")  'krb-ruby-backward-kill)
   (local-set-key (kbd "DEL")      'krb-ruby-del-left)
-  (local-set-key "\C-c\C-c\C-r" 'krb-ruby-run-rails-console)
+  (local-set-key "\C-c\C-c\C-r"   'krb-ruby-run-rails-console)
   (setq abbrev-mode t))
 
 ;;; Implementation:
 
 (defun krb-ruby-run-rails-console (ruby-path application-path)
+  "Execute an irb (or jirb) console for rails.  This will be an
+inferior-ruby which has your rails application and libraries
+easily available to you.  It runs script/console."
   (interactive
    (list
     (read-file-name "Path to IRB: " krb-ruby-path-to-irb)
@@ -97,11 +92,16 @@
             (message "krb-run-rails-console: command='%s'" command)
             (comint-send-string (ruby-proc) command)))))
 
+;; TODO: in addition to script/console, create a runner for the
+;; script/dbconsole, what about the generator and the server?
+
 (defun krb-ruby-current-parse-state ()
+  "Get the current ruby-mode syntactic parse state."
   (ruby-parse-region (point-min)
                      (point)))
 
 (defun krb-ruby-in-string-p (&optional state)
+  "Test if the point is currently within a string."
   (interactive)
   (unless state
     (setq state (krb-ruby-current-parse-state)))
@@ -161,18 +161,32 @@ end of the string."
 (setq krb-ruby-line-continued-regexp "\\(||\\|&&\\) *$")
 
 (defun krb-ruby-on-continued-line ()
+  "Returns true if the current line is continued to the next.
+For example, compound logical expressions that span multiple
+lines will indicate true.  Eg, the first 2 of the following 3
+lines:
+
+   this &&
+   that ||
+   other_thing
+"
   (krb-ruby-line-ends-with-regexp krb-ruby-line-continued-regexp))
 
 (defun krb-ruby-is-continued-line? ()
+  "Tests if on a continued line, priting a message - this
+function is for debugging."
   (interactive)
   (message "continued? %s" (krb-ruby-on-continued-line)))
 
 (defun krb-ruby-line-is-comment ()
+  "Tests if the current line is (entirely) a comment."
   (save-excursion
     (beginning-of-line)
-    (looking-at " *#.+")))
+    (looking-at "[ \t]*#.+")))
 
 (defun krb-ruby-find-end-of-continued-expression ()
+  "Finds the line which is the end of the current continued
+expression."
   (save-excursion
     (while (or (krb-ruby-on-continued-line)
                (krb-ruby-line-is-comment))
@@ -182,6 +196,8 @@ end of the string."
     (point)))
 
 (defun krb-ruby-at-ruby-block-start ()
+  "Test if the point is at the start of a logical
+block (function, module, class definition, etc)."
   (save-excursion
     (beginning-of-line)
     (looking-at "[ \t]*\\(def\\|class\\|module\\|if\\|unless\\|for\\)")))
@@ -249,27 +265,35 @@ block.  See `ruby-parse-region'"
     (ruby-indent-command)))
 
 (defun krb-ruby-electric-brace (arg)
+  "For opening delmiters (braces, quotes, parenthesis, etc.) it
+automatically inserts the closing delimiter.  This helps prevent
+certin types of invalid syntax."
   (interactive "P")
-  (cond ((and (char-equal (aref "\"" 0) last-command-char)
-              (krb-ruby-in-string-p)
-              (looking-at "\""))
-         (forward-char 1))
-        ((and (char-equal (aref "\"" 0) last-command-char)
-              (krb-ruby-in-string-p))
-         (insert "\\\""))
-        ;; other delmited char type
-        (t
-         (insert-char last-command-char 1)
-         (insert (cdr (assoc 
-                       (format "%c" last-command-char)
-                       '(("("  . ")")
-                         ("["  . "]")
-                         ("{"  . "}")
-                         ("\"" . "\"")))))
-         (backward-char 1))))
+  (cond
+   ((and (char-equal (aref "\"" 0) last-command-char)
+         (krb-ruby-in-string-p)
+         (looking-at "\""))
+    (forward-char 1))
+   ((and (char-equal (aref "\"" 0) last-command-char)
+         (krb-ruby-in-string-p))
+    (insert "\\\""))
+   ;; other delmited char type
+   (t
+    (insert-char last-command-char 1)
+    (insert (cdr (assoc 
+                  (format "%c" last-command-char)
+                  '(("("  . ")")
+                    ("["  . "]")
+                    ("{"  . "}")
+                    ("\"" . "\"")))))
+    (backward-char 1))))
 
 ;; override, if at a close delim (']', '}', ')', "'", or '"'), step past it
 (defun krb-ruby-close-delim (arg)
+  "When typing closing delimiters, none will be inserted.  If the
+point is at a closing delimiter, the point will be moved outside
+of its scope.  This helps prevent certin types of invalid
+syntax."
   (interactive "P")
   (cond ((looking-at "[\])}'\"]")
          (forward-char 1))
@@ -278,6 +302,8 @@ block.  See `ruby-parse-region'"
 
 ;; override C-d, if at an open delim, move fwd
 (defun krb-ruby-del-left ()
+  "Delete backwards, making an attempt at preservation of valid
+syntax."
   (interactive)
   (cond
    ((looking-back "\\\\\"" 1)
@@ -300,6 +326,8 @@ block.  See `ruby-parse-region'"
 
 ;; override DEL, if close delim is to the left, move into
 (defun krb-ruby-del-right (arg)
+  "Delete forward, making an attempt at preservation of valid
+syntax."
   (interactive "P")
   (message "delete to the right...")
   (cond ((looking-at "\\((\\|\\[\\|{\\)")
@@ -312,6 +340,9 @@ block.  See `ruby-parse-region'"
          (delete-char 1))))
 
 (defun krb-ruby-backward-kill (arg)
+  "Delete backwards, attempting to delete recognized expressions.
+This helps preserve valid syntax and help the author work more
+efficiently."
   (interactive "P")
   (cond ((and (not (krb-ruby-in-string-p))
               (looking-back "\\()\\|\]\\|}\\|\"\\|'\\) *" 3))
