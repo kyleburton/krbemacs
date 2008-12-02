@@ -141,7 +141,8 @@
 ;; setup confluence mode
 (add-hook 'confluence-mode-hook
           '(lambda ()
-             (local-set-key "\C-xw" confluence-prefix-map)))
+             (local-set-key "\C-xw" confluence-prefix-map)
+             (setq abbrev-mode t)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -184,8 +185,6 @@
             (message "krb-run-rails-console: command='%s'" command)
             (comint-send-string (ruby-proc) command)))))
 
-
-
 (defun krb-ruby-current-parse-state ()
   (ruby-parse-region (point-min)
                      (point)))
@@ -194,6 +193,9 @@
   (interactive)
   (unless state
     (setq state (krb-ruby-current-parse-state)))
+  (if (nth 0 state)
+      (message "krb-ruby-current-parse-state: in string? => YES")
+    (message "krb-ruby-current-parse-state: in string? => NO"))
   (nth 0 state))
 
 (defun krb-ruby-find-beg-of-curr-string (&optional state)
@@ -270,7 +272,7 @@ end of the string."
 (defun krb-ruby-at-ruby-block-start ()
   (save-excursion
     (beginning-of-line)
-    (looking-at "\s*\\(def\\|class\\|module\\|if\\|unless\\)")))
+    (looking-at "[ \t]*\\(def\\|class\\|module\\|if\\|unless\\|for\\)")))
 
 (defun krb-ruby-kill ()
   "If at the beginning of a string, kill the entire string.
@@ -334,13 +336,14 @@ block.  See `ruby-parse-region'"
       (kill-line)))
     (ruby-indent-command)))
 
-
 (defun krb-ruby-electric-brace (arg)
   (interactive "P")
-  (cond ((and (krb-ruby-in-string-p)
+  (cond ((and (char-equal (aref "\"" 0) last-command-char)
+              (krb-ruby-in-string-p)
               (looking-at "\""))
          (forward-char 1))
-        ((krb-ruby-in-string-p)
+        ((and (char-equal (aref "\"" 0) last-command-char)
+              (krb-ruby-in-string-p))
          (insert "\\\""))
         ;; other delmited char type
         (t
@@ -419,8 +422,8 @@ block.  See `ruby-parse-region'"
              (local-set-key "}"             'krb-ruby-close-delim)
              (local-set-key "\C-d"          'krb-ruby-del-right)
              (local-set-key (kbd "ESC DEL") 'krb-ruby-backward-kill)
-             (local-set-key (kbd "DEL")     'krb-ruby-del-left))
-
+             (local-set-key (kbd "DEL")     'krb-ruby-del-left)
+             (setq abbrev-mode t))
 
 (add-hook 'ruby-mode-hook
           'krb-ruby-apply-keybindings)
@@ -438,7 +441,8 @@ block.  See `ruby-parse-region'"
   (local-set-key "\C-c)" 'paredit-forward-slurp-sexp)
   (local-set-key "\C-c(" 'paredit-backward-slurp-sexp)
   (local-set-key "\C-c}" 'paredit-forward-barf-sexp)
-  (local-set-key "\C-c{" 'paredit-backward-barf-sexp))
+  (local-set-key "\C-c{" 'paredit-backward-barf-sexp)
+  (setq abbrev-mode t))
 
 (add-hook 'clojure-mode-hook
           'krb-set-clojure-bindings)
@@ -500,7 +504,8 @@ block.  See `ruby-parse-region'"
     (local-set-key "\M-Oa" 'paredit-splice-sexp-killing-backward)
     (local-set-key "\M-Ob" 'paredit-splice-sexp-killing-forward)
     (local-set-key "\M-Oc" 'paredit-forward-slurp-sexp)
-    (local-set-key "\M-Od" 'paredit-forward-barf-sexp)))
+    (local-set-key "\M-Od" 'paredit-forward-barf-sexp)
+    (setq abbrev-mode t)))
 
 (setq slime-lisp-implementations
       (append
@@ -510,7 +515,8 @@ block.  See `ruby-parse-region'"
 
 (add-hook 'lisp-mode-hook
           (lambda ()
-             (paredit-mode +1)))
+             (paredit-mode +1)
+             (setq abbrev-mode t)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; end Lisp and Clojure
@@ -551,6 +557,13 @@ block.  See `ruby-parse-region'"
 
 
 ; (require 'elunit)
+
+(setq abbrev-file-name (expand-file-name "~/personal/projects/krbemacs/abbrev-defs.el"))
+(read-abbrev-file abbrev-file-name t)
+
+(add-to-list 'load-path "~/personal/projects/krbemacs/yasnippet")
+(require 'yasnippet)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; end Other
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
