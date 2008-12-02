@@ -18,7 +18,11 @@
     ))
 
 (define-abbrev-table 'ruby-mode-abbrev-table '(
-    ("rclass" "class Foo\ndef initalize\nerror\"\"\nend\nend" nil 0)
+    ("rclass" "class Foo
+def initalize
+error\"\"
+end
+end" nil 1)
     ))
 
 (define-abbrev-table 'sldb-mode-abbrev-table '(
@@ -40,5 +44,11 @@
     ))
 
 (define-abbrev-table 'text-mode-abbrev-table '(
+    ))
+
+(define-abbrev-table 'vc-annotate-mode-abbrev-table '(
+    ))
+
+(define-abbrev-table 'vc-dired-mode-abbrev-table '(
     ))
 
