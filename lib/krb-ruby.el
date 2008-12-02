@@ -528,12 +528,14 @@ efficiently."
 
 (defvar krb-ruby-tags-stack (list))
 
-(defun krb-ruby-visit-location-and-save-current (file &optional char-pos)
+(defun krb-ruby-visit-location-and-save-current (file &optional char-pos line-number)
   (push (list buffer-file-name (point))
         krb-ruby-tags-stack)
   (find-file file)
-  (when char-pos 
-    (goto-char char-pos)))
+  (cond (line-number
+         (goto-line line-number))
+        (char-pos 
+         (goto-char char-pos))))
 
 (defun krb-ruby-pop-tags-stack ()
   (interactive)
@@ -608,7 +610,7 @@ efficiently."
         (let ((output (krb-ruby-find-ruby-file start-path (concat "/" (krb-ruby-convert-symbol-to-file-name target) ".rb"))))
           ;; if there is 1 result, just go there
           (cond ((= 1 (length output))
-                 (find-file (first output))
+                 (krb-ruby-visit-location-and-save-current (first output))
                  (return-from function t))
                 ((= 0 (length output))
                  (message "not found: %s" target)
@@ -648,23 +650,24 @@ efficiently."
       (message "Falling back to find/xargs/grep...")
       (let ((output (krb-ruby-find-xargs-grep start-path target "*.rb")))
         (cond ((= 1 (length output))
-               (krb-ruby-visit-location-and-save-current (first (first output))
-                                                         (second (first output)))
+               (krb-ruby-visit-location-and-save-current (first (first output)) nil (second (first output)))
                (return-from function t))
               ((= 0 (length output))
                (message "Not found via xargs/grep"))
               (t
                (let ((sel (krb-ruby-user-select-menu output)))
                  (when sel
-                   (apply 'krb-ruby-visit-location-and-save-current sel)))
+                   (message "going to: %s" sel)
+                   (krb-ruby-visit-location-and-save-current (first sel) nil (second sel))))
                (return-from function t)))))))
 
 (defun krb-ruby-user-select-menu (things)
   (with-current-buffer (get-buffer-create "*selection*")
     (switch-to-buffer (get-buffer-create "*selection*"))
     (let ((resp-alist (list)))
+      ;; NB: yes, this hard-codes a max of 62 choices...
       (loop for thing in things
-            for idx in (string-to-list "01234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+            for idx in (string-to-list "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
             do
             (insert (format "  [% 2c]: %s\n" idx thing))
             (push (cons idx thing) resp-alist))
