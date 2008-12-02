@@ -71,6 +71,7 @@ be jruby if you're using jruby."
   (local-set-key (kbd "DEL")      'krb-ruby-del-left)
   (local-set-key "\C-c\C-c\C-r"   'krb-ruby-run-rails-console)
   (local-set-key "\C-c\C-c\C-w"   'krb-ruby-check-buffer-syntax)
+  (local-set-key "\C-x\C-e"       'krb-ruby-send-expression)
   (setq abbrev-mode t))
 
 ;;; Implementation:
@@ -83,30 +84,40 @@ easily available to you.  It runs script/console."
    (list
     (read-file-name "Path to IRB: " krb-ruby-path-to-irb)
     (read-directory-name "Path to Rails App: ")))
-  (when (not (ruby-proc))
-    (setq ruby-path        (expand-file-name ruby-path)
-          application-path (expand-file-name application-path))
-    (let ((cmd  (format "%s --inf-ruby-mode" ruby-path application-path))
-          (cmd2 (format "%s --inf-ruby-mode %s/script/console" ruby-path application-path)))
-      (message "ruby/rails run: %s" cmd)
-      (run-ruby cmd)
-      ;; if each of these files exist, load them...
-      (loop for file in (mapcar #'(lambda (p)
-                                    (format "%s/%s" application-path p))
-                                '("config/boot.rb"
-                                  "config/java.rb"))
-            for command = (format "load '%s'\n" file)
-            then (format "load '%s'\n" file)
-            do
-            (when (file-exists-p file)
-              (message "krb-run-rails-console: command='%s'" command)
-              (comint-send-string (ruby-proc) command))))))
-
+  (if (ruby-proc)
+      (display-buffer (get-buffer-create "*ruby*"))
+      (begin
+       (setq ruby-path        (expand-file-name ruby-path)
+             application-path (expand-file-name application-path))
+       (let ((cmd  (format "%s --inf-ruby-mode" ruby-path application-path))
+             (cmd2 (format "%s --inf-ruby-mode %s/script/console" ruby-path application-path)))
+         (message "ruby/rails run: %s" cmd)
+         (run-ruby cmd)
+         ;; if each of these files exist, load them...
+         (loop for file in (mapcar #'(lambda (p)
+                                       (format "%s/%s" application-path p))
+                                   '("config/boot.rb"
+                                     "config/java.rb"))
+               for command = (format "load '%s'\n" file)
+               then (format "load '%s'\n" file)
+               do
+               (when (file-exists-p file)
+                 (message "krb-run-rails-console: command='%s'" command)
+                 (comint-send-string (ruby-proc) command)))))))
 
 ;; TODO: in addition to script/console, create a runner for the
 ;; script/dbconsole, what about the generator and the server?
 
 ;; TODO: create a 'send-expression' that works just like C-k
+(defun krb-ruby-send-expression ()
+  "Sends the expression after the point - unlike C-x C-e which
+  does the previous expression."
+  (interactive)
+  (destructuring-bind (spos epos)
+      (krb-ruby-find-expression-region)
+    (comint-send-region (ruby-proc) spos epos)
+    (comint-send-string (ruby-proc) "\n")
+    (display-buffer (get-buffer-create "*ruby*"))))
 
 
 (defun krb-ruby-current-parse-state ()
@@ -119,9 +130,9 @@ easily available to you.  It runs script/console."
   (interactive)
   (unless state
     (setq state (krb-ruby-current-parse-state)))
-  (if (nth 0 state)
-      (message "krb-ruby-current-parse-state: in string? => YES")
-    (message "krb-ruby-current-parse-state: in string? => NO"))
+;;   (if (nth 0 state)
+;;       (message "krb-ruby-current-parse-state: in string? => YES")
+;;     (message "krb-ruby-current-parse-state: in string? => NO"))
   (nth 0 state))
 
 (defun krb-ruby-find-beg-of-curr-string (&optional state)
@@ -292,7 +303,6 @@ block.  See `ruby-parse-region'"
   (destructuring-bind (start-pos end-pos)
       (krb-ruby-find-expression-region)
     (kill-region start-pos end-pos)))
-
 
 (defun krb-ruby-find-expression-region ()
   (interactive)
