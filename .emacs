@@ -1,4 +1,4 @@
-;; -*- mode: emacs-lisp; mode: paredit -*-
+;; -*- mode: emacs-lisp -*-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Author: Kyle R. Burton
 ;;
@@ -10,7 +10,11 @@
 (add-to-list 'load-path (expand-file-name "~/personal/projects/krbemacs/slime/slime"))
 (add-to-list 'load-path (expand-file-name "~/personal/projects/krbemacs/clojure-mode"))
 (add-to-list 'load-path (expand-file-name "~/personal/projects/krbemacs/swank-clojure"))
-(add-to-list 'load-path "/personal/projects/krbemacs/jochu-clojure-mode-494dfab8cd0dfc5ed24a1fc33da8b892feeef20d")
+(add-to-list 'load-path (expand-file-name "~/personal/projects/krbemacs/jochu-clojure-mode-494dfab8cd0dfc5ed24a1fc33da8b892feeef20d"))
+
+(defvar krb-local-host-name nil)
+
+(setq krb-local-host-name (first (split-string (shell-command-to-string "hostname") "\n")))
 
 (require 'cl)
 
@@ -61,9 +65,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Day job customization
-(let ((emacs-utils (expand-file-name "~/projects/svn.datapump/trunk/hmsdev2/etc/emacs-utils.el")))
-  (when (file-exists-p emacs-utils)
-    (load-file emacs-utils)))
+(when (string= "kburton-lin" krb-local-host-name)
+  (setq krb-ruby-path-to-ruby (expand-file-name "~/projects/sandbox/trunk/standardize-web/jruby/jruby-1.1.5/bin/jruby"))
+  (let ((emacs-utils (expand-file-name "~/projects/svn.datapump/trunk/hmsdev2/etc/emacs-utils.el")))
+    (when (file-exists-p emacs-utils)
+      (load-file emacs-utils))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Perl Development customization
@@ -180,6 +186,11 @@
   (local-set-key "\C-c{" 'paredit-backward-barf-sexp)
   (setq abbrev-mode t))
 
+(add-hook 'emacs-lisp-mode-hook
+          (lambda ()
+             (paredit-mode +1)
+             (setq abbrev-mode t)))
+
 (add-hook 'clojure-mode-hook
           'krb-set-clojure-bindings)
 
@@ -294,11 +305,15 @@
 
 ; (require 'elunit)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Abbreviations and yasnippet...
 (setq abbrev-file-name (expand-file-name "~/personal/projects/krbemacs/abbrev-defs.el"))
 (read-abbrev-file abbrev-file-name t)
 
 (add-to-list 'load-path "~/personal/projects/krbemacs/yasnippet")
 (require 'yasnippet)
+;;; Abbreviations and yasnippet...
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; end Other
