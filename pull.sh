@@ -1,1 +1,2 @@
-rsync -rvh asymmetr@asymmetrical-view.com:public_html/personal/config/emacs/ ./
+time rsync -rvh asymmetr@asymmetrical-view.com:public_html/personal/config/emacs/ ./
+date
