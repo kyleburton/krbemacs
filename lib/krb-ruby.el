@@ -315,10 +315,10 @@ block.  See `ruby-parse-region'"
           (cond
            ;; inside an empty string
            ((= 1 (- (point) string-start))
-            (return-from function (list (- (point) 1) (+ (point) 1)))))
+            (return-from function (list (- (point) 1) (+ (point) 1))))
            ;; inside some other string
            (t
-            (return-from function (list (point) (- (krb-ruby-find-end-of-curr-string state) 1))))))
+            (return-from function (list (point) (- (krb-ruby-find-end-of-curr-string state) 1)))))))
        ;; at the beginning of an empty string?
        ((looking-at "\"\"")
         (message "at empty string...")
@@ -448,9 +448,9 @@ efficiently."
               (looking-back "\\()\\|\]\\|}\\|\"\\|'\\) *" 3))
          (let ((start-point (point)))
            (ruby-backward-sexp)
-           (kill-region (point) start-point)))
-        (t
-         (backward-kill-word 1))))
+           (kill-region (point) start-point))
+         (t
+          (backward-kill-word 1)))))
 
 (defun krb-ruby-get-default-ruby-path ()
   (or krb-ruby-path-to-ruby
