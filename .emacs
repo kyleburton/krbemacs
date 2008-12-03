@@ -7,16 +7,17 @@
 ;;
 
 (add-to-list 'load-path (expand-file-name "~/personal/projects/krbemacs/lib"))
+(add-to-list 'load-path (expand-file-name "~/personal/projects/krbemacs/git"))
 (add-to-list 'load-path (expand-file-name "~/personal/projects/krbemacs/slime/slime"))
 (add-to-list 'load-path (expand-file-name "~/personal/projects/krbemacs/clojure-mode"))
 (add-to-list 'load-path (expand-file-name "~/personal/projects/krbemacs/swank-clojure"))
 (add-to-list 'load-path (expand-file-name "~/personal/projects/krbemacs/jochu-clojure-mode-494dfab8cd0dfc5ed24a1fc33da8b892feeef20d"))
 
-(defvar krb-local-host-name nil)
-
-(setq krb-local-host-name (first (split-string (shell-command-to-string "hostname") "\n")))
 
 (require 'cl)
+
+(defvar krb-local-host-name nil)
+(setq krb-local-host-name (first (split-string (shell-command-to-string "hostname") "\n")))
 
 (defun krb-file-ext-case-permute (pattern)
   (loop for mutator in '(downcase upcase capitalize)
@@ -64,12 +65,36 @@
  '(confluence-prompt-page-function 'cf-prompt-page-by-path))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Day job customization
+;; localized customization per host
+
+(defmacro when-file-exists (decl &rest body)
+  "(when-file-exists (fname \"/etc/passwd\")
+     (message \"%s exists\" fname)"
+  (destructuring-bind (var file-path) decl
+    `(let ((,var (expand-file-name ,file-path)))
+       (when (file-exists-p ,var)
+         ,@body))))
+
 (when (string= "kburton-lin" krb-local-host-name)
-  (setq krb-ruby-path-to-ruby (expand-file-name "~/projects/sandbox/trunk/standardize-web/jruby/jruby-1.1.5/bin/jruby"))
-  (let ((emacs-utils (expand-file-name "~/projects/svn.datapump/trunk/hmsdev2/etc/emacs-utils.el")))
-    (when (file-exists-p emacs-utils)
-      (load-file emacs-utils))))
+  (when-file-exists
+   (fname "~/projects/sandbox/trunk/standardize-web/jruby/jruby-1.1.5/bin/jruby")
+   (setq krb-ruby-path-to-ruby fname))
+  (when-file-exists 
+   (fname "~/projects/svn.datapump/trunk/hmsdev2/etc/emacs-utils.el")
+   (load-file fname)))
+
+(when-file-exists
+ (fname (format "~/personal/projects/krbemacs/config/%s.el" krb-local-host-name))
+ (message "loading local customization file: %s" fname)
+ (load-file fname))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; version control customization
+
+;;; git
+;; see: http://xtalk.msk.su/~ott/en/writings/emacs-vcs/EmacsGit.html
+(require 'git)
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Perl Development customization
