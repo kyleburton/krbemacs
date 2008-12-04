@@ -247,6 +247,15 @@ block.  See `ruby-parse-region'"
          ;; inside an empty string
          ((= 1 (- (point) string-start))
           (kill-region (- (point) 1) (+ (point) 1)))
+         ;; at a string-interpolated spot? eg: "foo=#{foo}"
+         ((looking-at "#{")
+          (message "in a string, looking at #{")
+          (save-excursion
+            (let ((start (point)))
+              (forward-char 1)
+              (match-paren "{")
+              (forward-char 1)
+              (return-from function (list start (point))))))
          ;; inside some other string
          (t
           (kill-region (point) (- (krb-ruby-find-end-of-curr-string state) 1))))))
