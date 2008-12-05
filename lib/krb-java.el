@@ -1,9 +1,9 @@
-;;; krb-java.el --- Emacs mode extension, enhancements to ruby-mode.el
+;;; krb-java.el --- Emacs mode extension, enhancements to java-mode.el
 
 ;; Copyright (C) 2008  Free Software Foundation, Inc.
 
 ;; Author: Kyle Burton <kyle.burton@gmail.com>
-;; Keywords: ruby, ruby-mode, paredit
+;; Keywords: java, java-mode, paredit
 
 ;; This file is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published
@@ -290,3 +290,88 @@
 
 
 
+(defun krb-java-apply-keybindings ()
+  "Set local keybindings for the extensions."
+  (local-set-key "\M-."           'krb-java-find-at-point)
+  (local-set-key "\C-\C"          'krb-find-xargs-grep)
+  (setq abbrev-mode t))
+
+(defun krb-java-find-pom-location (&optional path orig-path)
+  (unless path
+    (setf path (file-name-directory buffer-file-name)))
+  (unless orig-path
+    (setf orig-path path))
+  (loop while (not (file-exists-p (format "%s/pom.xml" path)))
+        do
+        (message "looking at: %s" path)
+        (setf path (replace-regexp-in-string "/[^/]*$" "" path))
+        (unless path
+          (error "pom.xml not found beneath: %s" path)))
+  path)
+
+;;(replace-regexp-in-string "[^/]+$" "" "/foo/bar/qux")
+
+(defun krb-tmp ()
+  (interactive)
+  (message "%s" (krb-java-find-pom-location)))
+
+(defun krb-find-xargs-grep (search-string &optional search-path)
+  (interactive)
+  (unless search-path
+    (setf search-path (krb-java-find-pom-location)))
+  (let ((cmd (format "find %s -print0 | xargs -0 grep -li '%s'" search-path search-string)))
+    (message "need to exec: %s" cmd)))
+
+(defun krb-java-get-symbol-at-point ()
+  (interactive)
+  (save-excursion
+    (let ((start nil)
+          (symb nil))
+      (unless (looking-at "[; \t\n\"'\\.]")
+        (search-forward-regexp "[; \t\n\"'\\.]"))
+      (backward-char 1)
+      (setf start (point))
+      (search-backward-regexp "[; \t\n\"'\\.]")
+      (forward-char 1)
+      (setf symb (buffer-substring start (point)))
+      (message "symbol: '%s'" symb)
+      symb)))
+
+
+
+(defun is-upper-case? (s1)
+  (string= (upcase s1)
+           s1))
+
+;; TODO: FYI, this is unfinished...should just use jdee
+(defun krb-java-find-at-point (&optional word)
+  (interactive)
+  (let ((symbol (or word (krb-java-get-symbol-at-point))))
+    (cond
+     ;; is all uppercase?  look for constant definition (decl or assignment)
+     ((is-upper-case? symbol)
+      (krb-find-xargs-grep (format "%s[ \t]*[;=]" symbol)))
+     ;; starts w/capitol, assume class name
+     ((starts-with-capitol symbol)
+      (krb-find-xargs-grep (format "class %s" symbol)))
+     (t
+      ;; it's either a method or a variable declaration, assume method
+      (krb-find-xargs-grep (format "%s[ \t]*(")))))
+)
+
+
+(defun krb-java-class-name-to-path (string)
+  (replace-regexp-in-string "\\." "/" string))
+
+;; (krb-java-class-name-to-path "foo.bar.qux")
+
+(defun krb-java-open-file-for-class (string)
+  (interactive "sClass:")
+  (let ((fname (format "%s/src/main/java/%s.java" (krb-java-find-pom-location)
+                       (krb-java-class-name-to-path string))))
+    (if (file-exists-p fname)
+        (find-file fname)
+      (message "Doens't exist, sorry: %s => %s" string fname))))
+
+(provide 'krb-java)
+;;; krb-java.el ends here
