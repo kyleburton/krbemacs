@@ -1,9 +1,9 @@
-;;; krb-java.el --- Emacs mode extension, enhancements to java-mode.el
+;;; krb-java.el --- Emacs mode extension, enhancements to ruby-mode.el
 
 ;; Copyright (C) 2008  Free Software Foundation, Inc.
 
 ;; Author: Kyle Burton <kyle.burton@gmail.com>
-;; Keywords: java, java-mode, paredit
+;; Keywords: ruby, ruby-mode, paredit
 
 ;; This file is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published
