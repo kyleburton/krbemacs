@@ -15,6 +15,7 @@
 
 
 (require 'cl)
+(require 'yaml-mode)
 
 (defvar krb-local-host-name nil)
 (setq krb-local-host-name (first (split-string (shell-command-to-string "hostname") "\n")))
