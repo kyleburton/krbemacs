@@ -285,11 +285,14 @@
                  )
     (funcall function)))
 
-(defimplementation swank-compile-file (filename load-p external-format)
+(defimplementation swank-compile-file (input-file output-file 
+                                       load-p external-format)
   (with-compilation-hooks ()
     (let ((*buffer-name* nil)
-          (*compile-filename* filename))
-      (compile-file *compile-filename* :load-after-compile load-p
+          (*compile-filename* input-file))
+      (compile-file *compile-filename* 
+                    :output-file output-file
+                    :load-after-compile load-p
                     :external-format external-format))))
 
 (defun call-with-temp-file (fn)
@@ -315,9 +318,9 @@
            (delete-file binary-filename))
          (not failure?)))))
 
-(defimplementation swank-compile-string (string &key buffer position directory
-                                                debug)
-  (declare (ignore debug))
+(defimplementation swank-compile-string (string &key buffer position filename
+                                         policy)
+  (declare (ignore policy))
   ;; We store the source buffer in excl::*source-pathname* as a string
   ;; of the form <buffername>;<start-offset>.  Quite ugly encoding, but
   ;; the fasl file is corrupted if we use some other datatype.
@@ -326,14 +329,15 @@
           (*buffer-start-position* position)
           (*buffer-string* string)
           (*default-pathname-defaults*
-           (if directory (merge-pathnames (pathname directory))
+           (if filename 
+               (merge-pathnames (pathname filename))
                *default-pathname-defaults*)))
       (compile-from-temp-file
        (format nil "~S ~S~%~A" 
                `(in-package ,(package-name *package*))
                `(eval-when (:compile-toplevel :load-toplevel)
-                 (setq excl::*source-pathname*
-                  ',(format nil "~A;~D" buffer position)))
+                  (setq excl::*source-pathname*
+                        ',(format nil "~A;~D" buffer position)))
                string)))))
 
 ;;;; Definition Finding
@@ -691,6 +695,10 @@
      (when (eq timeout t) (return (values nil t)))
      (mp:process-wait-with-timeout "receive-if" 0.5
                                    #'mp:gate-open-p (mailbox.gate mbox)))))
+
+(defimplementation set-default-initial-binding (var form)
+  (setq excl:*cl-default-special-bindings*
+        (acons var form excl:*cl-default-special-bindings*)))
 
 (defimplementation quit-lisp ()
   (excl:exit 0 :quiet t))

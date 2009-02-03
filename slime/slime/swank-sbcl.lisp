@@ -32,29 +32,16 @@
   ;; Generate a form suitable for testing for stepper support (0.9.17)
   ;; with #+.
   (defun sbcl-with-new-stepper-p ()
-    (if (find-symbol "ENABLE-STEPPING" "SB-IMPL")
-        '(:and)
-        '(:or)))
+    (with-symbol 'enable-stepping 'sb-impl))
   ;; Ditto for weak hash-tables
   (defun sbcl-with-weak-hash-tables ()
-    (if (find-symbol "HASH-TABLE-WEAKNESS" "SB-EXT")
-        '(:and)
-        '(:or)))
+    (with-symbol 'hash-table-weakness 'sb-ext))
   ;; And for xref support (1.0.1)
   (defun sbcl-with-xref-p ()
-    (if (find-symbol "WHO-CALLS" "SB-INTROSPECT")
-        '(:and)
-        '(:or)))
+    (with-symbol 'who-calls 'sb-introspect))
   ;; ... for restart-frame support (1.0.2)
   (defun sbcl-with-restart-frame ()
-    (if (find-symbol "FRAME-HAS-DEBUG-TAG-P" "SB-DEBUG")
-        '(:and)
-        '(:or)))
-  (defun sbcl-with-symbol (name package)
-    (if (find-symbol (string name) (string package))
-        '(:and)
-        '(:or)))
-  )
+    (with-symbol 'frame-has-debug-tag-p 'sb-debug)))
 
 ;;; swank-mop
 
@@ -176,13 +163,22 @@
     (setq *wait-for-input-called* t))
   (let ((*wait-for-input-called* nil))
     (loop
-     (let ((ready (remove-if-not #'listen streams)))
+     (let ((ready (remove-if (lambda (s)
+                               (let ((c (read-char-no-hang s nil :eof)))
+                                 (case c
+                                   ((nil) t)
+                                   ((:eof) nil)
+                                   (t 
+                                    (unread-char c s)
+                                    nil))))
+                             streams)))
        (when ready (return ready)))
      (when timeout (return nil))
      (when (check-slime-interrupts) (return :interrupt))
      (when *wait-for-input-called* (return :interrupt))
      (let* ((f (constantly t))
             (handlers (loop for s in streams
+                            do (assert (open-stream-p s))
                             collect (add-one-shot-handler s f))))
        (unwind-protect
             (sb-sys:serve-event 0.2)
@@ -326,6 +322,11 @@
 
 ;;; Utilities
 
+#+#.(swank-backend::with-symbol 'function-lambda-list 'sb-introspect)
+(defimplementation arglist (fname)
+  (sb-introspect:function-lambda-list fname))
+
+#-#.(swank-backend::with-symbol 'function-lambda-list 'sb-introspect)
 (defimplementation arglist (fname)
   (sb-introspect:function-arglist fname))
 
@@ -344,6 +345,12 @@
                                       (find-symbol (symbol-name (first qualifier)) :cl))
                                   flags :key #'ensure-list))
           (call-next-method)))))
+
+#+#.(swank-backend::with-symbol 'deftype-lambda-list 'sb-introspect)
+(defmethod type-specifier-arglist :around (typespec-operator)
+  (multiple-value-bind (arglist foundp)
+      (sb-introspect:deftype-lambda-list typespec-operator)
+    (if foundp arglist (call-next-method))))
 
 (defvar *buffer-name* nil)
 (defvar *buffer-offset*)
@@ -465,16 +472,19 @@ compiler state."
 
 (defvar *trap-load-time-warnings* nil)
 
-(defimplementation swank-compile-file (pathname load-p external-format)
+(defimplementation swank-compile-file (input-file output-file 
+                                       load-p external-format)
   (handler-case
       (multiple-value-bind (output-file warnings-p failure-p)
           (with-compilation-hooks ()
-            (compile-file pathname :external-format external-format))
+            (compile-file input-file :output-file output-file
+                          :external-format external-format))
         (values output-file warnings-p
                 (or failure-p
                     (when load-p
                       ;; Cache the latest source file for definition-finding.
-                      (source-cache-get pathname (file-write-date pathname))
+                      (source-cache-get input-file 
+                                        (file-write-date input-file))
                       (not (load output-file))))))
     (sb-c:fatal-compiler-error () nil)))
 
@@ -493,41 +503,47 @@ compiler state."
   "Return a temporary file name to compile strings into."
   (concatenate 'string (tmpnam nil) ".lisp"))
 
-(defimplementation swank-compile-string (string &key buffer position directory
-                                                debug)
-  (declare (ignorable debug))
+(defun get-compiler-policy (default-policy)
+  (declare (ignorable default-policy))
+  #+#.(swank-backend::with-symbol 'restrict-compiler-policy 'sb-ext)
+  (remove-duplicates (append default-policy (sb-ext:restrict-compiler-policy))
+                     :key #'car))
+
+(defun set-compiler-policy (policy)
+  (declare (ignorable policy))
+  #+#.(swank-backend::with-symbol 'restrict-compiler-policy 'sb-ext)
+   (loop for (qual . value) in policy
+         do (sb-ext:restrict-compiler-policy qual value)))
+
+(defimplementation swank-compile-string (string &key buffer position filename
+                                         policy)
   (let ((*buffer-name* buffer)
         (*buffer-offset* position)
         (*buffer-substring* string)
-        (filename (temp-file-name))
-        #+#.(swank-backend::sbcl-with-symbol 'restrict-compiler-policy 'sb-ext)
-        (old-min-debug (assoc 'debug (sb-ext:restrict-compiler-policy)))
-        )
-    #+#.(swank-backend::sbcl-with-symbol 'restrict-compiler-policy 'sb-ext)
-    (when debug
-      (sb-ext:restrict-compiler-policy 'debug debug))
+        (temp-file-name (temp-file-name))
+        (saved-policy (get-compiler-policy '((debug . 0) (speed . 0)))))
+    (when policy
+      (set-compiler-policy policy))
     (flet ((load-it (filename)
              (when filename (load filename)))
            (compile-it (cont)
              (with-compilation-hooks ()
                (with-compilation-unit
                    (:source-plist (list :emacs-buffer buffer
-                                        :emacs-directory directory
+                                        :emacs-filename filename
                                         :emacs-string string
                                         :emacs-position position))
-                 (funcall cont (compile-file filename))))))
-      (with-open-file (s filename :direction :output :if-exists :error)
+                 (funcall cont (compile-file temp-file-name))))))
+      (with-open-file (s temp-file-name :direction :output :if-exists :error)
         (write-string string s))
       (unwind-protect
            (if *trap-load-time-warnings*
                (compile-it #'load-it)
                (load-it (compile-it #'identity)))
         (ignore-errors
-          #+#.(swank-backend::sbcl-with-symbol
-               'restrict-compiler-policy 'sb-ext)
-          (sb-ext:restrict-compiler-policy 'debug (or old-min-debug 0))
-          (delete-file filename)
-          (delete-file (compile-file-pathname filename)))))))
+          (set-compiler-policy saved-policy)
+          (delete-file temp-file-name)
+          (delete-file (compile-file-pathname temp-file-name)))))))
 
 ;;;; Definitions
 
@@ -733,7 +749,7 @@ Return NIL if the symbol is unbound."
   (defxref who-sets)
   (defxref who-references)
   (defxref who-macroexpands)
-  #+#.(swank-backend::sbcl-with-symbol 'who-specializes 'sb-introspect)
+  #+#.(swank-backend::with-symbol 'who-specializes 'sb-introspect)
   (defxref who-specializes))
 
 (defun source-location-for-xref-data (xref-data)
@@ -904,11 +920,11 @@ stack."
          (plist (sb-c::debug-source-plist dsource)))
     (if (getf plist :emacs-buffer)
         (emacs-buffer-source-location code-location plist)
-        #+#.(swank-backend::sbcl-with-symbol 'debug-source-from 'sb-di)
+        #+#.(swank-backend::with-symbol 'debug-source-from 'sb-di)
         (ecase (sb-di:debug-source-from dsource)
           (:file (file-source-location code-location))
           (:lisp (lisp-source-location code-location)))
-        #-#.(swank-backend::sbcl-with-symbol 'debug-source-from 'sb-di)
+        #-#.(swank-backend::with-symbol 'debug-source-from 'sb-di)
         (if (sb-di:debug-source-namestring dsource)
             (file-source-location code-location)
             (lisp-source-location code-location)))))
@@ -965,10 +981,10 @@ stack."
                          `(:snippet ,snippet)))))))
 
 (defun code-location-debug-source-name (code-location)
-  (namestring (truename (#+#.(swank-backend::sbcl-with-symbol
+  (namestring (truename (#+#.(swank-backend::with-symbol
                               'debug-source-name 'sb-di)
                              sb-c::debug-source-name
-                             #-#.(swank-backend::sbcl-with-symbol
+                             #-#.(swank-backend::with-symbol
                                   'debug-source-name 'sb-di)
                              sb-c::debug-source-namestring
                          (sb-di::code-location-debug-source code-location)))))

@@ -262,6 +262,10 @@
 ;;     (error "Can't determine SBCL_HOME, tried: %s, please locate
 ;;     it or disable slime in this environment."  locations)))
 
+(eval-after-load "slime"
+  '(progn
+     (slime-setup '(slime-repl))))
+
 
 (require 'slime)
 (slime-setup)

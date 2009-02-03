@@ -138,16 +138,17 @@
   (handler-bind ((warning #'handle-compiler-warning))
     (funcall function)))
 
-(defimplementation swank-compile-file (*compile-filename* load-p
-                                       external-format)
+(defimplementation swank-compile-file (input-file output-file
+                                       load-p external-format)
   (declare (ignore external-format))
   (with-compilation-hooks ()
-    (let ((*buffer-name* nil))
-      (compile-file *compile-filename* :load t))))
+    (let ((*buffer-name* nil)
+          (*compile-filename* input-file))
+      (compile-file input-file :output-file output-file :load t))))
 
-(defimplementation swank-compile-string (string &key buffer position directory
-                                                debug)
-  (declare (ignore directory debug))
+(defimplementation swank-compile-string (string &key buffer position filename
+                                         policy)
+  (declare (ignore filename policy))
   (with-compilation-hooks ()
     (let ((*buffer-name* buffer)
           (*buffer-start-position* position)
@@ -183,7 +184,9 @@
           (multiple-value-bind (arglist errorp)
               (ignore-errors
                 (values (read-from-string docstring t nil :start pos)))
-            (if errorp :not-available (cdr arglist)))
+            (if (or errorp (not (listp arglist)))
+                :not-available
+                (cdr arglist)))
           :not-available ))))
 
 (defimplementation arglist (name)

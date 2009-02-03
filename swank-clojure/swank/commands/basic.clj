@@ -124,7 +124,7 @@
               )))))))
 
 (defslimefn compile-file-for-emacs
-  ([file-name load?]
+  ([file-name load? compile-options]
      (when load?
        (compile-file-for-emacs* file-name))))
 
@@ -258,7 +258,7 @@
 
 (defn- slime-search-paths []
   (concat (get-path-prop "user.dir" "java.class.path" "sun.boot.class.path")
-          (map #(.getPath #^java.net.URL %) (.getURLs clojure.lang.RT/ROOT_CLASSLOADER))))
+          (map #(.getPath #^java.net.URL %) (.getURLs (clojure.lang.RT/baseLoader)))))
 
 (defn- namespace-to-path [ns]
   (let [#^String ns-str (name (ns-name ns))]
@@ -271,10 +271,13 @@
   (let [sym-name (read-from-string name)
         sym-var (ns-resolve (maybe-ns *current-package*) sym-name)]
     (when-let [meta (and sym-var (meta sym-var))]
-        (if-let [path (or (slime-find-file-in-paths (str (namespace-to-path (:ns meta))
-                                                         (.separator File)
-                                                         (:file meta)) (slime-search-paths))
-                          (slime-find-file-in-paths (:file meta) (slime-search-paths)))]
+      (if-let [path (or
+                     ;; Check first check using full namespace
+                     (slime-find-file-in-paths (str (namespace-to-path (:ns meta))
+                                                       File/separator
+                                                       (:file meta)) (slime-search-paths))
+                     ;; Otherwise check using just the filename
+                     (slime-find-file-in-paths (:file meta) (slime-search-paths)))]
         `((~(str "(defn " (:name meta) ")")
            (:location
             ~path
@@ -301,3 +304,5 @@
 
 (defslimefn frame-catch-tags-for-emacs [n] nil)
 (defslimefn frame-locals-for-emacs [n] nil)
+
+(defslimefn create-repl [target] '("user" user))

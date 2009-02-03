@@ -1,12 +1,46 @@
-;;; clojure-mode.el -- Major mode for Clojure code
+;;; clojure-mode.el --- Major mode for Clojure code
 
-;; Copyright (C) 2008 Jeffrey Chu
+;; Copyright (C) 2007, 2008 Jeffrey Chu and Lennart Staflin
 ;;
-;; Author: Jeffrey Chu <jochu0@gmail.com>
-;; 
-;;   Originally by: Lennart Staflin <lenst@lysator.liu.se>
-;;                  Copyright (C) 2007, 2008 Lennart Staflin
-;;
+;; Authors: Jeffrey Chu <jochu0@gmail.com>
+;;          Lennart Staflin <lenst@lysator.liu.se>
+;; URL: http://www.emacswiki.org/cgi-bin/wiki/ClojureMode
+;; Version: 1.0
+;; Keywords: languages, lisp
+
+;; This file is not part of GNU Emacs.
+
+;;; Commentary:
+
+;; Provides font-lock, indentation, and functions for communication
+;; with subprocesses for Clojure. (http://clojure.org)
+
+;;; Installation:
+
+;; (0) Add this file to your load-path.
+;; (1) Either:
+;;     Add these lines to your .emacs:
+;;       (autoload 'clojure-mode "clojure-mode" "A major mode for Clojure" t)
+;;       (add-to-list 'auto-mode-alist '("\\.clj$" . clojure-mode))
+;;     Or generate autoloads with the `update-directory-autoloads' function.
+
+;; Paredit users:
+
+;; Download paredit v21 or greater
+;;    http://mumble.net/~campbell/emacs/paredit.el
+
+;; Use paredit as you normally would any other mode.
+;; Example:
+;;   ;; require or autoload paredit-mode
+;;   (defun lisp-enable-paredit-hook () (paredit-mode 1))
+;;   (add-hook 'clojure-mode-hook 'lisp-enable-paredit-hook)
+
+;;; Todo:
+
+;; * hashbang is also a valid comment character
+
+;;; License:
+
 ;; This program is free software; you can redistribute it and/or
 ;; modify it under the terms of the GNU General Public License
 ;; as published by the Free Software Foundation; either version 3
@@ -21,6 +55,8 @@
 ;; along with GNU Emacs; see the file COPYING.  If not, write to the
 ;; Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
 ;; Boston, MA 02110-1301, USA.
+
+;;; Code:
 
 (require 'cl)
 
@@ -61,7 +97,6 @@ indentation."
   "Maximum amount to backtrack up a list to check for context."
   :type 'integer
   :group 'clojure-mode)
-
 
 (defvar clojure-mode-map
   (let ((map (make-sparse-keymap)))
@@ -106,7 +141,10 @@ All commands in `lisp-mode-shared-map' are inherited by this map.")
 This holds a cons cell of the form `(DIRECTORY . FILE)'
 describing the last `clojure-load-file' or `clojure-compile-file' command.")
 
+(defvar clojure-def-regexp "^\\s *\\((def\\S *\\s +\\(\\S +\\)\\)"
+  "A regular expression to match any top-level definitions.")
 
+;;;###autoload
 (defun clojure-mode ()
   "Major mode for editing Clojure code - similar to Lisp mode..
 Commands:
@@ -132,6 +170,12 @@ if that value is non-nil."
        'clojure-indent-function)
   (set (make-local-variable 'font-lock-multiline) t)
 
+  (setq lisp-imenu-generic-expression
+        `((nil ,clojure-def-regexp 2)))
+  (setq imenu-create-index-function
+        (lambda ()
+          (imenu--generic-function lisp-imenu-generic-expression)))
+
   (if (and (not (boundp 'font-lock-extend-region-functions))
            (or clojure-mode-font-lock-multiline-def
                clojure-mode-font-lock-comment-sexp))
@@ -154,7 +198,12 @@ if that value is non-nil."
 	  (font-lock-mark-block-function . mark-defun)
 	  (font-lock-syntactic-face-function . lisp-font-lock-syntactic-face-function)))
   
-  (run-mode-hooks 'clojure-mode-hook))
+  (run-mode-hooks 'clojure-mode-hook)
+  
+  ;; Enable curly braces when paredit is enabled in clojure-mode-hook
+  (when (and (featurep 'paredit) paredit-mode (>= paredit-version 21))
+    (define-key clojure-mode-map "{" 'paredit-open-curly)
+    (define-key clojure-mode-map "}" 'paredit-close-curly)))
 
 (defun clojure-font-lock-def-at-point (point)
   "Find the position range between the top-most def* and the
@@ -254,16 +303,44 @@ elements of a def* forms."
       (,(concat
          "(\\(?:clojure/\\)?" 
          (regexp-opt
-          '("cond" "for" "loop" "let" "recur" "do" "binding" "with-meta"
-            "when" "when-not" "when-let" "when-first" "if" "if-let"
-            "delay" "lazy-cons" "." ".." "->" "and" "or" "locking"
-            "dosync" "load"
-            "sync" "doseq" "dotimes" "import" "unimport" "ns" "in-ns" "refer"
-            "implement" "proxy" "time" "try" "catch" "finally" "throw"
-            "doto" "with-open" "with-local-vars" "struct-map"
+          '("let" "do"
+            "cond" "condp"
+            "for" "loop" "recur"
+            "when" "when-not" "when-let" "when-first"
+            "if" "if-let" "if-not"
+            "." ".." "->" "doto"
+            "and" "or"
+            "dosync" "doseq" "dotimes" "dorun" "doall"
+            "load" "import" "unimport" "ns" "in-ns" "refer"
+            "try" "catch" "finally" "throw"
+            "with-open" "with-local-vars" "binding" 
             "gen-class" "gen-and-load-class" "gen-and-save-class") t)
          "\\>")
         .  1)
+      ;; Built-ins
+      (,(concat
+         "(\\(?:clojure/\\)?" 
+         (regexp-opt
+          '(
+            "implement" "proxy" "lazy-cons" "with-meta"
+            "struct" "struct-map" "delay" "locking" "sync" "time" "apply"
+            "remove" "merge" "interleave" "interpose" "distinct" "for"
+            "cons" "concat" "lazy-cat" "cycle" "rest" "frest" "drop" "drop-while"
+            "nthrest" "take" "take-while" "take-nth" "butlast" "drop-last"
+            "reverse" "sort" "sort-by" "split-at" "partition" "split-with"
+            "first" "ffirst" "rfirst" "when-first" "zipmap" "into" "set" "vec" "into-array"
+            "to-array-2d" "not-empty" "seq?" "not-every?" "every?" "not-any?" "empty?"
+            "map" "mapcat" "vector?" "list?" "hash-map" "reduce" "filter"
+            "vals" "keys" "rseq" "subseq" "rsubseq" "count"
+            "fnseq" "lazy-cons" "repeatedly" "iterate"
+            "repeat" "replicate" "range"
+            "line-seq" "resultset-seq" "re-seq" "re-find" "tree-seq" "file-seq" "xml-seq"
+            "iterator-seq" "enumeration-seq"
+            "symbol?" "string?" "vector" "conj" "str"
+            "pos?" "neg?" "zero?" "nil?" "inc" "format"
+            "alter" "commute" "ref-set" "floor" "assoc" "send" "send-off" ) t)
+         "\\>")
+       1 font-lock-builtin-face)
       ;; (fn name? args ...)
       (,(concat "(\\(?:clojure/\\)?\\(fn\\)[ \t]+"
                 ;; Possibly type
@@ -276,7 +353,7 @@ elements of a def* forms."
       ("\\<:\\sw+\\>" 0 font-lock-builtin-face)
       ;; Meta type annotation #^Type
       ("#^\\sw+" 0 font-lock-type-face)
-      ))
+      ("\\<io\\!\\>" 0 font-lock-warning-face)))
   "Default expressions to highlight in Clojure mode.")
 
 
@@ -452,37 +529,26 @@ check for contextual indenting."
   (binding 1)
   (comment 0)
   (defstruct 1)
-  (doseq 2)
-  (dotimes 2)
+  (doseq 1)
+  (dotimes 1)
   (doto 1)
   (implement 1)
   (let 1)
-  (when-let 2)
-  (if-let 2)
+  (when-let 1)
+  (if-let 1)
   (locking 1)
   (proxy 2)
   (sync 1)
   (when 1)
-  (when-first 2)
-  (when-let 2)
+  (when-first 1)
+  (when-let 1)
   (when-not 1)
   (with-local-vars 1)
-  (with-open 2)
+  (with-open 1)
   (with-precision 1))
 
-;; macro indent (auto generated)
-
-;; Things that just aren't right (manually removed)
-; (put '-> 'clojure-indent-function 2)
-; (put '.. 'clojure-indent-function 2)
-; (put 'and 'clojure-indent-function 1)
-; (put 'defmethod 'clojure-indent-function 2)
-; (put 'defn- 'clojure-indent-function 1)
-; (put 'memfn 'clojure-indent-function 1)
-; (put 'or 'clojure-indent-function 1)
-; (put 'lazy-cat 'clojure-indent-function 1)
-; (put 'lazy-cons 'clojure-indent-function 1)
+;;;###autoload
+(add-to-list 'auto-mode-alist '("\\.clj$" . clojure-mode))
 
 (provide 'clojure-mode)
-
 ;;; clojure-mode.el ends here

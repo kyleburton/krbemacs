@@ -263,11 +263,11 @@
 (defun krbj-elisp-tests ()
   (assert
    (krbj-assocs-equalp '((a . 1)
-                             (b . 2)
-                             (c . 3))
-                           '((b . 2)
-                             (a . 1)
-                             (c . 3))))
+                         (b . 2)
+                         (c . 3))
+                       '((b . 2)
+                         (a . 1)
+                         (c . 3))))
   (assert (equalp
            (krbj-parse-method-signature "void method(void)")
            '((protection . "package")
@@ -293,7 +293,7 @@
 (defun krb-java-apply-keybindings ()
   "Set local keybindings for the extensions."
   (local-set-key "\M-."           'krb-java-find-at-point)
-  (local-set-key "\C-\C"          'krb-find-xargs-grep)
+  ;; (local-set-key "\C-\C"          'krb-find-xargs-grep)
   (setq abbrev-mode t))
 
 (defun krb-java-find-pom-location (&optional path orig-path)

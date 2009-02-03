@@ -261,12 +261,15 @@ condition."
   (handler-bind ((ccl::compiler-warning 'handle-compiler-warning))
     (funcall function)))
 
-(defimplementation swank-compile-file (filename load-p external-format)
+(defimplementation swank-compile-file (input-file output-file
+                                       load-p external-format)
   (declare (ignore external-format))
   (with-compilation-hooks ()
     (let ((*buffer-name* nil)
           (*buffer-offset* nil))
-      (compile-file filename :load load-p))))
+      (compile-file input-file 
+                    :output-file output-file
+                    :load load-p))))
 
 (defimplementation frame-var-value (frame var)
   (block frame-var-value
@@ -368,19 +371,38 @@ condition."
            (mapcan 'who-specializes (ccl::%class-direct-subclasses class)))
    :test 'equal))
 
-(defimplementation swank-compile-string (string &key buffer position directory
-                                                debug)
-  (declare (ignore directory debug))
+(defimplementation swank-compile-string (string &key buffer position filename
+                                         policy)
+  (declare (ignore policy))
   (with-compilation-hooks ()
     (let ((*buffer-name* buffer)
           (*buffer-offset* position)
-          (filename (temp-file-name)))
+          (temp-file-name (temp-file-name)))
       (unwind-protect
-           (with-open-file (s filename :direction :output :if-exists :error)
-             (write-string string s))
-        (let ((binary-filename (compile-file filename :load t)))
-          (delete-file binary-filename)))
-      (delete-file filename))))
+           (progn
+             (with-open-file (s temp-file-name :direction :output 
+                                :if-exists :error)
+               (write-string string s))
+             (let ((binary-filename (compile-temp-file
+                                     temp-file-name filename buffer position)))
+               (delete-file binary-filename)))
+        (delete-file temp-file-name)))))
+
+(defvar *temp-file-map* (make-hash-table :test #'equal)
+  "A mapping from tempfile names to Emacs buffer names.")
+
+(defun compile-temp-file (temp-file-name buffer-file-name buffer-name offset)
+  (if (fboundp 'ccl::function-source-note)
+      (compile-file temp-file-name
+                    :load t
+                    :compile-file-original-truename 
+                    (or buffer-file-name
+                        (progn 
+                          (setf (gethash temp-file-name *temp-file-map*)
+                                buffer-name)
+                          temp-file-name))
+                    :compile-file-original-buffer-offset (1- offset))
+      (compile-file temp-file-name :load t)))
 
 ;;; Profiling (alanr: lifted from swank-clisp)
 
@@ -437,6 +459,10 @@ condition."
   (let ((*debugger-hook* hook)
         (*break-in-sldb* t))
     (funcall fun)))
+
+(defimplementation install-debugger-globally (function)
+  (setq *debugger-hook* function)
+  (setq *break-in-sldb* t))
 
 (defun backtrace-context ()
   nil)
@@ -598,54 +624,166 @@ condition."
                       (list (list type symbol) 
                             (canonicalize-location file symbol))))))
 
-(defun function-source-location (function)
-  (or (car (source-locations function))
-      (list :error (format nil "No source info available for ~A" function))))
+;; CCL commit r11373 | gz | 2008-11-16 16:35:28 +0100 (Sun, 16 Nov 2008)
+;; contains some interesting details:
+;; 
+;; Source location are recorded in CCL:SOURCE-NOTE's, which are objects
+;; with accessors CCL:SOURCE-NOTE-FILENAME, CCL:SOURCE-NOTE-START-POS,
+;; CCL:SOURCE-NOTE-END-POS and CCL:SOURCE-NOTE-TEXT.  The start and end
+;; positions are file positions (not character positions).  The text will
+;; be NIL unless text recording was on at read-time.  If the original
+;; file is still available, you can force missing source text to be read
+;; from the file at runtime via CCL:ENSURE-SOURCE-NOTE-TEXT.
+;; 
+;; Source-note's are associated with definitions (via record-source-file)
+;; and also stored in function objects (including anonymous and nested
+;; functions).  The former can be retrieved via
+;; CCL:FIND-DEFINITION-SOURCES, the latter via CCL:FUNCTION-SOURCE-NOTE.
+;; 
+;; The recording behavior is controlled by the new variable
+;; CCL:*SAVE-SOURCE-LOCATIONS*:
+;; 
+;;   If NIL, don't store source-notes in function objects, and store only
+;;   the filename for definitions (the latter only if
+;;   *record-source-file* is true).
+;; 
+;;   If T, store source-notes, including a copy of the original source
+;;   text, for function objects and definitions (the latter only if
+;;   *record-source-file* is true).
+;; 
+;;   If :NO-TEXT, store source-notes, but without saved text, for
+;;   function objects and defintions (the latter only if
+;;   *record-source-file* is true).  This is the default.
+;; 
+;; PC to source mapping is controlled by the new variable
+;; CCL:*RECORD-PC-MAPPING*.  If true (the default), functions store a
+;; compressed table mapping pc offsets to corresponding source locations.
+;; This can be retrieved by (CCL:FIND-SOURCE-NOTE-AT-PC function pc)
+;; which returns a source-note for the source at offset pc in the
+;; function.
+;; 
+;; Currently the only thing that makes use of any of this is the
+;; disassembler.  ILISP and current version of Slime still use
+;; backward-compatible functions that deal with filenames only.  The plan
+;; is to make Slime, and our IDE, use this eventually.
 
-;; source-locations THING => LOCATIONS NAMES
-;; LOCATIONS ... a list of source-locations.  Most "specific" first.
-;; NAMES     ... a list of names.
-(labels ((str (obj) (princ-to-string obj))
-         (str* (list) (mapcar #'princ-to-string list))
-         (unzip (list) (values (mapcar #'car list) (mapcar #'cdr list)))
-         (filename (file) (namestring (truename file)))
-         (src-loc (file pos)
-           (etypecase file
-             (null `(:error "No source-file info available"))
-             ((or string pathname)
-              (handler-case (make-location `(:file ,(filename file)) pos)
-                (error (c) `(:error ,(princ-to-string c)))))))
-         (fallback (thing)
-           (cond ((functionp thing)
-                  (let ((name (ccl::function-name thing)))
-                    (and (consp name) (eq (car name) :internal)
-                         (ccl::edit-definition-p (second name))))))))
+#+#.(cl:if (cl:fboundp 'ccl::function-source-note) '(:or) '(:and))
+(progn
+  (defun function-source-location (function)
+    (or (car (source-locations function))
+        (list :error (format nil "No source info available for ~A" function))))
+  
+  (defun pc-source-location (function pc)
+    (function-source-location function))
 
-  ;; FIXME: reorder result, e.g. if THING is a function then return
-  ;; the locations for type 'function before those with type
-  ;; 'variable.  (Otherwise the debugger jumps to compiler-macros
-  ;; instead of functions :-)
-  (defun source-locations (thing)
-    (multiple-value-bind (files name) (ccl::edit-definition-p thing)
-      (when (null files) 
-        (multiple-value-setq (files name) (fallback thing)))
-      (unzip
-       (loop for (type . file) in files collect
-             (etypecase type
-               ((member function macro variable compiler-macro 
-                        ccl:defcallback ccl::x8664-vinsn)
-                (cons (src-loc file (list :function-name (str name))) 
-                      (list type name)))
-               (method
-                (let* ((met type)
-                       (name (ccl::method-name met))
-                       (specs (ccl::method-specializers met))
-                       (specs (mapcar #'specializer-name specs))
-                       (quals (ccl::method-qualifiers met)))
-                  (cons (src-loc file (list :method (str name) 
-                                            (str* specs) (str* quals)))
-                        `(method ,name ,quals ,specs))))))))))
+  ;; source-locations THING => LOCATIONS NAMES
+  ;; LOCATIONS ... a list of source-locations.  Most "specific" first.
+  ;; NAMES     ... a list of names.
+  (labels ((str (obj) (princ-to-string obj))
+           (str* (list) (mapcar #'princ-to-string list))
+           (unzip (list) (values (mapcar #'car list) (mapcar #'cdr list)))
+           (filename (file) (namestring (truename file)))
+           (src-loc (file pos)
+             (etypecase file
+               (null `(:error "No source-file info available"))
+               ((or string pathname)
+                (handler-case (make-location `(:file ,(filename file)) pos)
+                  (error (c) `(:error ,(princ-to-string c)))))))
+           (fallback (thing)
+             (cond ((functionp thing)
+                    (let ((name (ccl::function-name thing)))
+                      (and (consp name) (eq (car name) :internal)
+                           (ccl::edit-definition-p (second name))))))))
 
+    ;; FIXME: reorder result, e.g. if THING is a function then return
+    ;; the locations for type 'function before those with type
+    ;; 'variable.  (Otherwise the debugger jumps to compiler-macros
+    ;; instead of functions :-)
+    (defun source-locations (thing)
+      (multiple-value-bind (files name) (ccl::edit-definition-p thing)
+        (when (null files) 
+          (multiple-value-setq (files name) (fallback thing)))
+        (unzip
+         (loop for (type . file) in files collect
+               (etypecase type
+                 ((member function macro variable compiler-macro 
+                          ccl:defcallback ccl::x8664-vinsn)
+                  (cons (src-loc file (list :function-name (str name))) 
+                        (list type name)))
+                 (method
+                  (let* ((met type)
+                         (name (ccl::method-name met))
+                         (specs (ccl::method-specializers met))
+                         (specs (mapcar #'specializer-name specs))
+                         (quals (ccl::method-qualifiers met)))
+                    (cons (src-loc file (list :method (str name) 
+                                              (str* specs) (str* quals)))
+                          `(method ,name ,@quals ,specs)))))))))))
+
+#+#.(cl:if (cl:fboundp 'ccl::function-source-note) '(:and) '(:or))
+(progn
+  (defun function-source-location (function)
+    (source-note-to-source-location
+     (ccl:function-source-note function)
+     (lambda ()
+       (format nil "Function has no source note: ~A" function))))
+
+  (defun pc-source-location (function pc)
+    (source-note-to-source-location
+     (or (ccl:find-source-note-at-pc function pc)
+         (ccl:function-source-note function))
+     (lambda ()
+       (format nil "No source note at PC: ~A:#x~x" function pc))))
+
+  (defun source-note-to-source-location (note if-nil-thunk)
+    (labels ((filename-to-buffer (filename)
+               (cond ((probe-file filename)
+                      (list :file (namestring (truename filename))))
+                     ((gethash filename *temp-file-map*)
+                      (list :buffer (gethash filename *temp-file-map*)))
+                     (t (error "File ~s doesn't exist" filename)))))
+      (cond (note
+             (handler-case
+                 (make-location 
+                  (filename-to-buffer (ccl:source-note-filename note))
+                  (list :position (1+ (ccl:source-note-start-pos note))))
+               (error (c) `(:error ,(princ-to-string c)))))
+          (t `(:error ,(funcall if-nil-thunk))))))
+
+  (defimplementation find-definitions (symbol)
+    (loop for (loc . name) in (source-locations symbol)
+          collect (list name loc)))
+
+  (defgeneric source-locations (thing))
+
+  (defmethod source-locations ((f function))
+    (list (cons (function-source-location f)
+                (list 'function (ccl:function-name f)))))
+
+  (defmethod source-locations ((s symbol))
+    (append
+     #+(or)
+     (if (and (fboundp s) 
+              (not (macro-function s))
+              (not (special-operator-p s))
+              (functionp (symbol-function s)))
+         (source-locations (symbol-function s)))
+     (loop for ((type . name) source) in (ccl:find-definition-sources s)
+           collect (cons (source-note-to-source-location 
+                          source (lambda () "No source info available"))
+                         (definition-name type name)))))
+
+  (defgeneric definition-name (type name)
+    (:method ((type ccl::definition-type) name)
+      (list (ccl::definition-type-name type) name)))
+
+  (defmethod definition-name ((type ccl::method-definition-type)
+                              (met method))
+    `(,(ccl::definition-type-name type)
+       ,(ccl::method-name met)
+       ,@(ccl::method-qualifiers met)
+       ,(mapcar #'specializer-name (ccl::method-specializers met)))))
+  
 (defimplementation frame-source-location-for-emacs (index)
   "Return to Emacs the location of the source code for the
 function in a debugger frame.  In OpenMCL, we are not able to
@@ -654,10 +792,12 @@ at least the filename containing it."
   (block frame-source-location-for-emacs
     (map-backtrace
      (lambda (frame-number p context lfun pc)
-       (declare (ignore p context pc))
+       (declare (ignore p context))
        (when (and (= frame-number index) lfun)
          (return-from frame-source-location-for-emacs
-           (function-source-location lfun)))))))
+           (if pc
+               (pc-source-location lfun pc)
+               (function-source-location lfun))))))))
 
 (defimplementation eval-in-frame (form index)
   (block eval-in-frame
@@ -706,10 +846,10 @@ at least the filename containing it."
    :when :around
    :name sldb-break))
 
-(defun break-in-sldb (&optional string &rest args)
+(defun break-in-sldb (x y &rest args)
   (let ((*sldb-stack-top-hint* (or *sldb-stack-top-hint*
                                    (ccl::%get-frame-ptr))))
-    (apply #'cerror "Continue from break" (or string "Break") args)))
+    (apply #'cerror y (if args "Break: ~a" x) args)))
 
 ;;; Utilities
 
@@ -784,6 +924,10 @@ at least the filename containing it."
 	   (numberp (symbol-value s))
 	   (< (symbol-value s) 255))
       (setf (gethash (symbol-value s) *value2tag*) s)))
+
+#+#.(swank-backend::with-symbol 'macroexpand-all 'ccl)
+(defimplementation macroexpand-all (form)
+  (ccl:macroexpand-all form))
 
 ;;;; Inspection
 
@@ -960,6 +1104,9 @@ out IDs for.")
            (return (car tail)))))
      (when (eq timeout t) (return (values nil t)))
      (ccl:timed-wait-on-semaphore (mailbox.semaphore mbox) 1))))
+
+(defimplementation set-default-initial-binding (var form)
+  (eval `(ccl::def-standard-initial-binding ,var ,form)))
 
 (defimplementation quit-lisp ()
   (ccl::quit))

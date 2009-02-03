@@ -177,6 +177,7 @@
                         :element-type 'character
                         :external-format external-format))
 
+#-win32
 (defimplementation wait-for-input (streams &optional timeout)
   (assert (member timeout '(nil t)))
   (let ((streams (mapcar (lambda (s) (list* s :input nil)) streams)))
@@ -306,8 +307,9 @@ Return NIL if the symbol is unbound."
 			  (make-location (list :file (namestring truename))
 					 (if (consp lines)
 					     (list* :line lines)
-					     (list :function-name (string fspec)))
-					 (list :snippet (format nil "~A" type))))
+					     (list :function-name (string name)))
+                                         (when (consp type)
+                                           (list :snippet (format nil "~A" type)))))
 			 (t (list :error (princ-to-string c))))))
 		(t (list :error (format nil "No source information available for: ~S"
 					fspec)))))))
@@ -624,19 +626,22 @@ Execute BODY with NAME's function slot set to FUNCTION."
                           :message (princ-to-string condition)
                           :location (compiler-note-location))))
 
-(defimplementation swank-compile-file (filename load-p external-format)
+(defimplementation swank-compile-file (input-file output-file
+                                       load-p external-format)
   (with-compilation-hooks ()
     (with-compilation-unit ()
       (multiple-value-bind (fasl-file warningsp failurep)
-          (compile-file filename :external-format external-format)
+          (compile-file input-file 
+                        :output-file output-file
+                        :external-format external-format)
         (values fasl-file warningsp
                 (or failurep 
                     (and load-p 
                          (not (load fasl-file)))))))))
 
-(defimplementation swank-compile-string (string &key buffer position directory
-                                         debug)
-  (declare (ignore directory debug))
+(defimplementation swank-compile-string (string &key buffer position filename
+                                         policy)
+  (declare (ignore filename policy))
   (with-compilation-hooks ()
     (let ((*buffer-name* buffer)
           (*buffer-offset* position))
