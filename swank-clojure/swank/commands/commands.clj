@@ -1,6 +1,6 @@
 (ns swank.commands)
 
-(defonce slime-fn-map {})
+(def slime-fn-map {})
 
 (defmacro defslimefn
   ([fname & body]

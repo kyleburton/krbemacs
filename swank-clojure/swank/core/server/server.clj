@@ -13,14 +13,14 @@
 ;;  - Creates swank.core.connections
 ;;  - Spins up new threads
 
-(defonce *connections* (ref []))
+(def *connections* (ref []))
 
 (defn- slime-secret
   "Load the data from the secret file. Returns nil if secret file
    could not be read."
   ([] (try
        (let [path-to-secret (str (user-home-path) File/separator ".slime-secret")]
-         (with-open [secret (BufferedReader. (FileReader. path-to-secret))]
+         (with-open secret (BufferedReader. (FileReader. path-to-secret))
            (.readLine secret)))
        (catch Throwable e nil))))
 
@@ -29,30 +29,26 @@
    has sent it and the authentication string matches."
   ([#^Socket socket opts]
      (returning conn (make-connection socket (get opts :encoding *default-encoding*))
-       (when-let [secret (slime-secret)]
+       (when-let secret (slime-secret)
          (let [first-val (read-from-connection conn)]
            (when-not (= first-val secret)
              (.close socket)
              (throw (new Exception "Incoming connection doesn't know the password."))))))))
 
-(defn- make-output-redirection
-  ([conn]
-     (call-on-flush-stream
-      #(with-connection conn
-         (send-to-emacs `(:write-string ~%)))))
-  {:tag java.io.StringWriter})
+(defn- make-output-redirection [conn]
+  (call-on-flush-stream
+   #(with-connection conn
+      (send-to-emacs `(:write-string ~%)))))
 
 (def dont-close nil)
 
 (defn- socket-serve [connection-serve socket opts]
   (with-connection (accept-authenticated-connection socket opts)
-    (let [out-redir (make-output-redirection *current-connection*)]
-      (binding [*out* out-redir
-                *err* (java.io.PrintWriter. out-redir)]
-        (dosync (ref-set (*current-connection* :writer-redir) *out*))
-        (dosync (alter *connections* conj *current-connection*))
-        (connection-serve *current-connection*)
-        (not dont-close)))))
+    (binding [*out* (make-output-redirection *current-connection*)]
+      (dosync (ref-set (*current-connection* :writer-redir) *out*))
+      (dosync (alter *connections* conj *current-connection*))
+      (connection-serve *current-connection*)
+      (not dont-close))))
 
 
 ;; Setup frontent
@@ -73,7 +69,7 @@
 (defn announce-port-to-file
   "Writes the given port number into a file."
   ([#^String file port]
-     (with-open [out (new java.io.FileWriter file)]
+     (with-open out (new java.io.FileWriter file)
        (doto out
-         (.write (str port "\n"))
-         (.flush)))))
+         (write (str port "\n"))
+         (flush)))))

@@ -185,15 +185,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; need to make this environment indepdendent...
-(add-to-list 'load-path "/usr/share/emacs/site-lisp/ruby1.8-elisp")
-(load "ruby-mode.el")
-(load "inf-ruby.el")
+;; (add-to-list 'load-path "/usr/share/emacs/site-lisp/ruby1.8-elisp")
+;; (load "ruby-mode.el")
+;; (load "inf-ruby.el")
 
-(krb-push-file-ext-and-mode-binding 'ruby-mode "\\.rb$" "\\.erb$")
+;; (krb-push-file-ext-and-mode-binding 'ruby-mode "\\.rb$" "\\.erb$")
 
-(require 'krb-ruby)
-(add-hook 'ruby-mode-hook
-          'krb-ruby-apply-keybindings)
+;; (require 'krb-ruby)
+;; (add-hook 'ruby-mode-hook
+;;           'krb-ruby-apply-keybindings)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Lisp and Clojure

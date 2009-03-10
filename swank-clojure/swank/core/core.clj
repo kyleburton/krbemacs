@@ -6,20 +6,18 @@
   (:require (swank.util.concurrent [mbox :as mb])))
 
 ;; Protocol version
-(defonce *protocol-version* (ref nil))
+(def *protocol-version* (ref nil))
 
 ;; Emacs packages
 (def *current-package*)
 
-(defonce *active-threads* (ref ()))
-
 (defn maybe-ns [package]
-  (cond
-   (symbol? package) (or (find-ns package) (maybe-ns 'user))
-   (string? package) (maybe-ns (symbol package))
-   (keyword? package) (maybe-ns (name package))
-   (instance? clojure.lang.Namespace package) package
-   :else (maybe-ns 'user)))
+    (cond
+     (symbol? package) (or (find-ns package) (maybe-ns 'user))
+     (string? package) (maybe-ns (symbol package))
+     (keyword? package) (maybe-ns (name package))
+     (instance? clojure.lang.Namespace package) package
+     :else (maybe-ns 'user)))
 
 (defmacro with-emacs-package [& body]
   `(binding [*ns* (maybe-ns *current-package*)]
@@ -33,13 +31,9 @@
        (when-not (= last-ns# *ns*)
          (send-to-emacs `(:new-package ~(str (ns-name *ns*)) ~(str (ns-name *ns*)))))))))
 
-(defmacro dothread-swank [& body]
-  `(dothread-keeping-clj [*current-connection*]
-     ~@body))
-
 ;; Exceptions for debugging
-(defonce *debug-quit-exception* (Exception. "Debug quit"))
-(def #^Throwable *current-exception*)
+(defexception swank.core.DebugQuitException)
+(def *current-exception*)
 
 ;; Handle Evaluation
 (defn send-to-emacs
@@ -52,7 +46,7 @@
 
 (defn eval-in-emacs-package [form]
   (with-emacs-package
-   (eval form)))
+    (eval form)))
 
 
 (defn eval-from-control
@@ -66,13 +60,12 @@
    evaluates them (will block if no mbox message is available)."
   ([] (continuously (eval-from-control))))
 
-(defn exception-causes [#^Throwable t]
-  (lazy-seq
-    (cons t (when-let [cause (.getCause t)]
-              (exception-causes cause)))))
+(defn- exception-causes [#^Throwable t]
+  (lazy-cons t (when-let cause (.getCause t)
+                 (exception-causes cause))))
 
 (defn- debug-quit-exception? [t]
-  (some #(identical? *debug-quit-exception* %) (exception-causes t)))
+  (some #(instance? swank.core.DebugQuitException %) (exception-causes t)))
 
 (defn debug-loop
   "A loop that is intented to take over an eval thread when a debug is
@@ -92,23 +85,23 @@
 
 (def *debug-thread-id*)
 (defn invoke-debugger [#^Throwable thrown id]
-  (dothread-swank
-   (thread-set-name "Swank Debugger Thread")
-   (binding [*current-exception* thrown
-             *debug-thread-id* id]
-     (let [level 1
-           message (list (or (.getMessage thrown) "No message.")
-                         (str "  [Thrown " (class thrown) "]")
-                         nil)
-           options `(("ABORT" "Return to SLIME's top level.")
-                     ~@(when-let [cause (.getCause thrown)]
-                         '(("CAUSE" "Throw cause of this exception"))))
-           error-stack (exception-stacktrace thrown)
-           continuations (list id)]
-       (send-to-emacs (list :debug (current-thread) level message options error-stack continuations))
-       (send-to-emacs (list :debug-activate (current-thread) level true))
-       (debug-loop)
-       (send-to-emacs (list :debug-return (current-thread) level nil))))))
+  (dothread-keeping [*out* *ns* *current-connection* *warn-on-reflection* *e]
+    (thread-set-name "Swank Debugger Thread")
+    (binding [*current-exception* thrown
+              *debug-thread-id* id]
+      (let [level 1
+            message (list (or (.getMessage thrown) "No message.")
+                          (str "  [Thrown " (class thrown) "]")
+                          nil)
+            options `(("ABORT" "Return to SLIME's top level.")
+                      ~@(when-let cause (.getCause thrown)
+                          '(("CAUSE" "Throw cause of this exception"))))
+            error-stack (exception-stacktrace thrown)
+            continuations (list id)]
+        (send-to-emacs (list :debug (current-thread) level message options error-stack continuations))
+        (send-to-emacs (list :debug-activate (current-thread) level true))
+        (debug-loop)
+        (send-to-emacs (list :debug-return (current-thread) level nil))))))
 
 (defn doall-seq [coll]
   (if (seq? coll)
@@ -118,7 +111,7 @@
 (defn eval-for-emacs [form buffer-package id]
   (try
    (binding [*current-package* buffer-package]
-     (if-let [f (slime-fn (first form))]
+     (if-let f (slime-fn (first form))
        (let [form (cons f (rest form))
              result (doall-seq (eval-in-emacs-package form))]
          (run-hook *pre-reply-hook*)
@@ -132,40 +125,29 @@
      (when (debug-quit-exception? t)
        (send-to-emacs `(:return ~(thread-name (current-thread)) (:abort) ~id))
        (throw t))
-
+     
      ;; start sldb, don't bother here because you can't actually recover with java
      (invoke-debugger t id)
      ;; reply with abort
      (send-to-emacs `(:return ~(thread-name (current-thread)) (:abort) ~id)))))
 
-(defn- add-active-thread [thread]
-  (dosync
-   (commute *active-threads* conj thread)))
-
-(defn- remove-active-thread [thread]
-  (dosync
-   (commute *active-threads* (fn [threads] (remove #(= % thread) threads)))))
-
 (defn spawn-worker-thread
   "Spawn an thread that blocks for a single command from the control
    thread, executes it, then terminates."
   ([conn]
-     (dothread-swank
-       (try
-        (add-active-thread (current-thread))
-        (thread-set-name "Swank Worker Thread")
-        (eval-from-control)
-        (finally
-         (remove-active-thread (current-thread)))))))
+     (dothread-keeping [*out* *ns* *current-connection* *1 *2 *3 *e *warn-on-reflection*]
+       (thread-set-name "Swank Worker Thread")
+       (eval-from-control))))
 
 (defn spawn-repl-thread
   "Spawn an thread that sets itself as the current
    connection's :repl-thread and then enters an eval-loop"
   ([conn]
-     (dothread-swank
-      (thread-set-name "Swank REPL Thread")
-      (with-connection conn
-        (eval-loop)))))
+     (dothread-keeping [*out* *ns* *1 *2 *3 *e *warn-on-reflection*
+                        *print-level* *print-length*]
+       (thread-set-name "Swank REPL Thread")
+       (with-connection conn
+         (eval-loop)))))
 
 (defn find-or-spawn-repl-thread
   "Returns the current connection's repl-thread or create a new one if
@@ -206,31 +188,18 @@
 
          (= action :return)
          (let [[thread & ret] args]
-           (binding [*print-level* nil, *print-length* nil]
-             (write-to-connection conn `(:return ~@ret))))
+           (write-to-connection conn `(:return ~@ret)))
 
          (one-of? action
-                  :presentation-start :presentation-end
+                  :write-string :presentation-start :presentation-end
                   :new-package :new-features :ed :percent-apply :indentation-update
                   :eval-no-wait :background-message :inspect)
-         (binding [*print-level* nil, *print-length* nil]
-           (write-to-connection conn ev))
-
-         (= action :write-string)
          (write-to-connection conn ev)
 
          (one-of? action
                   :debug :debug-condition :debug-activate :debug-return)
          (let [[thread & args] args]
            (write-to-connection conn `(~action ~(thread-map-id thread) ~@args)))
-
-         (= action :emacs-interrupt)
-         (let [[thread & args] args]
-           (dosync
-            (when (and (true? thread)
-                       (seq @*active-threads*))
-              (. #^Thread (first @*active-threads*)
-                 stop))))
          
          :else
          nil))))

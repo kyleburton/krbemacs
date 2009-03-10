@@ -1,8 +1,7 @@
 (ns swank.commands.basic
   (:refer-clojure :exclude [load-file])
   (:use (swank util commands core)
-        (swank.util.concurrent thread)
-        (swank.util string clojure))
+        (swank.util.concurrent thread))
   (:require (swank.util [sys :as sys]))
   (:import (java.io StringReader File)
            (java.util.zip ZipFile)
@@ -19,7 +18,7 @@
     :version ~(deref *protocol-version*)))
 
 (defslimefn quit-lisp []
-  (System/exit 0))
+  (.exit System 0))
 
 ;;;; Evaluation
 
@@ -27,7 +26,7 @@
   "Evaluate string, return the results of the last form as a list and
    a secondary value the last form."
   ([string]
-     (with-open [rdr (LineNumberingPushbackReader. (StringReader. string))]
+     (with-open rdr (new LineNumberingPushbackReader (new StringReader string))
        (loop [form (read rdr false rdr), value nil, last-form nil]
          (if (= form rdr)
            [value last-form]
@@ -78,7 +77,7 @@
 ;;;; Compiler / Execution
 
 (def *compiler-exception-location-re* #"^clojure\\.lang\\.Compiler\\$CompilerException: ([^:]+):([^:]+):")
-(defn- guess-compiler-exception-location [#^Throwable t]
+(defn- guess-compiler-exception-location [t]
   (when (instance? clojure.lang.Compiler$CompilerException t)
     (let [[match file line] (re-find *compiler-exception-location-re* (.toString t))]
       (when (and file line)
@@ -97,6 +96,10 @@
              :references nil
              :short-message ~(.toString t)))
 
+(defn- exception-causes [#^Throwable t]
+  (lazy-cons t (when-let cause (.getCause t)
+                 (exception-causes cause))))
+
 (defn- compile-file-for-emacs*
   "Compiles a file for emacs. Because clojure doesn't compile, this is
    simple an alias for load file w/ timing and messages. This function
@@ -105,7 +108,7 @@
   ([file-name]
      (let [start (System/nanoTime)]
        (try
-        (let [ret (clojure.core/load-file file-name)
+        (let [ret (clojure/load-file file-name)
               delta (- (System/nanoTime) start)]
           `(:compilation-result nil ~(pr-str ret) ~(/ delta 1000000000.0)))
         (catch Throwable t
@@ -120,12 +123,12 @@
               )))))))
 
 (defslimefn compile-file-for-emacs
-  ([file-name load? compile-options]
+  ([file-name load?]
      (when load?
        (compile-file-for-emacs* file-name))))
 
 (defslimefn load-file [file-name]
-  (pr-str (clojure.core/load-file file-name)))
+  (pr-str (clojure/load-file file-name)))
 
 (defslimefn compile-string-for-emacs [string buffer position directory debug]
   (let [start (System/nanoTime)
@@ -141,7 +144,7 @@
 
 (defn- describe-symbol* [symbol-name]
   (with-emacs-package
-   (if-let [v (ns-resolve (maybe-ns *current-package*) (symbol symbol-name))]
+   (if-let v (ns-resolve (maybe-ns *current-package*) (symbol symbol-name))
      (describe-to-string v)
      (str "Unknown symbol " symbol-name))))
 
@@ -168,30 +171,58 @@
      (cond
       (keyword? f) "([map])"
       (symbol? f) (let [var (ns-resolve (maybe-ns package) f)]
-                    (if-let [args (and var (:arglists (meta var)))]
+                    (if-let args (and var (:arglists (meta var)))
                       (pr-str args)
                       nil))
       :else nil))
    (catch Throwable t nil)))
 
+
+
 ;;;; Completions
+
 
 (defn- vars-with-prefix
   "Filters a coll of vars and returns only those that have a given
    prefix."
   ([#^String prefix vars]
-     (filter #(.startsWith #^String % prefix) (map (comp name :name meta) vars))))
+     (let [matches-prefix?
+           (fn matches-prefix? [#^String s]
+             (and s (not= 0 (.length s)) (.startsWith s prefix)))]
+       (filter matches-prefix? (map (comp str :name meta) vars)))))
 
-(defn- maybe-alias [sym ns]
-  (or (resolve-ns sym (maybe-ns ns))
-      (maybe-ns ns)))
+(defn- largest-common-prefix
+  "Returns the largest common prefix of two strings."
+  ([#^String a #^String b]
+     (let [limit (min (.length a) (.length b))]
+       (loop [i 0]
+         (if (or (= i limit)
+                 (not= (.charAt a i) (.charAt b i)))
+           (.substring a 0 i)
+           (recur (inc i))))))
+  {:tag String})
+
+(defn- symbol-name-parts
+  "Parses a symbol name into a namespace and a name. If name doesn't
+   contain a namespace, the default-ns is used (nil if none provided)."
+  ([symbol]
+     (symbol-name-parts symbol nil))
+  ([#^String symbol default-ns]
+     (let [ns-pos (.indexOf symbol (int \/))]
+       (if (= ns-pos -1) ;; namespace found? 
+         [default-ns symbol] 
+         [(.substring symbol 0 ns-pos) (.substring symbol (inc ns-pos))]))))
+
+(defn- maybe-alias [sym pkg]
+  (or (find-ns sym)
+      (get (ns-aliases (maybe-ns pkg)) sym)))
 
 (defslimefn simple-completions [symbol-string package]
   (try
    (let [[sym-ns sym-name] (symbol-name-parts symbol-string)
          ns (if sym-ns (maybe-alias (symbol sym-ns) package) (maybe-ns package))
-         vars (if sym-ns (vals (ns-publics ns)) (filter var? (vals (ns-map ns))))
-         matches (seq (sort (vars-with-prefix sym-name vars)))]
+         vars (vals (if sym-ns (ns-publics ns) (ns-map ns)))
+         matches (sort (vars-with-prefix sym-name vars))]
      (if sym-ns
        (list (map (partial str sym-ns "/") matches)
              (if matches
@@ -242,41 +273,35 @@
   (let [f (File. file)]
     (if (.isAbsolute f)
       `(:file ~file)
-      (first (filter identity (map #(slime-find-file-in-dir f %) paths))))))
+      (first (filter identity (map (partial slime-find-file-in-dir f) paths))))))
 
 (defn- get-path-prop
-  "Returns a coll of the paths represented in a system property"
+  "Returns a coll of paths within a property"
   ([prop]
-     (seq (-> (System/getProperty prop)
-              (.split File/pathSeparator))))
-  ([prop & props]
-     (lazy-cat (get-path-prop prop) (mapcat get-path-prop props))))
+     (seq (.. System
+              (getProperty prop)
+              (split File/pathSeparator)))))
 
 (defn- slime-search-paths []
-  (concat (get-path-prop "user.dir" "java.class.path" "sun.boot.class.path")
-          (let [loader (clojure.lang.RT/baseLoader)]
-            (when (instance? java.net.URLClassLoader loader)
-              (map #(.getPath #^java.net.URL %)
-                   (.getURLs #^java.net.URLClassLoader (cast java.net.URLClassLoader (clojure.lang.RT/baseLoader))))))))
+  (concat (get-path-prop "user.dir")
+          (get-path-prop "java.class.path")
+          (get-path-prop "sun.boot.class.path")
+          (map #(.getPath %) (seq (.getURLs (.ROOT_CLASSLOADER clojure.lang.RT))))))
 
 (defn- namespace-to-path [ns]
-  (let [#^String ns-str (name (ns-name ns))]
-    (-> ns-str
-        (.substring 0 (.lastIndexOf ns-str "."))
-        (.replace \- \_)
-        (.replace \. \/))))
+  (.. (ns-name ns)
+      toString
+      (replace \- \_)
+      (replace \. \/)))
 
 (defslimefn find-definitions-for-emacs [name]
   (let [sym-name (read-from-string name)
         sym-var (ns-resolve (maybe-ns *current-package*) sym-name)]
-    (when-let [meta (and sym-var (meta sym-var))]
-      (if-let [path (or
-                     ;; Check first check using full namespace
-                     (slime-find-file-in-paths (str (namespace-to-path (:ns meta))
-                                                       File/separator
-                                                       (:file meta)) (slime-search-paths))
-                     ;; Otherwise check using just the filename
-                     (slime-find-file-in-paths (:file meta) (slime-search-paths)))]
+    (when-let meta (and sym-var (meta sym-var))
+      (if-let path (or (slime-find-file-in-paths (str (namespace-to-path (:ns meta))
+                                                      (.separator File)
+                                                      (:file meta)) (slime-search-paths))
+                       (slime-find-file-in-paths (:file meta) (slime-search-paths)))
         `((~(str "(defn " (:name meta) ")")
            (:location
             ~path
@@ -287,14 +312,14 @@
 
 
 (defslimefn throw-to-toplevel []
-  (throw *debug-quit-exception*))
+  (throw (swank.core.DebugQuitException. "Return debug")))
 
 (defslimefn invoke-nth-restart-for-emacs [level n]
   (if (= n 1)
     (let [cause (.getCause *current-exception*)]
       (invoke-debugger cause *debug-thread-id*)
       (.getMessage cause))
-    (throw *debug-quit-exception*)))
+    (throw (swank.core.DebugQuitException. "Nth restart"))))
 
 (defslimefn backtrace [start end]
   (doall (take (- end start) (drop start (exception-stacktrace *current-exception*)))))
@@ -303,5 +328,3 @@
 
 (defslimefn frame-catch-tags-for-emacs [n] nil)
 (defslimefn frame-locals-for-emacs [n] nil)
-
-(defslimefn create-repl [target] '("user" user))

@@ -2,18 +2,18 @@
   (:use (swank util)
         (swank.util.concurrent thread)))
 
-(defonce *thread-map-next-id* (ref 1))
-(defonce *thread-map* (ref {}))
+(def *thread-map-next-id* (ref 1))
+(def *thread-map* (ref {}))
 
 (defn- thread-map-clean []
-  (doseq [[id t] @*thread-map*]
+  (doseq [id t] @*thread-map*
     (when (or (nil? t)
               (not (thread-alive? t)))
       (dosync
        (alter *thread-map* dissoc id)))))
 
 (defn- get-thread-id [thread]
-  (if-let [entry (find-first #(= (val %) thread) @*thread-map*)]
+  (if-let entry (find-first #(= (val %) thread) @*thread-map*)
     (key entry)
     (let [next-id @*thread-map-next-id*]
       (alter *thread-map* assoc next-id thread)

@@ -1,8 +1,8 @@
-(ns swank.util.concurrent.mbox
+(clojure/ns swank.util.concurrent.mbox
   (:refer-clojure :exclude [send get]))
 
 ;; Holds references to the mailboxes (message queues)
-(defonce *mailboxes* (ref {}))
+(def *mailboxes* (ref {}))
 
 (defn get
   "Returns the mailbox for a given id. Creates one if one does not

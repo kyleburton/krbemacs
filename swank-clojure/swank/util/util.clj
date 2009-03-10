@@ -1,4 +1,4 @@
-(ns swank.util
+(clojure/ns swank.util
   (:import (java.io StringReader)
            (clojure.lang LineNumberingPushbackReader)))
 
@@ -26,14 +26,12 @@
      (first (filter pred coll))))
 
 (defn position
-  "Finds the first position of an item that matches a given predicate
-   within col. Returns nil if not found. Optionally provide a start
-   offset to search from."
-  ([pred coll] (position pred coll 0))
-  ([pred coll start]
-     (loop [coll (drop start coll), i start]
-       (when (seq coll)
-         (if (pred (first coll))
+  "Finds the first position of item within col. Returns nil if not
+   found."
+  ([item coll]
+     (loop [coll coll, i 0]
+       (when coll
+         (if (= (first coll) item)
            i
            (recur (rest coll) (inc i))))))
   {:tag Integer})
@@ -70,9 +68,16 @@
 (defmacro continuously [& body]
   `(loop [] ~@body (recur)))
 
+(defmacro defexception [name]
+  `(try
+    (gen-and-load-class (quote ~name) :extends Exception)
+    (catch java.lang.LinkageError le#
+      ;; ignore linkage error, probably just already defined
+      nil)))
+
 (defn read-from-string
   "Reads the next object from a string, throws an exception when form
    cannot be read."
   ([#^String string]
-     (with-open [rdr (LineNumberingPushbackReader. (StringReader. string))]
+     (with-open rdr (LineNumberingPushbackReader. (StringReader. string))
        (read rdr))))

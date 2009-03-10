@@ -1,6 +1,6 @@
 ;;; clojure-mode.el --- Major mode for Clojure code
 
-;; Copyright (C) 2007, 2008 Jeffrey Chu and Lennart Staflin
+;; Copyright (C) 2007, 2008, 2009 Jeffrey Chu and Lennart Staflin
 ;;
 ;; Authors: Jeffrey Chu <jochu0@gmail.com>
 ;;          Lennart Staflin <lenst@lysator.liu.se>
@@ -17,7 +17,7 @@
 
 ;;; Installation:
 
-;; (0) Add this file to your load-path.
+;; (0) Add this file to your load-path, usually the ~/.emacs.d directory.
 ;; (1) Either:
 ;;     Add these lines to your .emacs:
 ;;       (autoload 'clojure-mode "clojure-mode" "A major mode for Clojure" t)
@@ -29,15 +29,21 @@
 ;; Download paredit v21 or greater
 ;;    http://mumble.net/~campbell/emacs/paredit.el
 
-;; Use paredit as you normally would any other mode.
-;; Example:
+;; Use paredit as you normally would with any other mode; for instance:
+;;
 ;;   ;; require or autoload paredit-mode
 ;;   (defun lisp-enable-paredit-hook () (paredit-mode 1))
 ;;   (add-hook 'clojure-mode-hook 'lisp-enable-paredit-hook)
 
+;; The clojure-install function can check out and configure all the
+;; dependencies get going with Clojure, including SLIME integration.
+;; To use this function, you may have to manually load clojure-mode.el
+;; using M-x load-file or M-x eval-buffer.
+
 ;;; Todo:
 
 ;; * hashbang is also a valid comment character
+;; * do the inferior-lisp functions work without SLIME? needs documentation
 
 ;;; License:
 
@@ -98,6 +104,13 @@ indentation."
   :type 'integer
   :group 'clojure-mode)
 
+(defcustom clojure-src-root (expand-file-name "~/src")
+  "Directory that contains checkouts for clojure, clojure-contrib,
+slime, and swank-clojure. This value is used by `clojure-install'
+and `clojure-slime-config'."
+  :type 'string
+  :group 'clojure-mode)
+
 (defvar clojure-mode-map
   (let ((map (make-sparse-keymap)))
     (set-keymap-parent map lisp-mode-shared-map)
@@ -132,7 +145,6 @@ All commands in `lisp-mode-shared-map' are inherited by this map.")
     (modify-syntax-entry ?\[ "(]" table)
     (modify-syntax-entry ?\] ")[" table)
     (modify-syntax-entry ?^ "'" table)
-    (modify-syntax-entry ?= "'" table)
     table))
 
 
@@ -181,25 +193,27 @@ if that value is non-nil."
                clojure-mode-font-lock-comment-sexp))
       (message "Clojure mode font lock extras are unavailable, please upgrade to atleast version 22 ")
     
-   (when clojure-mode-font-lock-multiline-def
-     (add-to-list 'font-lock-extend-region-functions 'clojure-font-lock-extend-region-def t))
-   
-   (when clojure-mode-font-lock-comment-sexp
-     (add-to-list 'font-lock-extend-region-functions 'clojure-font-lock-extend-region-comment t)
-     (make-local-variable 'clojure-font-lock-keywords)
-     (add-to-list 'clojure-font-lock-keywords  'clojure-font-lock-mark-comment t)
-     (set (make-local-variable 'open-paren-in-column-0-is-defun-start) nil)))
+    (when clojure-mode-font-lock-multiline-def
+      (add-to-list 'font-lock-extend-region-functions 'clojure-font-lock-extend-region-def t))
+    
+    (when clojure-mode-font-lock-comment-sexp
+      (add-to-list 'font-lock-extend-region-functions 'clojure-font-lock-extend-region-comment t)
+      (make-local-variable 'clojure-font-lock-keywords)
+      (add-to-list 'clojure-font-lock-keywords  'clojure-font-lock-mark-comment t)
+      (set (make-local-variable 'open-paren-in-column-0-is-defun-start) nil)))
 
   (setq font-lock-defaults
-	'(clojure-font-lock-keywords    ; keywords
-	  nil nil
+        '(clojure-font-lock-keywords    ; keywords
+          nil nil
           (("+-*/.<>=!?$%_&~^:@" . "w")) ; syntax alist
           nil
-	  (font-lock-mark-block-function . mark-defun)
-	  (font-lock-syntactic-face-function . lisp-font-lock-syntactic-face-function)))
-  
-  (run-mode-hooks 'clojure-mode-hook)
-  
+          (font-lock-mark-block-function . mark-defun)
+          (font-lock-syntactic-face-function . lisp-font-lock-syntactic-face-function)))
+
+  (if (fboundp 'run-mode-hooks) 
+      (run-mode-hooks 'clojure-mode-hook)
+    (run-hooks 'clojure-mode-hook))
+
   ;; Enable curly braces when paredit is enabled in clojure-mode-hook
   (when (and (featurep 'paredit) paredit-mode (>= paredit-version 21))
     (define-key clojure-mode-map "{" 'paredit-open-curly)
@@ -287,7 +301,7 @@ elements of a def* forms."
     `( ;; Definitions.
       (,(concat "(\\(?:clojure/\\)?\\(def"
 		;; Function declarations.
-		"\\(n-?\\|multi\\|macro\\|method\\|"
+		"\\(n-?\\|multi\\|macro\\|method\\|test\\|"
 		;; Variable declarations.
                 "struct\\|once\\|"
 		"\\)\\)\\>"
@@ -303,7 +317,7 @@ elements of a def* forms."
       (,(concat
          "(\\(?:clojure/\\)?" 
          (regexp-opt
-          '("let" "do"
+          '("let" "letfn" "do"
             "cond" "condp"
             "for" "loop" "recur"
             "when" "when-not" "when-let" "when-first"
@@ -514,12 +528,15 @@ check for contextual indenting."
   (catch 2)
   (defmuti 1)
   (do 0)
-  (for 1)    ; FIXME (for seqs expr) and (for seqs filter expr)
+  (for 1)
   (if 1)
+  (if-not 1)
   (let 1)
+  (letfn 1)
   (loop 1)
   (struct-map 1)
   (assoc 1)
+  (condp 2)
 
   (fn 'defun))
 
@@ -546,6 +563,100 @@ check for contextual indenting."
   (with-local-vars 1)
   (with-open 1)
   (with-precision 1))
+
+;;; SLIME integration
+
+;;;###autoload
+(defun clojure-slime-config ()
+  "Load Clojure SLIME support out of the `clojure-src-root' directory.
+
+Since there's no single conventional place to keep Clojure, this
+is bundled up as a function so that you can call it after you've set
+`clojure-src-root' in your personal config."
+
+  (add-to-list 'load-path (concat clojure-src-root "/slime"))
+  (add-to-list 'load-path (concat clojure-src-root "/slime/contrib"))
+  (add-to-list 'load-path (concat clojure-src-root "/swank-clojure"))
+
+  (require 'slime-autoloads)
+  (require 'swank-clojure-autoload)
+
+  (slime-setup '(slime-fancy slime-repl))
+
+  (setq swank-clojure-jar-path (concat clojure-src-root "/clojure/clojure.jar")
+        swank-clojure-extra-classpaths
+        (list (concat clojure-src-root "/clojure-contrib/src/"))))
+
+;;;###autoload
+(defun clojure-install (src-root)
+  "Perform the initial Clojure install along with Emacs support libs.
+
+This requires git, a JVM, ant, and an active Internet connection."
+  (interactive (list
+                (read-string (concat "Install Clojure in (default: "
+                                     clojure-src-root "): ")
+                             nil nil clojure-src-root)))
+
+  (make-directory src-root t)
+
+  (if (file-exists-p (concat src-root "/clojure"))
+      (error "Clojure is already installed at %s/clojure" src-root))
+
+  (message "Checking out source... this will take a while...")
+  (dolist (cmd '("git clone git://github.com/kevinoneill/clojure.git"
+                 "git clone git://github.com/kevinoneill/clojure-contrib.git"
+                 "git clone git://github.com/jochu/swank-clojure.git"
+                 "git clone --depth 2 git://github.com/nablaone/slime.git"))
+    (unless (= 0 (shell-command (format "cd %s; %s" src-root cmd)))
+      (error "Clojure installation step failed: %s" cmd)))
+
+  (message "Compiling...")
+  (unless (= 0 (shell-command (format "cd %s/clojure; ant" src-root)))
+    (error "Couldn't compile Clojure."))
+
+  (with-output-to-temp-buffer "clojure-install-note"
+    (princ
+     (if (equal src-root clojure-src-root)
+         "Add a call to \"\(eval-after-load 'clojure-mode '\(clojure-slime-config\)\)\"
+to your .emacs so you can use SLIME in future sessions."
+       (setq clojure-src-root src-root)
+       (format "You've installed clojure in a non-default location. If you want
+to use this installation in the future, you will need to add the following
+lines to your personal Emacs config somewhere:
+
+\(setq clojure-src-root \"%s\"\)
+\(eval-after-load 'clojure-mode '\(clojure-slime-config\)\)" src-root)))
+    (princ "\n\n Press M-x slime to launch Clojure."))
+
+  (clojure-slime-config))
+
+(defun clojure-update ()
+  "Update clojure-related repositories and recompile clojure.
+
+Works with clojure etc. installed via `clojure-install'. Code
+should be checked out in the `clojure-src-root' directory."
+  (interactive)
+
+  (message "Updating...")
+  (dolist (repo '("clojure" "clojure-contrib" "swank-clojure" "slime"))
+    (unless (= 0 (shell-command (format "cd %s/%s; git pull origin master" clojure-src-root repo)))
+      (error "Clojure update failed: %s" repo)))
+
+  (message "Compiling...")
+  (save-window-excursion
+    (unless (= 0 (shell-command (format "cd %s/clojure; ant" clojure-src-root)))
+      (error "Couldn't compile Clojure.")))
+  (message "Finished updating Clojure."))
+
+(defun clojure-enable-slime-on-existing-buffers ()
+  (interactive)
+  (dolist (buffer (buffer-list))
+    (if (equal '(major-mode . clojure-mode)
+               (assoc 'major-mode (buffer-local-variables buffer)))
+        (with-current-buffer buffer
+          (slime-mode t)))))
+
+(add-hook 'slime-connected-hook 'clojure-enable-slime-on-existing-buffers)
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.clj$" . clojure-mode))
