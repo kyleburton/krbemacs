@@ -199,8 +199,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Lisp and Clojure
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'clojure-auto)
-(require 'clojure-paredit) 
 
 (load "paredit.el")
 
@@ -268,7 +266,8 @@
 (slime-setup)
 
 (setq swank-clojure-binary "clojure")
-(require 'clojure-auto)
+; (require 'clojure-auto)
+; (require 'clojure-paredit) 
 (require 'swank-clojure-autoload)
 
 (add-hook

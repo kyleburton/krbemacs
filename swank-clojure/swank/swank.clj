@@ -8,7 +8,7 @@
 ;;; See README file for more information about installation
 ;;;
 
-(clojure/ns swank
+(ns swank.swank
   (:use (swank core)
         (swank.core connection server)
         (swank.util.concurrent thread))
@@ -22,11 +22,11 @@
 
 (defn- connection-serve [conn]
   (let [control
-        (dothread-keeping [*out* *ns* *current-connection* *warn-on-reflection*]
+        (dothread-swank
           (thread-set-name "Swank Control Thread")
           (control-loop conn))
         read
-        (dothread-keeping [*out* *ns* *current-connection* *warn-on-reflection*]
+        (dothread-swank
           (thread-set-name "Read Loop Thread")
           (read-loop conn control))]
     (dosync
@@ -37,11 +37,10 @@
   "Start the server and write the listen port number to
    PORT-FILE. This is the entry point for Emacs."
   ([port-file & opts]
-     (binding [*warn-on-reflection* true]
-       (let [opts (apply hash-map opts)]
-         (setup-server (get opts :port 0)
-                       (fn announce-port [port]
-                         (announce-port-to-file port-file port)
-                         (simple-announce port))
-                       connection-serve
-                       opts)))))
+     (let [opts (apply hash-map opts)]
+       (setup-server (get opts :port 0)
+                     (fn announce-port [port]
+                       (announce-port-to-file port-file port)
+                       (simple-announce port))
+                     connection-serve
+                     opts))))

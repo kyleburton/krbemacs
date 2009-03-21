@@ -6,10 +6,12 @@
   (:require (swank.util.concurrent [mbox :as mb])))
 
 ;; Protocol version
-(def *protocol-version* (ref nil))
+(defonce *protocol-version* (ref nil))
 
 ;; Emacs packages
 (def *current-package*)
+
+(defonce *active-threads* (ref ()))
 
 (defn maybe-ns [package]
   (cond
@@ -36,7 +38,7 @@
      ~@body))
 
 ;; Exceptions for debugging
-(def *debug-quit-exception* (Exception. "Debug quit"))
+(defonce *debug-quit-exception* (Exception. "Debug quit"))
 (def #^Throwable *current-exception*)
 
 ;; Handle Evaluation
@@ -50,7 +52,7 @@
 
 (defn eval-in-emacs-package [form]
   (with-emacs-package
-    (eval form)))
+   (eval form)))
 
 
 (defn eval-from-control
@@ -64,9 +66,10 @@
    evaluates them (will block if no mbox message is available)."
   ([] (continuously (eval-from-control))))
 
-(defn- exception-causes [#^Throwable t]
-  (lazy-cons t (when-let [cause (.getCause t)]
-                 (exception-causes cause))))
+(defn exception-causes [#^Throwable t]
+  (lazy-seq
+    (cons t (when-let [cause (.getCause t)]
+              (exception-causes cause)))))
 
 (defn- debug-quit-exception? [t]
   (some #(identical? *debug-quit-exception* %) (exception-causes t)))
@@ -129,19 +132,31 @@
      (when (debug-quit-exception? t)
        (send-to-emacs `(:return ~(thread-name (current-thread)) (:abort) ~id))
        (throw t))
-     
+
      ;; start sldb, don't bother here because you can't actually recover with java
      (invoke-debugger t id)
      ;; reply with abort
      (send-to-emacs `(:return ~(thread-name (current-thread)) (:abort) ~id)))))
+
+(defn- add-active-thread [thread]
+  (dosync
+   (commute *active-threads* conj thread)))
+
+(defn- remove-active-thread [thread]
+  (dosync
+   (commute *active-threads* (fn [threads] (remove #(= % thread) threads)))))
 
 (defn spawn-worker-thread
   "Spawn an thread that blocks for a single command from the control
    thread, executes it, then terminates."
   ([conn]
      (dothread-swank
-      (thread-set-name "Swank Worker Thread")
-      (eval-from-control))))
+       (try
+        (add-active-thread (current-thread))
+        (thread-set-name "Swank Worker Thread")
+        (eval-from-control)
+        (finally
+         (remove-active-thread (current-thread)))))))
 
 (defn spawn-repl-thread
   "Spawn an thread that sets itself as the current
@@ -195,15 +210,27 @@
              (write-to-connection conn `(:return ~@ret))))
 
          (one-of? action
-                  :write-string :presentation-start :presentation-end
+                  :presentation-start :presentation-end
                   :new-package :new-features :ed :percent-apply :indentation-update
                   :eval-no-wait :background-message :inspect)
+         (binding [*print-level* nil, *print-length* nil]
+           (write-to-connection conn ev))
+
+         (= action :write-string)
          (write-to-connection conn ev)
 
          (one-of? action
                   :debug :debug-condition :debug-activate :debug-return)
          (let [[thread & args] args]
            (write-to-connection conn `(~action ~(thread-map-id thread) ~@args)))
+
+         (= action :emacs-interrupt)
+         (let [[thread & args] args]
+           (dosync
+            (when (and (true? thread)
+                       (seq @*active-threads*))
+              (. #^Thread (first @*active-threads*)
+                 stop))))
          
          :else
          nil))))
