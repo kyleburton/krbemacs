@@ -25,13 +25,18 @@
         collect (funcall mutator pattern)))
 
 (defun krb-push-file-ext-and-mode-binding (mode-name &rest patterns)
+  "Bind the given node name to the givne set of file
+extensions (patterns). Eg:
+
+  (krb-push-file-ext-and-mode-binding 'cperl-mode \"\\.pl$\" \"\\.pm$\" \"\\.al$\")
+"
   (loop for pattern in patterns
         do
         (loop for modified-case in (krb-file-ext-case-permute pattern)
               do
               (setq auto-mode-alist
-              (cons (cons pattern mode-name)
-                    auto-mode-alist)))))
+                    (cons (cons pattern mode-name)
+                          auto-mode-alist)))))
 
 
 (require  'color-theme)
@@ -219,6 +224,7 @@
           'krb-set-clojure-bindings)
 
 (krb-push-file-ext-and-mode-binding 'clojure-mode "\\.clj$")
+(krb-push-file-ext-and-mode-binding 'shell-script-mode "\\.env$")
 
 (defvar sbcl-binary nil)
 
