@@ -13,7 +13,6 @@
 (add-to-list 'load-path (expand-file-name "~/personal/projects/krbemacs/swank-clojure"))
 (add-to-list 'load-path (expand-file-name "~/personal/projects/krbemacs/jochu-clojure-mode-494dfab8cd0dfc5ed24a1fc33da8b892feeef20d"))
 
-
 (require 'cl)
 (require 'yaml-mode)
 
