@@ -8,6 +8,7 @@
 
 (add-to-list 'load-path (expand-file-name "~/personal/projects/krbemacs/lib"))
 (add-to-list 'load-path (expand-file-name "~/personal/projects/krbemacs/git"))
+(add-to-list 'load-path (expand-file-name "~/personal/projects/krbemacs/ruby-mode"))
 (add-to-list 'load-path (expand-file-name "~/personal/projects/krbemacs/slime/slime"))
 (add-to-list 'load-path (expand-file-name "~/personal/projects/krbemacs/clojure-mode"))
 (add-to-list 'load-path (expand-file-name "~/personal/projects/krbemacs/swank-clojure"))
@@ -191,14 +192,15 @@ extensions (patterns). Eg:
 
 ;; need to make this environment indepdendent...
 ;; (add-to-list 'load-path "/usr/share/emacs/site-lisp/ruby1.8-elisp")
-;; (load "ruby-mode.el")
-;; (load "inf-ruby.el")
 
-;; (krb-push-file-ext-and-mode-binding 'ruby-mode "\\.rb$" "\\.erb$")
 
 ;; (require 'krb-ruby)
 ;; (add-hook 'ruby-mode-hook
 ;;           'krb-ruby-apply-keybindings)
+
+(require 'ruby-mode)
+(require 'inf-ruby)
+(krb-push-file-ext-and-mode-binding 'ruby-mode "\\.rb$" "\\.erb$")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Lisp and Clojure
