@@ -34,9 +34,16 @@ extensions (patterns). Eg:
         do
         (loop for modified-case in (krb-file-ext-case-permute pattern)
               do
-              (setq auto-mode-alist
-                    (cons (cons pattern mode-name)
-                          auto-mode-alist)))))
+              (when (not (member-if (lambda (ent)
+                                      (equal (car ent) pattern))
+                                    auto-mode-alist))
+                (setq auto-mode-alist
+                      (cons (cons pattern mode-name)
+                            auto-mode-alist))))))
+
+;; (message "%s" auto-mode-alist)
+
+;; "((\\.jar$ . archive-mode) (\\.ear$ . archive-mode) (\\.war$ . archive-mode) (\\.yaml$ . yaml-mode) (\\.yml$ . yaml-mode) (\\.xml$ . nxml-mode) (\\.clj$ . clojure-mode) (\\.env$ . shell-script-mode) (\\.erb$ . ruby-mode) (\\.rb$ . ruby-mode) (\\.al$ . cperl-mode) (\\.pm$ . cperl-mode) (\\.pl$ . cperl-mode) (\\.dz\\' nil jka-compr) (\\.g?z\\(~\\|\\.~[0-9]+~\\)?\\' nil jka-compr) (\\.bz2\\(~\\|\\.~[0-9]+~\\)?\\' nil jka-compr) (\\.Z\\(~\\|\\.~[0-9]+~\\)?\\' nil jka-compr) (\\.vr[hi]?\\' . vera-mode) (\\.py\\' . python-mode) (\\.mixal\\' . mixal-mode) (\\.x[bdsru]?[cn]?\\' . ld-script-mode) (\\.ld[si]?\\> . ld-script-mode) (\\.x[bp]m\\' . image-mode-maybe) (\\.p[bpgn]m\\' . image-mode) (\\.tiff?\\' . image-mode) (\\.gif\\' . image-mode) (\\.png\\' . image-mode) (\\.jpe?g\\' . image-mode) (\\.[Pp][Rr][Oo]\\' . idlwave-mode) (/\\.[a-z0-9-]*gdbinit . gdb-script-mode) (\\.soa\\' . dns-mode) (\\.css\\' . css-mode) (\\.gcov\\' . compilation-mode) (\\.awk\\' . awk-mode) (\\.\\(u?lpc\\|pike\\|pmod\\(.in\\)?\\)\\' . pike-mode) (\\.idl\\' . idl-mode) (\\.java\\' . java-mode) (\\.m\\' . objc-mode) (\\.lex\\' . c-mode) (\\.y\\(acc\\)?\\' . c-mode) (\\.[ch]\\' . c-mode) (\\.\\(CC?\\|HH?\\)\\' . c++-mode) (\\.[ch]\\(pp\\|xx\\|\\+\\+\\)\\' . c++-mode) (\\.\\(cc\\|hh\\)\\' . c++-mode) (\\.bst\\' . bibtex-style-mode) (\\.s?html?\\(\\.[a-zA-Z_]+\\)?\\' . html-mode) (\\.te?xt\\' . text-mode) (\\.[tT]e[xX]\\' . tex-mode) (\\.ins\\' . tex-mode) (\\.ltx\\' . latex-mode) (\\.dtx\\' . doctex-mode) (\\.el\\' . emacs-lisp-mode) (\\.\\(scm\\|stk\\|ss\\|sch\\)\\' . scheme-mode) (\\.l\\' . lisp-mode) (\\.li?sp\\' . lisp-mode) (\\.[fF]\\' . fortran-mode) (\\.for\\' . fortran-mode) (\\.p\\' . pascal-mode) (\\.pas\\' . pascal-mode) (\\.ad[abs]\\' . ada-mode) (\\.ad[bs].dg\\' . ada-mode) (\\.\\([pP]\\([Llm]\\|erl\\|od\\)\\|al\\)\\' . perl-mode) (Imakefile\\' . makefile-imake-mode) (Makeppfile\\(?:\\.mk\\)?\\' . makefile-makepp-mode) (\\.makepp\\' . makefile-makepp-mode) (\\.mk\\' . makefile-gmake-mode) ([Mm]akefile\\' . makefile-gmake-mode) (\\.am\\' . makefile-automake-mode) (\\.texinfo\\' . texinfo-mode) (\\.te?xi\\' . texinfo-mode) (\\.[sS]\\' . asm-mode) (\\.asm\\' . asm-mode) ([cC]hange\\.?[lL]og?\\' . change-log-mode) ([cC]hange[lL]og[-.][0-9]+\\' . change-log-mode) (\\$CHANGE_LOG\\$\\.TXT . change-log-mode) (\\.scm\\.[0-9]*\\' . scheme-mode) (\\.[ck]?sh\\'\\|\\.shar\\'\\|/\\.z?profile\\' . sh-mode) (\\.bash\\' . sh-mode) (\\(/\\|\\`\\)\\.\\(bash_profile\\|z?login\\|bash_login\\|z?logout\\)\\' . sh-mode) (\\(/\\|\\`\\)\\.\\(bash_logout\\|shrc\\|[kz]shrc\\|bashrc\\|t?cshrc\\|esrc\\)\\' . sh-mode) (\\(/\\|\\`\\)\\.\\([kz]shenv\\|xinitrc\\|startxrc\\|xsession\\)\\' . sh-mode) (\\.m?spec\\' . sh-mode) (\\.m[mes]\\' . nroff-mode) (\\.man\\' . nroff-mode) (\\.sty\\' . latex-mode) (\\.cl[so]\\' . latex-mode) (\\.bbl\\' . latex-mode) (\\.bib\\' . bibtex-mode) (\\.sql\\' . sql-mode) (\\.m[4c]\\' . m4-mode) (\\.mf\\' . metafont-mode) (\\.mp\\' . metapost-mode) (\\.vhdl?\\' . vhdl-mode) (\\.article\\' . text-mode) (\\.letter\\' . text-mode) (\\.i?tcl\\' . tcl-mode) (\\.exp\\' . tcl-mode) (\\.itk\\' . tcl-mode) (\\.icn\\' . icon-mode) (\\.sim\\' . simula-mode) (\\.mss\\' . scribe-mode) (\\.f9[05]\\' . f90-mode) (\\.indent\\.pro\\' . fundamental-mode) (\\.pro\\' . idlwave-mode) (\\.prolog\\' . prolog-mode) (\\.tar\\' . tar-mode) (\\.\\(arc\\|zip\\|lzh\\|lha\\|zoo\\|[jew]ar\\|xpi\\)\\' . archive-mode) (\\.\\(ARC\\|ZIP\\|LZH\\|LHA\\|ZOO\\|[JEW]AR\\|XPI\\)\\' . archive-mode) (\\.\\(sx[dmicw]\\|odt\\)\\' . archive-mode) (\\`/tmp/Re . text-mode) (/Message[0-9]*\\' . text-mode) (\\.zone\\' . zone-mode) (\\`/tmp/fol/ . text-mode) (\\.oak\\' . scheme-mode) (\\.sgml?\\' . sgml-mode) (\\.x[ms]l\\' . xml-mode) (\\.dtd\\' . sgml-mode) (\\.ds\\(ss\\)?l\\' . dsssl-mode) (\\.js\\' . java-mode) (\\.x[bp]m\\' . c-mode) (\\.d?v\\' . verilog-mode) ([]>:/\\]\\..*\\(emacs\\|gnus\\|viper\\)\\' . emacs-lisp-mode) (\\`\\..*emacs\\' . emacs-lisp-mode) ([:/]_emacs\\' . emacs-lisp-mode) (/crontab\\.X*[0-9]+\\' . shell-script-mode) (\\.ml\\' . lisp-mode) (\\.asd\\' . lisp-mode) (\\.\\(asn\\|mib\\|smi\\)\\' . snmp-mode) (\\.\\(as\\|mi\\|sm\\)2\\' . snmpv2-mode) (\\.\\(diffs?\\|patch\\|rej\\)\\' . diff-mode) (\\.\\(dif\\|pat\\)\\' . diff-mode) (\\.[eE]?[pP][sS]\\' . ps-mode) (configure\\.\\(ac\\|in\\)\\' . autoconf-mode) (BROWSE\\' . ebrowse-tree-mode) (\\.ebrowse\\' . ebrowse-tree-mode) (#\\*mail\\* . mail-mode) (\\.g\\' . antlr-mode) (\\.ses\\' . ses-mode) (\\.\\(soa\\|zone\\)\\' . dns-mode) (\\.docbook\\' . sgml-mode) (\\.com\\' . dcl-mode) (/config\\.\\(?:bat\\|log\\)\\' . fundamental-mode) (\\.\\(?:[iI][nN][iI]\\|[lL][sS][tT]\\|[rR][eE][gG]\\|[sS][yY][sS]\\)\\' . conf-mode) (\\.\\(?:desktop\\|la\\)\\' . conf-unix-mode) (\\.ppd\\' . conf-ppd-mode) (java.+\\.conf\\' . conf-javaprop-mode) (\\.properties\\(?:\\.[a-zA-Z0-9._-]+\\)?\\' . conf-javaprop-mode) ([/.]c\\(?:on\\)?f\\(?:i?g\\)?\\(?:\\.[a-zA-Z0-9._-]+\\)?\\' . conf-mode-maybe) (\\`/etc/\\(?:DIR_COLORS\\|ethers\\|.?fstab\\|.*hosts\\|lesskey\\|login\\.?de\\(?:fs\\|vperm\\)\\|magic\\|mtab\\|pam\\.d/.*\\|permissions\\(?:\\.d/.+\\)?\\|protocols\\|rpc\\|services\\)\\' . conf-space-mode) (\\`/etc/\\(?:acpid?/.+\\|aliases\\(?:\\.d/.+\\)?\\|default/.+\\|group-?\\|hosts\\..+\\|inittab\\|ksysguarddrc\\|opera6rc\\|passwd-?\\|shadow-?\\|sysconfig/.+\\)\\' . conf-mode) ([cC]hange[lL]og[-.][-0-9a-z]+\\' . change-log-mode) (/\\.?\\(?:gnokiirc\\|kde.*rc\\|mime\\.types\\|wgetrc\\)\\' . conf-mode) (/\\.\\(?:enigma\\|gltron\\|gtk\\|hxplayer\\|net\\|neverball\\|qt/.+\\|realplayer\\|scummvm\\|sversion\\|sylpheed/.+\\|xmp\\)rc\\' . conf-mode) (/\\.\\(?:gdbtkinit\\|grip\\|orbital/.+txt\\|rhosts\\|tuxracer/options\\)\\' . conf-mode) (/\\.?X\\(?:default\\|resource\\|re\\)s\\> . conf-xdefaults-mode) (/X11.+app-defaults/ . conf-xdefaults-mode) (/X11.+locale/.+/Compose\\' . conf-colon-mode) (/X11.+locale/compose\\.dir\\' . conf-javaprop-mode) (\\.~?[0-9]+\\.[0-9][-.0-9]*~?\\' nil t) (\\.[1-9]\\' . nroff-mode) (\\.\\(?:orig\\|in\\|[bB][aA][kK]\\)\\' nil t) (\\.tgz\\' . tar-mode) (\\.tbz\\' . tar-mode))"
 
 
 (require  'color-theme)
@@ -221,10 +228,7 @@ extensions (patterns). Eg:
              (paredit-mode +1)
              (setq abbrev-mode t)))
 
-(add-hook 'clojure-mode-hook
-          'krb-set-clojure-bindings)
 
-(krb-push-file-ext-and-mode-binding 'clojure-mode "\\.clj$")
 (krb-push-file-ext-and-mode-binding 'shell-script-mode "\\.env$")
 
 (defvar sbcl-binary nil)
@@ -277,9 +281,15 @@ extensions (patterns). Eg:
 (slime-setup)
 
 (setq swank-clojure-binary "clojure")
-; (require 'clojure-auto)
-; (require 'clojure-paredit) 
+(require 'clojure-mode)
 (require 'swank-clojure-autoload)
+
+(krb-push-file-ext-and-mode-binding 'clojure-mode "\\.clj$")
+
+(add-hook 'clojure-mode-hook
+          'krb-set-clojure-bindings)
+(add-hook 'clojure-mode-hook
+          'paredit-mode)
 
 (add-hook
  'paredit-mode-hook
