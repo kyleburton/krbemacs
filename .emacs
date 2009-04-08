@@ -180,7 +180,7 @@ extensions (patterns). Eg:
 ;; keybindings (change to suit)
 
 ;; open confluence page
-(global-set-key "\C-xwf" 'confluence-get-page)
+;; (global-set-key "\C-xwf" 'confluence-get-page)
 
 ;; setup confluence mode
 (add-hook 'confluence-mode-hook
