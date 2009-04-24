@@ -41,8 +41,13 @@ extensions (patterns). Eg:
                       (cons (cons pattern mode-name)
                             auto-mode-alist))))))
 
-;; (message "%s" auto-mode-alist)
+;; (setq auto-mode-alist
+;;       (remove-if '(lambda (pair)
+;;                     (equal (cdr pair) 'nxml-mode))
+;;                  auto-mode-alist))
 
+;; (krb-file-ext-case-permute "\\.xml$")
+;; (message "%s" auto-mode-alist)
 
 (require  'color-theme)
 (load "themes/color-theme-library.el")
@@ -75,6 +80,18 @@ extensions (patterns). Eg:
  '(confluence-default-space-alist (list (cons confluence-url "SWDEV")))
  '(confluence-prompt-page-function 'cf-prompt-page-by-path))
 
+(defun krb-revert-all-buffers ()
+  "Revert all file based buffers.  Useful when you have pulled
+from your scm behind emacs, brings the buffers up to date with
+the backing files."
+  (interactive)
+  (dolist (buff (buffer-list))
+    (with-current-buffer buff
+      (when buffer-file-name
+        (revert-buffer)))))
+
+;; (krb-revert-all-buffers)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; localized customization per host
 
@@ -98,12 +115,6 @@ extensions (patterns). Eg:
  (fname (format "~/personal/projects/krbemacs/config/%s.el" krb-local-host-name))
  (message "loading local customization file: %s" fname)
  (load-file fname))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; XML editing / settings
-;;
-(krb-push-file-ext-and-mode-binding 'xml-mode "\\.xml$")
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;a
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; version control customization
@@ -307,8 +318,13 @@ extensions (patterns). Eg:
 (setq slime-lisp-implementations
       (append
        '((sbcl ("sbcl")))
-       ;; (list (list 'sbcl (list sbcl-binary)))
        slime-lisp-implementations))
+
+(setq slime-lisp-implementations
+      (append
+       `((lst (,(expand-file-name "~/projects/lst/trunk/sandbox/target/installed/bin/repl")) :init swank-clojure-init))
+       slime-lisp-implementations))
+
 
 (add-hook 'lisp-mode-hook
           (lambda ()
@@ -333,7 +349,7 @@ extensions (patterns). Eg:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; XML, YAML Customizations
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(krb-push-file-ext-and-mode-binding 'nxml-mode "\\.xml$")
+(krb-push-file-ext-and-mode-binding 'xml-mode "\\.xml$")
 (krb-push-file-ext-and-mode-binding 'yaml-mode "\\.yml$" "\\.yaml$")
 (setq nxml-slash-auto-complete-flag t)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -385,3 +401,4 @@ extensions (patterns). Eg:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; end Other
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
