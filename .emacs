@@ -92,6 +92,11 @@ the backing files."
 
 ;; (krb-revert-all-buffers)
 
+
+(setq save-place-file "~/.emacs.d/saveplace")
+(setq-default save-place t)
+(require 'saveplace)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; localized customization per host
 
@@ -315,15 +320,16 @@ the backing files."
     (local-set-key "\M-Od" 'paredit-forward-barf-sexp)
     (setq abbrev-mode t)))
 
-(setq slime-lisp-implementations
-      (append
-       '((sbcl ("sbcl")))
-       slime-lisp-implementations))
+(add-to-list 'slime-lisp-implementations `(sbcl (,sbcl-binary)) t)
+(add-to-list 'slime-lisp-implementations '(clojure2 ("clojure2") :init swank-clojure-init) t)
 
-(setq slime-lisp-implementations
-      (append
-       `((lst (,(expand-file-name "~/projects/lst/trunk/sandbox/target/installed/bin/repl")) :init swank-clojure-init))
-       slime-lisp-implementations))
+;;slime-lisp-implementations
+;;((lst ("/home/mortis/projects/lst/trunk/sandbox/target/installed/bin/repl") :init swank-clojure-init) (clojure ("clojure") :init swank-clojure-init) (sbcl "/home/mortis/local/sbcl/bin/sbcl") (clojure2 "clojure2" :init swank-clojure-init))
+
+;; (setq slime-lisp-implementations
+;;       (append
+;;        `((lst (,(expand-file-name "~/projects/lst/trunk/sandbox/target/installed/bin/repl")) :init swank-clojure-init))
+;;        slime-lisp-implementations))
 
 
 (add-hook 'lisp-mode-hook
