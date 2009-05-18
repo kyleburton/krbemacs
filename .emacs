@@ -14,6 +14,8 @@
 (add-to-list 'load-path (expand-file-name "~/personal/projects/krbemacs/swank-clojure"))
 (add-to-list 'load-path (expand-file-name "~/personal/projects/krbemacs/jochu-clojure-mode-494dfab8cd0dfc5ed24a1fc33da8b892feeef20d"))
 
+(require 'highlight-parentheses)
+
 (require 'cl)
 (require 'yaml-mode)
 
@@ -246,6 +248,7 @@ the backing files."
 (add-hook 'emacs-lisp-mode-hook
           (lambda ()
              (paredit-mode +1)
+             (highlight-parentheses-mode t)
              (setq abbrev-mode t)))
 
 
@@ -306,10 +309,8 @@ the backing files."
 
 (krb-push-file-ext-and-mode-binding 'clojure-mode "\\.clj$")
 
-(add-hook 'clojure-mode-hook
-          'krb-set-clojure-bindings)
-(add-hook 'clojure-mode-hook
-          'paredit-mode)
+(add-hook 'clojure-mode-hook 'krb-set-clojure-bindings)
+(add-hook 'clojure-mode-hook 'paredit-mode)
 
 (add-hook
  'paredit-mode-hook
@@ -318,6 +319,7 @@ the backing files."
     (local-set-key "\M-Ob" 'paredit-splice-sexp-killing-forward)
     (local-set-key "\M-Oc" 'paredit-forward-slurp-sexp)
     (local-set-key "\M-Od" 'paredit-forward-barf-sexp)
+    (highlight-parentheses-mode t)
     (setq abbrev-mode t)))
 
 (add-to-list 'slime-lisp-implementations `(sbcl (,sbcl-binary)) t)
@@ -335,6 +337,7 @@ the backing files."
 (add-hook 'lisp-mode-hook
           (lambda ()
              (paredit-mode +1)
+             (highlight-parentheses-mode t)
              (setq abbrev-mode t)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
