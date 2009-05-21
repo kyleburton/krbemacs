@@ -11,6 +11,7 @@
 (add-to-list 'load-path (expand-file-name "~/personal/projects/krbemacs/ruby-mode"))
 (add-to-list 'load-path (expand-file-name "~/personal/projects/krbemacs/slime/slime"))
 (add-to-list 'load-path (expand-file-name "~/personal/projects/krbemacs/clojure-mode"))
+(add-to-list 'load-path (expand-file-name "~/personal/projects/krbemacs/distel-4.03/elisp"))
 (add-to-list 'load-path (expand-file-name "~/personal/projects/krbemacs/swank-clojure"))
 (add-to-list 'load-path (expand-file-name "~/personal/projects/krbemacs/jochu-clojure-mode-494dfab8cd0dfc5ed24a1fc33da8b892feeef20d"))
 
@@ -420,6 +421,14 @@ the backing files."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Erlang / Distel
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'distel)
+(krb-push-file-ext-and-mode-binding 'erlang-mode "\\.erl$")
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; End of Erlang / Distel
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;;;;;;;;;;;;;;;;;;;
 ;; set up unicode
