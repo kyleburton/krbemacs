@@ -1,28 +1,49 @@
 ;; -*- mode: emacs-lisp -*-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Author: Kyle R. Burton
+;; Author: Kyle R. Burton <kyle.burton@gmail.com>
 ;;
 ;; This is my personal emacs configuration.  Check it out into
-;; ~/personal/projects/krbemacs, then symlink it to ~/.emacs.
+;; $HOME/personal/projects/krbemacs, then symlink it to $HOME/.emacs.
 ;;
 
-(add-to-list 'load-path (expand-file-name "~/personal/projects/krbemacs/lib"))
-(add-to-list 'load-path (expand-file-name "~/personal/projects/krbemacs/git"))
-(add-to-list 'load-path (expand-file-name "~/personal/projects/krbemacs/ruby-mode"))
-(add-to-list 'load-path (expand-file-name "~/personal/projects/krbemacs/slime/slime"))
-(add-to-list 'load-path (expand-file-name "~/personal/projects/krbemacs/clojure-mode"))
-(add-to-list 'load-path (expand-file-name "~/personal/projects/krbemacs/distel-4.03/elisp"))
-(add-to-list 'load-path (expand-file-name "~/personal/projects/krbemacs/swank-clojure"))
-(add-to-list 'load-path (expand-file-name "~/personal/projects/krbemacs/jochu-clojure-mode-494dfab8cd0dfc5ed24a1fc33da8b892feeef20d"))
-
-(require 'highlight-parentheses)
-
 (require 'cl)
+
+(defvar *krbemacs-home* (expand-file-name "~/personal/projects/krbemacs"))
+
+(defun krb-file (file)
+  (concat  *krbemacs-home* "/" file))
+
+
+(defvar *krb-lib-dirs* 
+  '("lib"
+    "git"
+    "ruby-mode"
+    "slime/slime"
+    "clojure-mode"
+    "distel-4.03/elisp" 
+    "swank-clojure"
+    "jochu-clojure-mode-494dfab8cd0dfc5ed24a1fc33da8b892feeef20d"
+    "yasnippet"))
+
+;; add those all to the lib path
+(mapcar #'(lambda (path)
+         (add-to-list 'load-path (krb-file path)))
+     *krb-lib-dirs*)
+
+;; pull in all the libs we want to use
+(require 'highlight-parentheses)
 (require 'yaml-mode)
+(require 'color-theme)
+(require 'saveplace)
+(require 'git)
+(require 'ruby-mode)
+(require 'inf-ruby)
+(require 'slime)
+(require 'clojure-mode)
+(require 'distel)
+(require 'yasnippet)
 
-(defvar krb-local-host-name nil)
-(setq krb-local-host-name (first (split-string (shell-command-to-string "hostname") "\n")))
-
+;; helper for ading file-extension to editor mode bindings
 (defun krb-file-ext-case-permute (pattern)
   (loop for mutator in '(downcase upcase capitalize)
         collect (funcall mutator pattern)))
@@ -44,23 +65,16 @@ extensions (patterns). Eg:
                       (cons (cons pattern mode-name)
                             auto-mode-alist))))))
 
-;; (setq auto-mode-alist
-;;       (remove-if '(lambda (pair)
-;;                     (equal (cdr pair) 'nxml-mode))
-;;                  auto-mode-alist))
-
-;; (krb-file-ext-case-permute "\\.xml$")
-;; (message "%s" auto-mode-alist)
-
-(require  'color-theme)
+;; I like this one, you may like something else
 (load "themes/color-theme-library.el")
 (color-theme-arjen)
 
+;; can't live w/o completion : M-/ ('alt' 'slash')
 (load "dabbrev")
 (load "completion")
 (initialize-completions)
 
-; spaces instead of tabs
+;; spaces instead of tabs for indentioan, 2 spaces
 (setq-default
  indent-tabs-mode nil
  c-basic-offset 2
@@ -76,7 +90,7 @@ extensions (patterns). Eg:
  '(semanticdb-default-save-directory (expand-file-name "~/.emacs-semantic") t)
  '(semanticdb-default-system-save-directory (expand-file-name "~/.emacs-semantic") t)
  '(user-full-name "Kyle R. Burton")
- '(user-mail-address "kburton@healthmarketscience.com")
+ '(user-mail-address "kburton@gmail.com")
  
  ;; confluence customization
  '(confluence-url "http://intranet.hmsonline.com/confluence/rpc/xmlrpc")
@@ -93,15 +107,17 @@ the backing files."
       (when buffer-file-name
         (revert-buffer)))))
 
-;; (krb-revert-all-buffers)
-
-
+;; remember's where you left off in the file, even if you closed it
+;; (like vim)
 (setq save-place-file "~/.emacs.d/saveplace")
 (setq-default save-place t)
-(require 'saveplace)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; localized customization per host
+
+;; this is to support per-host customization...
+(defvar krb-local-host-name nil)
+(setq krb-local-host-name (first (split-string (shell-command-to-string "hostname") "\n")))
 
 (defmacro when-file-exists (decl &rest body)
   "(when-file-exists (fname \"/etc/passwd\")
@@ -111,16 +127,8 @@ the backing files."
        (when (file-exists-p ,var)
          ,@body))))
 
-(when (string= "kburton-lin" krb-local-host-name)
-  (when-file-exists
-   (fname "~/projects/sandbox/trunk/standardize-web/jruby/jruby-1.1.5/bin/jruby")
-   (setq krb-ruby-path-to-ruby fname))
-  (when-file-exists 
-   (fname "~/projects/svn.datapump/trunk/hmsdev2/etc/emacs-utils.el")
-   (load-file fname)))
-
 (when-file-exists
- (fname (format "~/personal/projects/krbemacs/config/%s.el" krb-local-host-name))
+ (fname (krb-file (format "config/%s.el" krb-local-host-name)))
  (message "loading local customization file: %s" fname)
  (load-file fname))
 
@@ -129,23 +137,19 @@ the backing files."
 
 ;;; git
 ;; see: http://xtalk.msk.su/~ott/en/writings/emacs-vcs/EmacsGit.html
-(require 'git)
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Perl Development customization
 (setq cperl-hairy t)
-
 (krb-push-file-ext-and-mode-binding 'cperl-mode "\\.pl$" "\\.pm$" "\\.al$")
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Confluence Mode Settings
+;; see: http://code.google.com/p/confluence-el/
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(load (expand-file-name "~/personal/projects/krbemacs/confluence-el/xml-rpc.el"))
-(load (expand-file-name "~/personal/projects/krbemacs/confluence-el/confluence.el"))
-
+(load (krb-file "confluence-el/xml-rpc.el"))
+(load (krb-file "confluence-el/confluence.el"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; confluence editing support (with longlines mode)
@@ -220,16 +224,6 @@ the backing files."
 ;; Ruby
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; need to make this environment indepdendent...
-;; (add-to-list 'load-path "/usr/share/emacs/site-lisp/ruby1.8-elisp")
-
-
-;; (require 'krb-ruby)
-;; (add-hook 'ruby-mode-hook
-;;           'krb-ruby-apply-keybindings)
-
-(require 'ruby-mode)
-(require 'inf-ruby)
 (krb-push-file-ext-and-mode-binding 'ruby-mode "\\.rb$" "\\.erb$")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -238,78 +232,23 @@ the backing files."
 
 (load "paredit.el")
 
-(defun krb-set-clojure-bindings ()
-  (message "setting my own bindings")
-  (local-set-key "\C-c)" 'paredit-forward-slurp-sexp)
-  (local-set-key "\C-c(" 'paredit-backward-slurp-sexp)
-  (local-set-key "\C-c}" 'paredit-forward-barf-sexp)
-  (local-set-key "\C-c{" 'paredit-backward-barf-sexp)
-  (setq abbrev-mode t))
-
 (add-hook 'emacs-lisp-mode-hook
           (lambda ()
              (paredit-mode +1)
              (highlight-parentheses-mode t)
              (setq abbrev-mode t)))
 
-
 (krb-push-file-ext-and-mode-binding 'shell-script-mode "\\.env$")
-
-(defvar sbcl-binary nil)
-
-;; find the sbcl binary
-(let ((locations
-       (mapcar #'expand-file-name
-               (list "~/local/bin/sbcl"
-                     "~/local/sbcl/bin/sbcl")))
-      (found nil))
-  (loop for location in locations
-        while (not found)
-        do
-        (message "finding sbcl: %s => %s" location (file-exists-p location))
-        (when (file-exists-p location)
-          (setq inferior-lisp-program location
-                sbcl-binary location
-                found t)
-          (message "found sbcl: %s %s" inferior-lisp-program found)))
-  (unless found
-    (error "Can't find the sbcl binary for slime, tried: %s,
-    please locate it or disable slime in this environment."
-           locations)))
-
-;; ;; find SBCL_HOME...
-;; (let ((locations
-;;        (mapcar #'expand-file-name
-;;                (list "~/local/lib/sbcl"
-;;                      "~/local/sbcl/lib/sbcl")))
-;;       (found nil))
-;;   (loop for location in locations
-;;         while (not found)
-;;         do
-;;         (let ((file (format "%s/sbcl.core" location)))
-;;           (message "finding sbcl_home: %s => %s" file (file-exists-p file))
-;;           (when (file-exists-p file)
-;;             (setq found t)
-;;             (setenv "SBCL_HOME" location)
-;;             (message "found sbcl: %s %s" inferior-lisp-program found))))
-;;   (unless found
-;;     (error "Can't determine SBCL_HOME, tried: %s, please locate
-;;     it or disable slime in this environment."  locations)))
 
 (eval-after-load "slime"
   '(progn
      (slime-setup '(slime-repl))))
 
-
-(require 'slime)
-(slime-setup)
-
 (setq swank-clojure-binary "clojure")
-(require 'clojure-mode)
 (require 'swank-clojure-autoload)
 
+(slime-setup)
 (krb-push-file-ext-and-mode-binding 'clojure-mode "\\.clj$")
-
 (add-hook 'clojure-mode-hook 'krb-set-clojure-bindings)
 (add-hook 'clojure-mode-hook 'paredit-mode)
 
@@ -323,17 +262,8 @@ the backing files."
     (highlight-parentheses-mode t)
     (setq abbrev-mode t)))
 
-(add-to-list 'slime-lisp-implementations `(sbcl (,sbcl-binary)) t)
 (add-to-list 'slime-lisp-implementations '(clojure2 ("clojure2") :init swank-clojure-init) t)
-
-;;slime-lisp-implementations
-;;((lst ("/home/mortis/projects/lst/trunk/sandbox/target/installed/bin/repl") :init swank-clojure-init) (clojure ("clojure") :init swank-clojure-init) (sbcl "/home/mortis/local/sbcl/bin/sbcl") (clojure2 "clojure2" :init swank-clojure-init))
-
-;; (setq slime-lisp-implementations
-;;       (append
-;;        `((lst (,(expand-file-name "~/projects/lst/trunk/sandbox/target/installed/bin/repl")) :init swank-clojure-init))
-;;        slime-lisp-implementations))
-
+(add-to-list 'slime-lisp-implementations '(clojure3 ("clojure3") :init swank-clojure-init) t)
 
 (add-hook 'lisp-mode-hook
           (lambda ()
@@ -343,17 +273,6 @@ the backing files."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; end Lisp and Clojure
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Chicken scheme
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; (require 'hen)
-(setq scheme-program-name "csi")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; end Chicken scheme
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -372,15 +291,9 @@ the backing files."
 
 (krb-push-file-ext-and-mode-binding 'archive-mode "\\.war$" "\\.ear$" "\\.jar$")
 
-(require 'krb-java)
-(add-hook 'java-mode-hook
-          'krb-java-apply-keybindings)
-
-;; TODO: need to set up jdee
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; end Java 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -395,20 +308,16 @@ the backing files."
 ;; follow compilation output when M-x compile
 (setq compilation-scroll-output t)
 
-
-; (require 'elunit)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Abbreviations and yasnippet...
-(setq abbrev-file-name (expand-file-name "~/personal/projects/krbemacs/abbrev-defs.el"))
+(setq abbrev-file-name (krb-file "abbrev-defs.el"))
 (read-abbrev-file abbrev-file-name t)
 
-(add-to-list 'load-path "~/personal/projects/krbemacs/yasnippet")
-(require 'yasnippet)
 ;;; Abbreviations and yasnippet...
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun krb-html-escape ()
+  "Select a region (C-<space>) then M-x krb-html-escape"
   (interactive)
   (let ((start (point))
         (end (mark)))
@@ -420,18 +329,16 @@ the backing files."
 ;; end Other
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Erlang / Distel
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'distel)
 (krb-push-file-ext-and-mode-binding 'erlang-mode "\\.erl$")
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; End of Erlang / Distel
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;;;;;;;;;;;;;;;;;;;
-;; set up unicode
+;; unicode settings...
 (prefer-coding-system       'utf-8)
 (set-default-coding-systems 'utf-8)
 (set-terminal-coding-system 'utf-8)
