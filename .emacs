@@ -262,22 +262,6 @@ the backing files."
     (highlight-parentheses-mode t)
     (setq abbrev-mode t)))
 
-(defun krb-swank-clojure-init ()
-  "This redirects thread output (normally only seen in the
-*inferior-lisp* buffer) to the slime repl buffer.  Via Bill
-Clementson."
-  (slime-redirect-inferior-output))
-
-;; a bit convoluted, but add krb-swank-clojure-init to the entry
-;; created by swank-clojure-autoload
-(let* ((pred #'(lambda (elt)
-                 (equal 'clojure (car elt))))
-       (entry (find-if pred slime-lisp-implementations))
-       (remainder (remove-if pred slime-lisp-implementations))
-       (new-entry (append entry '(:init-function krb-swank-clojure-init))))
-  (setq slime-lisp-implementations
-        (cons new-entry remainder)))
-
 ;; these next 2 entries (clojure2 and clojure3) are to avoid
 ;; collisions for the debug port and let me run multiple
 ;; jvm+emacs+inferior-lisp instances on the same host w/o them
@@ -297,6 +281,10 @@ Clementson."
              (paredit-mode +1)
              (highlight-parentheses-mode t)
              (setq abbrev-mode t)))
+
+(add-hook 'slime-connected-hook
+          (lambda ()
+            (slime-redirect-inferior-output)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; end Lisp and Clojure
