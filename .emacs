@@ -276,7 +276,7 @@ Clementson."
        (remainder (remove-if pred slime-lisp-implementations))
        (new-entry (append entry '(:init-function krb-swank-clojure-init))))
   (setq slime-lisp-implementations
-        (cons new-entry slime-lisp-implementations)))
+        (cons new-entry remainder)))
 
 ;; these next 2 entries (clojure2 and clojure3) are to avoid
 ;; collisions for the debug port and let me run multiple
