@@ -65,18 +65,17 @@ extensions (patterns). Eg:
 
   (krb-push-file-ext-and-mode-binding 'cperl-mode \"\\.pl$\" \"\\.pm$\" \"\\.al$\")
 "
-  (loop for pattern in (apply #'append (mapcar #'krb-file-ext-case-permute patterns))
-        do
-        (when (not (krb-pattern-on-auto-mode-alist? pattern))
-          (setq auto-mode-alist
-                (cons (cons pattern mode-name)
-                      auto-mode-alist)))))
+  (dolist (pattern (apply #'append (mapcar #'krb-file-ext-case-permute patterns)))
+    (when (not (krb-pattern-on-auto-mode-alist? pattern))
+      (setq auto-mode-alist
+            (cons (cons pattern mode-name)
+                  auto-mode-alist)))))
 
 ;; I like this one, you may like something else
 (load "themes/color-theme-library.el")
 (color-theme-arjen)
 
-;; can't live w/o completion : M-/ ('alt' 'slash')
+;; completion : M-/ ('alt' 'slash')
 (load "dabbrev")
 (load "completion")
 (initialize-completions)
@@ -98,7 +97,6 @@ extensions (patterns). Eg:
  '(semanticdb-default-system-save-directory (expand-file-name "~/.emacs-semantic") t)
  '(user-full-name "Kyle R. Burton")
  '(user-mail-address "kburton@gmail.com")
- 
  ;; confluence customization
  '(confluence-url "http://intranet.hmsonline.com/confluence/rpc/xmlrpc")
  '(confluence-default-space-alist (list (cons confluence-url "SWDEV")))
@@ -114,8 +112,8 @@ the backing files."
       (when buffer-file-name
         (revert-buffer)))))
 
-;; remember's where you left off in the file, even if you closed it
-;; (like vim)
+;; remember's where you left off in the file, even when you've closed
+;; it (just like vim)
 (setq save-place-file "~/.emacs.d/saveplace")
 (setq-default save-place t)
 
@@ -139,11 +137,6 @@ the backing files."
  (message "loading host specific (%s) customization file: %s" krb-local-host-name fname)
  (load-file fname))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; version control customization
-
-;;; git
-;; see: http://xtalk.msk.su/~ott/en/writings/emacs-vcs/EmacsGit.html
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Perl Development customization
@@ -269,6 +262,7 @@ the backing files."
     (highlight-parentheses-mode t)
     (setq abbrev-mode t)))
 
+;; this is to support the debug port and multiple jvm+emacs+inferior-lisp instances on 1 host
 (add-to-list 'slime-lisp-implementations '(clojure2 ("clojure2") :init swank-clojure-init) t)
 (add-to-list 'slime-lisp-implementations '(clojure3 ("clojure3") :init swank-clojure-init) t)
 
@@ -301,7 +295,6 @@ the backing files."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; end Java 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Other
@@ -339,7 +332,7 @@ the backing files."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Erlang / Distel
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(krb-push-file-ext-and-mode-binding 'erlang-mode "\\.erl$")
+(krb-push-file-ext-and-mode-binding 'erlang-mode "\\.erl$" "\\.hrl$")
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; End of Erlang / Distel
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
