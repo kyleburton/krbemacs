@@ -8,11 +8,14 @@
 
 (require 'cl)
 
-(defvar *krbemacs-home* (expand-file-name "~/personal/projects/krbemacs"))
+(defvar *krbemacs-home*
+  (expand-file-name "~/personal/projects/krbemacs")
+  "The install location of my emacs configuration.  All other
+  modules will be relative to this location.")
 
 (defun krb-file (file)
-  (concat  *krbemacs-home* "/" file))
-
+  "Helper for locating files relative to the installation root."
+  (concat *krbemacs-home* "/" file))
 
 (defvar *krb-lib-dirs* 
   '("lib"
@@ -23,7 +26,8 @@
     "distel-4.03/elisp" 
     "swank-clojure"
     "jochu-clojure-mode-494dfab8cd0dfc5ed24a1fc33da8b892feeef20d"
-    "yasnippet"))
+    "yasnippet")
+  "List of my customization module directories.")
 
 ;; add those all to the lib path
 (mapcar #'(lambda (path)
@@ -43,27 +47,30 @@
 (require 'distel)
 (require 'yasnippet)
 
-;; helper for ading file-extension to editor mode bindings
 (defun krb-file-ext-case-permute (pattern)
+  "Helper for ading file-extension to editor mode bindings.
+
+  (krb-file-ext-case-permute \"foo\") => (\"foo\" \"FOO\" \"Foo\")"
   (loop for mutator in '(downcase upcase capitalize)
         collect (funcall mutator pattern)))
 
+(defun krb-pattern-on-auto-mode-alist? (pat)
+  (not (null (member-if (lambda (ent)
+                          (equal (car ent) pat))
+                        auto-mode-alist))))
+
 (defun krb-push-file-ext-and-mode-binding (mode-name &rest patterns)
-  "Bind the given node name to the givne set of file
+  "Bind the given mode name to the given set of file
 extensions (patterns). Eg:
 
   (krb-push-file-ext-and-mode-binding 'cperl-mode \"\\.pl$\" \"\\.pm$\" \"\\.al$\")
 "
-  (loop for pattern in patterns
+  (loop for pattern in (apply #'append (mapcar #'krb-file-ext-case-permute patterns))
         do
-        (loop for modified-case in (krb-file-ext-case-permute pattern)
-              do
-              (when (not (member-if (lambda (ent)
-                                      (equal (car ent) pattern))
-                                    auto-mode-alist))
-                (setq auto-mode-alist
-                      (cons (cons pattern mode-name)
-                            auto-mode-alist))))))
+        (when (not (krb-pattern-on-auto-mode-alist? pattern))
+          (setq auto-mode-alist
+                (cons (cons pattern mode-name)
+                      auto-mode-alist)))))
 
 ;; I like this one, you may like something else
 (load "themes/color-theme-library.el")
@@ -117,7 +124,7 @@ the backing files."
 
 ;; this is to support per-host customization...
 (defvar krb-local-host-name nil)
-(setq krb-local-host-name (first (split-string (shell-command-to-string "hostname") "\n")))
+(setq krb-local-host-name (system-name))
 
 (defmacro when-file-exists (decl &rest body)
   "(when-file-exists (fname \"/etc/passwd\")
@@ -128,8 +135,8 @@ the backing files."
          ,@body))))
 
 (when-file-exists
- (fname (krb-file (format "config/%s.el" krb-local-host-name)))
- (message "loading local customization file: %s" fname)
+ (fname (expand-file-name (format "~/.emacs.local/%s.el" krb-local-host-name)))
+ (message "loading host specific (%s) customization file: %s" krb-local-host-name fname)
  (load-file fname))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
