@@ -248,7 +248,7 @@ the backing files."
 
 (slime-setup)
 (krb-push-file-ext-and-mode-binding 'clojure-mode "\\.clj$")
-(add-hook 'clojure-mode-hook 'krb-set-clojure-bindings)
+(add-hook 'clojure-mode-hook 'krb-clojure-clojure-mode-init)
 (add-hook 'clojure-mode-hook 'paredit-mode)
 
 (add-hook
