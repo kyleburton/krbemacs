@@ -25,7 +25,6 @@
     "clojure-mode"
     "distel-4.03/elisp" 
     "swank-clojure"
-    "jochu-clojure-mode-494dfab8cd0dfc5ed24a1fc33da8b892feeef20d"
     "yasnippet")
   "List of my customization module directories.")
 
@@ -347,6 +346,7 @@ the backing files."
 ;; Erlang / Distel
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (krb-push-file-ext-and-mode-binding 'erlang-mode "\\.erl$" "\\.hrl$")
+(setq inferior-erlang-machine (expand-file-name "~/local/erlang/bin/erl"))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; End of Erlang / Distel
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
