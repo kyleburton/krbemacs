@@ -43,7 +43,6 @@
 (require 'inf-ruby)
 (require 'slime)
 (require 'clojure-mode)
-(require 'distel)
 (require 'yasnippet)
 
 (defun krb-file-ext-case-permute (pattern)
@@ -136,6 +135,9 @@ the backing files."
  (message "loading host specific (%s) customization file: %s" krb-local-host-name fname)
  (load-file fname))
 
+(when-file-exists
+ (fname (expand-file-name "~/.emacs-local"))
+ (load-file fname))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Perl Development customization
@@ -246,6 +248,10 @@ the backing files."
 (setq swank-clojure-binary "clojure")
 (require 'swank-clojure-autoload)
 
+(defun krb-set-clojure-bindings ()
+  (interactive)
+  nil)
+
 (slime-setup)
 (krb-push-file-ext-and-mode-binding 'clojure-mode "\\.clj$")
 (add-hook 'clojure-mode-hook 'krb-set-clojure-bindings)
@@ -260,6 +266,10 @@ the backing files."
     (local-set-key "\M-Od" 'paredit-forward-barf-sexp)
     (highlight-parentheses-mode t)
     (setq abbrev-mode t)))
+
+(defun krb-swank-clojure-init ()
+  (interactive)
+  nil)
 
 ;; these next 2 entries (clojure2 and clojure3) are to avoid
 ;; collisions for the debug port and let me run multiple
@@ -345,8 +355,15 @@ the backing files."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Erlang / Distel
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(krb-push-file-ext-and-mode-binding 'erlang-mode "\\.erl$" "\\.hrl$")
-(setq inferior-erlang-machine (expand-file-name "~/local/erlang/bin/erl"))
+;; (krb-push-file-ext-and-mode-binding 'erlang-mode "\\.erl$" "\\.hrl$")
+;; (setq inferior-erlang-machine (expand-file-name "~/local/erlang/bin/erl"))
+
+(require 'distel)
+(distel-setup)
+
+
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; End of Erlang / Distel
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -364,3 +381,4 @@ the backing files."
 (setq x-select-request-type '(UTF8_STRING COMPOUND_TEXT TEXT STRING))
 ;; ;; MS Windows clipboard is UTF-16LE 
 ;; (set-clipboard-coding-system 'utf-16le-dos)
+
