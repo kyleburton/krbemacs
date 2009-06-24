@@ -43,7 +43,6 @@
 (require 'inf-ruby)
 (require 'slime)
 (require 'clojure-mode)
-(require 'distel)
 (require 'yasnippet)
 
 (defun krb-file-ext-case-permute (pattern)
@@ -136,6 +135,9 @@ the backing files."
  (message "loading host specific (%s) customization file: %s" krb-local-host-name fname)
  (load-file fname))
 
+(when-file-exists
+ (fname (expand-file-name "~/.emacs-local"))
+ (load-file fname))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Perl Development customization
@@ -246,6 +248,10 @@ the backing files."
 (setq swank-clojure-binary "clojure")
 (require 'swank-clojure-autoload)
 
+(defun krb-set-clojure-bindings ()
+  (interactive)
+  nil)
+
 (slime-setup)
 (krb-push-file-ext-and-mode-binding 'clojure-mode "\\.clj$")
 (add-hook 'clojure-mode-hook 'krb-set-clojure-bindings)
@@ -353,7 +359,9 @@ the backing files."
 ;; Erlang / Distel
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (krb-push-file-ext-and-mode-binding 'erlang-mode "\\.erl$" "\\.hrl$")
-(setq inferior-erlang-machine (expand-file-name "~/local/erlang/bin/erl"))
+(require 'distel)
+(distel-setup)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; End of Erlang / Distel
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -372,9 +380,3 @@ the backing files."
 ;; ;; MS Windows clipboard is UTF-16LE 
 ;; (set-clipboard-coding-system 'utf-16le-dos)
 
-
-; swank-clojure-jar-path
-; swank-clojure-extra-classpaths  
-; swank-clojure-library-paths
-; swank-clojure-binary
-; swank-clojure-init-files
