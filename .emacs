@@ -355,14 +355,9 @@ the backing files."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Erlang / Distel
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; (krb-push-file-ext-and-mode-binding 'erlang-mode "\\.erl$" "\\.hrl$")
-;; (setq inferior-erlang-machine (expand-file-name "~/local/erlang/bin/erl"))
-
+(krb-push-file-ext-and-mode-binding 'erlang-mode "\\.erl$" "\\.hrl$")
 (require 'distel)
 (distel-setup)
-
-
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; End of Erlang / Distel
