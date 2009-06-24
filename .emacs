@@ -261,6 +261,10 @@ the backing files."
     (highlight-parentheses-mode t)
     (setq abbrev-mode t)))
 
+(defun krb-swank-clojure-init ()
+  (interactive)
+  nil)
+
 ;; these next 2 entries (clojure2 and clojure3) are to avoid
 ;; collisions for the debug port and let me run multiple
 ;; jvm+emacs+inferior-lisp instances on the same host w/o them
@@ -274,6 +278,9 @@ the backing files."
              '(clojure3 ("clojure3")
                         :init swank-clojure-init
                         :init-function krb-swank-clojure-init) t)
+
+(add-to-list 'slime-lisp-implementations 
+             '(sbcl ("sbcl")) t)
 
 (add-hook 'lisp-mode-hook
           (lambda ()
@@ -364,3 +371,10 @@ the backing files."
 (setq x-select-request-type '(UTF8_STRING COMPOUND_TEXT TEXT STRING))
 ;; ;; MS Windows clipboard is UTF-16LE 
 ;; (set-clipboard-coding-system 'utf-16le-dos)
+
+
+; swank-clojure-jar-path
+; swank-clojure-extra-classpaths  
+; swank-clojure-library-paths
+; swank-clojure-binary
+; swank-clojure-init-files
