@@ -261,6 +261,10 @@ the backing files."
     (highlight-parentheses-mode t)
     (setq abbrev-mode t)))
 
+(defun krb-swank-clojure-init ()
+  (interactive)
+  (message "krb-swank-clojure-init"))
+
 ;; these next 2 entries (clojure2 and clojure3) are to avoid
 ;; collisions for the debug port and let me run multiple
 ;; jvm+emacs+inferior-lisp instances on the same host w/o them
@@ -281,9 +285,9 @@ the backing files."
              (highlight-parentheses-mode t)
              (setq abbrev-mode t)))
 
-(add-hook 'slime-connected-hook
-          (lambda ()
-            (slime-redirect-inferior-output)))
+;; (add-hook 'slime-connected-hook
+;;           (lambda ()
+;;             (slime-redirect-inferior-output)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; end Lisp and Clojure
@@ -364,3 +368,13 @@ the backing files."
 (setq x-select-request-type '(UTF8_STRING COMPOUND_TEXT TEXT STRING))
 ;; ;; MS Windows clipboard is UTF-16LE 
 ;; (set-clipboard-coding-system 'utf-16le-dos)
+
+
+(defun google-region (&optional flags)
+  "Google the selected region"
+  (interactive)
+  (let ((query (buffer-substring (region-beginning)
+                                  (region-end))))
+    (browse-url (concat "http://www.google.com/search?ie=utf-8&oe=utf-8&q=" query))))
+
+(load (expand-file-name "~/.emacs-local"))

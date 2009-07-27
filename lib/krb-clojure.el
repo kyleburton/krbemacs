@@ -87,7 +87,7 @@
     ;; rewrite the namespace decl
     (message "%s" (append `(ns ,ns-name) (list (append '(:import) (list pkg-imports) new-imports)) new-ns))))
 
-;; TODO: model off of krb-clj-add-import
+;; TODO: model off of krb-clj-add-import, need to handle the :as clauses
 (defun krb-clj-add-use (namespace as-name)
   (interactive (list (read-string "Use Namespace: ")
                      (read-string "As (enter for default): ")))
