@@ -294,6 +294,14 @@ the backing files."
 ;; (add-hook 'slime-connected-hook
 ;;           (lambda ()
 ;;             (slime-redirect-inferior-output)))
+;;
+;;
+
+
+;; (autoload 'clojure-test-mode "clojure-test-mode" "Clojure test mode" t)
+;; (autoload 'clojure-test-maybe-enable "clojure-test-mode" "" t)
+;; (add-hook 'clojure-mode-hook 'clojure-test-maybe-enable)
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; end Lisp and Clojure
@@ -377,8 +385,6 @@ the backing files."
 ;; ;; MS Windows clipboard is UTF-16LE 
 ;; (set-clipboard-coding-system 'utf-16le-dos)
 
-<<<<<<< HEAD:.emacs
-
 (defun google-region (&optional flags)
   "Google the selected region"
   (interactive)
@@ -387,5 +393,3 @@ the backing files."
     (browse-url (concat "http://www.google.com/search?ie=utf-8&oe=utf-8&q=" query))))
 
 (load (expand-file-name "~/.emacs-local"))
-=======
->>>>>>> 100375b06cf524418ec4d962e5bf572ee81c00b4:.emacs
