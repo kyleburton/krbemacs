@@ -254,7 +254,7 @@ the backing files."
 
 (slime-setup)
 (krb-push-file-ext-and-mode-binding 'clojure-mode "\\.clj$")
-(add-hook 'clojure-mode-hook 'krb-set-clojure-bindings)
+(add-hook 'clojure-mode-hook 'krb-clojure-clojure-mode-init)
 (add-hook 'clojure-mode-hook 'paredit-mode)
 
 (add-hook
@@ -269,7 +269,7 @@ the backing files."
 
 (defun krb-swank-clojure-init ()
   (interactive)
-  nil)
+  (message "krb-swank-clojure-init"))
 
 ;; these next 2 entries (clojure2 and clojure3) are to avoid
 ;; collisions for the debug port and let me run multiple
@@ -294,9 +294,17 @@ the backing files."
              (highlight-parentheses-mode t)
              (setq abbrev-mode t)))
 
-(add-hook 'slime-connected-hook
-          (lambda ()
-            (slime-redirect-inferior-output)))
+;; (add-hook 'slime-connected-hook
+;;           (lambda ()
+;;             (slime-redirect-inferior-output)))
+;;
+;;
+
+
+;; (autoload 'clojure-test-mode "clojure-test-mode" "Clojure test mode" t)
+;; (autoload 'clojure-test-maybe-enable "clojure-test-mode" "" t)
+;; (add-hook 'clojure-mode-hook 'clojure-test-maybe-enable)
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; end Lisp and Clojure
@@ -380,3 +388,11 @@ the backing files."
 ;; ;; MS Windows clipboard is UTF-16LE 
 ;; (set-clipboard-coding-system 'utf-16le-dos)
 
+(defun google-region (&optional flags)
+  "Google the selected region"
+  (interactive)
+  (let ((query (buffer-substring (region-beginning)
+                                  (region-end))))
+    (browse-url (concat "http://www.google.com/search?ie=utf-8&oe=utf-8&q=" query))))
+
+(load (expand-file-name "~/.emacs-local"))

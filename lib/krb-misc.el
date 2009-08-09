@@ -1,65 +1,10 @@
-(defun make-input-signature (inputs)
-  (hms-string-join ", " (mapcar (lambda (elt) (hms-string-join " " (list (car elt) (cadr elt)))) inputs)))
-
-(defun make-call-form (inputs)
-  (hms-string-join ", " (mapcar #'cadr inputs)))
-
-(defun copy-method (ret-type name inputs return-statement)
-  (concat
-   "    public " ret-type " " name " ( " (make-input-signature inputs) " ) {\n"
-   "        for( PrintStream p : _streams ) {\n"
-   "            p." name "(" (make-call-form inputs) ");\n"
-   "        }\n"
-   "        " return-statement "\n"
-   "    }\n"
-   "\n"))
-
-(defun copy-methods ()
-  (interactive)
-  (insert "/* ==> START: generated code */\n")
-  (mapcar (lambda (pair) (eval `(insert (copy-method ,@pair))))
-       '(
-         ("PrintStream" "append" '(("char" "c")) "return this;")
-         ("PrintStream" "append" '(("CharSequence" "csq")) "return this;")
-         ("PrintStream" "append" '(("CharSequence" "csq") ("int" "start") ("int" "end")) "return this;")
-         ;("boolean" "checkError" '() "return false;")
-         ("void" "close" '() "")
-         ("void" "flush" '() "")
-         ("PrintStream" "format" '(("Locale" "l") ("String" "format") ("Object..." "args")) "return this;")
-         ("PrintStream" "format" '(("String" "format") ("Object..." "args")) "return this;")
-         ("void" "print" '(("boolean" "b")) "")
-         ("void" "print" '(("char" "c")) "")
-         ("void" "print" '(("char[]" "s")) "")
-         ("void" "print" '(("double" "d")) "")
-         ("void" "print" '(("float" "f")) "")
-         ("void" "print" '(("int" "i")) "")
-         ("void" "print" '(("long" "l")) "")
-         ("void" "print" '(("Object" "obj")) "")
-         ("void" "print" '(("String" "s")) "")
-         ("PrintStream" "printf" '(("Locale" "l") ("String" "format") ("Object..." "args")) "return this;")
-         ("PrintStream" "printf" '(("String" "format") ("Object..." "args")) "return this;")
-         ("void" "println" '() "")
-         ("void" "println" '(("boolean" "x")) "")
-         ("void" "println" '(("char" "x")) "")
-         ("void" "println" '(("char[]" "x")) "")
-         ("void" "println" '(("double" "x")) "")
-         ("void" "println" '(("float" "x")) "")
-         ("void" "println" '(("int" "x")) "")
-         ("void" "println" '(("long" "x")) "")
-         ("void" "println" '(("Object" "x")) "")
-         ("void" "println" '(("String" "x")) "")
-         ("void" "write" '(("byte[]" "buf") ("int" "off") ("int" "len")) "")
-         ("void" "write" '(("int" "b")) "")
-         ))
-  (insert "/* <== END: generated code */\n"))
-
+;; Utiliites
 
 (defun krb-insert-date ()
   "Inserts a date into the current buffer."
   (interactive)
   (insert (shell-command-to-string "date"))
   (backward-delete-char 1))
-
 
 (defun krb-join-lines (num)
   (interactive (list (read-string "Num Lines: " 1)))
@@ -68,71 +13,138 @@
         (join-line 1)
         (krb-join-lines (- num 1)))))
 
-(defun krb-java-insert-log (level)
-  "Insert a log call statement into the buffer."
-  (interactive "sLevel: ")
-  (beginning-of-line)
-  (c-indent-command)
-  (insert "if ( LOG.is" level "Enabled() ) {\n")
-  (search-backward-regexp level)
-  (capitalize-word 1)
-  (search-backward-regexp "enabled")
-  (capitalize-word 1)
+(defmacro krb-shift (lat)
+  "Destructive shift off of the right hand side of the list of atoms.
+As opposed to pop which works on the left."
+  `(let ((rev (reverse ,lat)))
+     (setq ,lat (reverse (cdr rev)))
+     (car rev)))
 
-  (forward-line 1)
-  (beginning-of-line)
-  (c-indent-command)
-  (insert "LOG." level "(\"\");\n")
-  (c-indent-command)
-  (insert "}")
-  (c-indent-command)
-  (insert "\n")
-  (search-backward-regexp "\\\");"))
+(defun goto-percent (pct)
+  "Computes the character position of the given percentage of the current 
+buffer and places the cursor at that position."
+  (interactive "nGoto percent: ")
+  (let* ((size (point-max))
+         (charpos (/ (* size pct) 100)))
+    (goto-char charpos)
+    (message "Moved to charpos: %d/5d." charpos size)))
 
-(defun krb-java-insert-println (writer)
+(defun match-paren (arg)
+  "Go to the matching paren if on an open paren; otherwise insert %."
+  (interactive "p")
+  (cond ((looking-at "\\s\(")
+         (forward-list 1)
+         (backward-char 1))
+        ((looking-at "\\s\)")
+         (forward-char 1)
+         (backward-list 1))
+        (t (self-insert-command (or arg 1)))))
+
+(defun krb-word-under-cursor ()
+  "Returns the 'word' at the point."
   (interactive)
-  (beginning-of-line)
-  (c-indent-command)
-  (insert writer ".println(\"\");")
-  (backward-char 3))
+  (save-excursion
+    (backward-word 1)
+    (let ((beg (point)))
+      (forward-word 1)
+      (buffer-substring beg (point)))))
 
-(defun krb-java-insert-out-println ()
-  "Insert a System.out.println statement at the point."
-  (interactive)
-  (krb-java-insert-println "System.out"))
+(defun krb-string-join (delim lat)
+  (let ((string (car lat)))
+    (loop for item in (cdr lat)
+          do
+          (setq string (concat string delim item)))
+    string))
+        
+(defun krb-get-pwd-as-list ()
+  (rest (split-string buffer-file-name "/")))
 
-(defun krb-java-insert-err-println ()
-  "Insert a System.out.println statement at the point."
-  (interactive)
-  (krb-java-insert-println "System.err"))
+;; (krb-get-pwd-as-list)
+
+(defun krb-string-find (buff pat pos)
+  (let ((pos 0) (loop t) (max (- (length buff) (length pat))))
+    (while (and loop (< pos max))
+      (cond ((string= pat (substring buff pos (+ pos (length pat))))
+             (setq loop nil))
+            (t
+             (setq pos (+ 1 pos)))
+            ))
+    (if (= pos max) -1 pos)))
+
+(defun krb-string-strip-lib-prefix (name)
+  (let ((pos (krb-string-find name "clj" 0)))
+    (message "pos=%s" pos)
+    (cond ((= -1 pos) name)
+          (t
+           (substring name (+ 1 pos (length "clj")))))))
+
+;; (krb-string-strip-lib-prefix "src/clj/com/github/kyleburton/mileage.clj")
+
+(defun krb-get-pwd-as-list-no-lib ()
+  (split-string (krb-string-strip-lib-prefix buffer-file-name) "/"))
+
+;; (krb-get-pwd-as-list-no-lib)
+
+(defun krb-string-strip-file-suffix (name)
+  (let ((pos (krb-string-find name "." 0)))
+    (cond ((= -1 pos) name)
+          (t (substring name 0 pos)))))
+
+;; (krb-string-strip-file-suffix "src/clj/com/github/kyleburton/mileage.clj")
 
 
-(defun krb-java-wrap-log-conditional ()
-"Wrap the LOG.x statement on the current line with a conditional."
-  (interactive)
-  (beginning-of-line)
-  (let ((start))
-    (search-forward-regexp "LOG\\.")
-    (setq start (point))
-    (search-forward-regexp "(")
-    (backward-char 1)
-    (setq end (point))
-    (setq logname (buffer-substring start (point)))
-    (beginning-of-line)
 
-    (c-indent-command)
-    (insert "if ( LOG.is" logname "Enabled() ) {\n")
-    (c-indent-command)
-    (search-backward-regexp logname)
-    (capitalize-word 1)
-    (search-backward-regexp "enabled")
-    (capitalize-word 1)
-    (search-forward-regexp ");")
-    (insert "\n")
-    (c-indent-command)
-    (insert "}")
-    (c-indent-command)
-    (insert "\n")
-    (c-indent-command)
-  ))
+
+(defun krb-seq-first (aseq)
+  (cond ((listp aseq)
+         (first aseq))
+        ((vectorp aseq)
+         (aref aseq 0))
+        (t
+         (error "krb-seq-first: not a list or vector: %s" aseq))))
+
+;; (krb-seq-first '(1 2 3))
+;; (krb-seq-first [1 2 3])
+
+(defmacro l1 (&rest body)
+  `#'(lambda (%1)
+       ,@body))
+
+(defmacro l* (&rest body)
+  `#'(lambda (&rest %*)
+       ,@body))
+
+(defun krb-seq->list (aseq)
+  (cond ((listp aseq)
+         aseq)
+        ((vectorp aseq)
+         (loop for item across aseq
+               collect item))
+        (t
+         (error "krb-seq->list: not a list or vector: %s" aseq))))
+
+(defun krb-seq->vector (aseq)
+  (cond ((vectorp aseq)
+         aseq)
+        ((listp aseq)
+         (loop for item in aseq
+               with the-vec = (make-vector (length aseq) 0)
+               for vec-idx  = 0 then (+ vec-idx 1)
+               finally (return the-vec)
+               do
+               (aset the-vec vec-idx item)))
+        (t
+         (error "krb-seq->vector: not a list or vector: %s" aseq))))
+
+(defun krb-vector-conj (the-vec elt)
+  (let ((new-vec (make-vector (+ 1 (length the-vec)) 0)))
+    (loop for item across the-vec
+          for idx = 0 then (+ 1 idx)
+          do
+          (aset new-vec idx item))
+    (aset new-vec
+          (- (length new-vec) 1)
+          elt)
+    new-vec))
+
 
