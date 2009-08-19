@@ -135,9 +135,6 @@ the backing files."
  (message "loading host specific (%s) customization file: %s" krb-local-host-name fname)
  (load-file fname))
 
-(when-file-exists
- (fname (expand-file-name "~/.emacs-local"))
- (load-file fname))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Perl Development customization
@@ -395,4 +392,7 @@ the backing files."
                                   (region-end))))
     (browse-url (concat "http://www.google.com/search?ie=utf-8&oe=utf-8&q=" query))))
 
-(load (expand-file-name "~/.emacs-local"))
+
+(when-file-exists
+ (fname (expand-file-name "~/.emacs-local"))
+ (load-file fname))
