@@ -44,6 +44,7 @@
 (require 'slime)
 (require 'clojure-mode)
 (require 'yasnippet)
+(yas/initialize)
 
 (defun krb-file-ext-case-permute (pattern)
   "Helper for ading file-extension to editor mode bindings.
