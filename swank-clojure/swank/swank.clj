@@ -29,7 +29,10 @@
         read
         (dothread-swank
           (thread-set-name "Read Loop Thread")
-          (read-loop conn control))]
+          (try
+           (read-loop conn control)
+           (catch java.lang.Throwable ex
+             (.println System/err (format "Connection Probably Closed: caught: %s" ex)))))]
     (dosync
      (ref-set (conn :control-thread) control)
      (ref-set (conn :read-thread) read))))
