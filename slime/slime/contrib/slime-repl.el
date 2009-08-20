@@ -458,6 +458,9 @@ joined together."))
   ("\C-c\C-p" 'slime-repl-previous-prompt)
   ("\C-c\C-z" 'slime-nop))
 
+(slime-define-keys slime-inspector-mode-map
+  ((kbd "M-RET") 'slime-inspector-copy-down-to-repl))
+
 (def-slime-selector-method ?r
   "SLIME Read-Eval-Print-Loop."
   (slime-output-buffer))
@@ -787,6 +790,8 @@ earlier in the buffer."
     (lisp-indent-line)))
 
 (defun slime-repl-delete-current-input ()
+  "Delete all text from the prompt."
+  (interactive)
   (delete-region slime-repl-input-start-mark (point-max)))
 
 (defun slime-repl-kill-input ()
@@ -1309,6 +1314,10 @@ expansion will be added to the REPL's history.)"
 
 (defslime-repl-shortcut slime-repl-disconnect ("disconnect")
   (:handler 'slime-disconnect)
+  (:one-liner "Disconnect the current connection."))
+
+(defslime-repl-shortcut slime-repl-disconnect-all ("disconnect-all")
+  (:handler 'slime-disconnect-all)
   (:one-liner "Disconnect all connections."))
 
 (defslime-repl-shortcut slime-repl-sayoonara ("sayoonara")
@@ -1417,6 +1426,14 @@ expansion will be added to the REPL's history.)"
             (t
              (error "Not in a function definition")))))))
 
+(defun slime-inspector-copy-down-to-repl (number)
+   "Evaluate the inspector slot at point via the REPL (to set `*')."
+   (interactive (list (or (get-text-property (point) 'slime-part-number)
+                          (error "No part at point"))))
+   (slime-repl-send-string (format "%s" `(swank:inspector-nth-part ,number)))
+   (slime-repl))
+
+
 (defun slime-set-default-directory (directory)
   "Make DIRECTORY become Lisp's current directory."
   (interactive (list (read-directory-name "Directory: " nil nil t)))
@@ -1499,7 +1516,8 @@ expansion will be added to the REPL's history.)"
 
 (defun slime-repl-connected-hook-function ()
   (destructuring-bind (package prompt) 
-      (slime-eval '(swank:create-repl nil))
+      (let ((slime-current-thread t))
+	(slime-eval '(swank:create-repl nil)))
     (setf (slime-lisp-package) package)
     (setf (slime-lisp-package-prompt-string) prompt))
   (slime-hide-inferior-lisp-buffer)
@@ -1513,6 +1531,9 @@ expansion will be added to the REPL's history.)"
     ((:read-string thread tag)
      (assert thread)
      (slime-repl-read-string thread tag)
+     t)
+    ((:read-aborted thread tag)
+     (slime-repl-abort-read thread tag)
      t)
     ((:open-dedicated-output-stream port)
      (slime-open-stream-to-lisp port)
@@ -1530,6 +1551,10 @@ expansion will be added to the REPL's history.)"
 (defun slime-repl-init ()
   (add-hook 'slime-event-hooks 'slime-repl-event-hook-function)
   (add-hook 'slime-connected-hook 'slime-repl-connected-hook-function))
+
+(defun slime-repl-remove-hooks ()
+  (remove-hook 'slime-event-hooks 'slime-repl-event-hook-function)
+  (remove-hook 'slime-connected-hook 'slime-repl-connected-hook-function))
 
 (def-slime-test package-updating
     (package-name nicknames)
@@ -1549,6 +1574,21 @@ expansion will be added to the REPL's history.)"
         (equal (slime-lisp-package) package-name))
       (slime-check ("slime-lisp-package-prompt-string is in %S." nicknames)
         (member (slime-lisp-package-prompt-string) nicknames)))))
+
+(defmacro with-canonicalized-slime-repl-buffer (&rest body)
+  "Evaluate BODY within a fresh REPL buffer. The REPL prompt is
+canonicalized to \"SWANK\"---we do actually switch to that
+package, though."
+  `(let ((%old-prompt% (slime-lisp-package-prompt-string)))
+     (unwind-protect
+          (progn (with-current-buffer (slime-output-buffer)
+                   (setf (slime-lisp-package-prompt-string) "SWANK"))
+                 (kill-buffer (slime-output-buffer))
+                 (with-current-buffer (slime-output-buffer)
+                   ,@body))
+       (setf (slime-lisp-package-prompt-string) %old-prompt%))))
+
+(put 'with-canonicalized-slime-repl-buffer 'lisp-indent-function 0)
 
 (def-slime-test repl-test
     (input result-contents)
@@ -1617,10 +1657,7 @@ SWANK> *[]")
  (1 . 2) (1 . 2) (1 . 2) (1 . 2) (1 . 2) (1 . 2))
 }0
 SWANK> *[]"))
-  (with-current-buffer (slime-output-buffer)
-    (setf (slime-lisp-package-prompt-string) "SWANK"))
-  (kill-buffer (slime-output-buffer))
-  (with-current-buffer (slime-output-buffer)
+  (with-canonicalized-slime-repl-buffer
     (insert input)
     (slime-check-buffer-contents "Buffer contains input" 
                                  (concat "{}SWANK> [" input "*]"))
@@ -1631,7 +1668,7 @@ SWANK> *[]"))
 (defun slime-check-buffer-contents (msg expected)
   (let* ((marks '((point . ?*) 
                   (slime-output-start . ?{) (slime-output-end . ?}) 
-                  (slimerepl-input-start-mark . ?\[) (point-max . ?\])))
+                  (slime-repl-input-start-mark . ?\[) (point-max . ?\])))
          (marks (remove-if-not (lambda (m) (position (cdr m) expected))
                                marks))
          (marks (sort (copy-sequence marks) 
@@ -1676,10 +1713,7 @@ SWANK> ")
 2)
 3
 SWANK> "))
-  (with-current-buffer (slime-output-buffer)
-    (setf (slime-lisp-package-prompt-string) "SWANK"))
-  (kill-buffer (slime-output-buffer))
-  (with-current-buffer (slime-output-buffer)
+  (with-canonicalized-slime-repl-buffer
     (insert before)
     (save-excursion (insert after))
     (slime-test-expect "Buffer contains input" 
@@ -1707,10 +1741,7 @@ SWANK> ")
 4)
 \(+ 2 3 4)
 SWANK> "))
-  (with-current-buffer (slime-output-buffer)
-    (setf (slime-lisp-package-prompt-string) "SWANK"))
-  (kill-buffer (slime-output-buffer))
-  (with-current-buffer (slime-output-buffer)
+  (with-canonicalized-slime-repl-buffer
     (insert (format "(values %s)" prompt))
     (call-interactively 'slime-repl-return)
     (slime-wait-condition "reading" #'slime-reading-p 5)
@@ -1731,10 +1762,7 @@ b
 c
 \(\"a\" \"b\" \"c\")
 SWANK> "))
-  (when (slime-output-buffer)
-    (kill-buffer (slime-output-buffer)))
-  (with-current-buffer (slime-output-buffer)
-    (setf (slime-lisp-package-prompt-string) "SWANK")
+  (with-canonicalized-slime-repl-buffer
     (insert command)
     (call-interactively 'slime-repl-return)
     (dolist (input inputs) 
@@ -1742,8 +1770,10 @@ SWANK> "))
       (insert input)
       (call-interactively 'slime-repl-return))
     (slime-sync-to-top-level 5)
-    (slime-check "Buffer contains result"
-      (equal final-contents (buffer-string)))))
+    (slime-test-expect "Buffer contains result"
+                       final-contents 
+                       (buffer-string)
+                       #'equal)))
 
 (def-slime-test repl-type-ahead
     (command input final-contents)
@@ -1758,10 +1788,7 @@ SWANK> [*foo]")
       ("(progn (sleep 0.1) (abort))" "*foo" "SWANK> (progn (sleep 0.1) (abort))
 {}; Evaluation aborted.
 SWANK> [*foo]"))
-  (when (slime-output-buffer)
-    (kill-buffer (slime-output-buffer)))
-  (setf (slime-lisp-package-prompt-string) "SWANK")
-  (with-current-buffer (slime-output-buffer)
+  (with-canonicalized-slime-repl-buffer
     (insert command)
     (call-interactively 'slime-repl-return)
     (save-excursion (insert (delete* ?* input)))
@@ -1775,31 +1802,28 @@ SWANK> [*foo]"))
     "Let's see what happens if we interrupt a blocking read operation."
     '(())
   (slime-check-top-level)
-  (when (slime-output-buffer)
-    (setf (slime-lisp-package-prompt-string) "SWANK")
-    (kill-buffer (slime-output-buffer)))
-  (with-current-buffer (slime-output-buffer)
+  (with-canonicalized-slime-repl-buffer
     (insert "(read-char)")
-    (call-interactively 'slime-repl-return))
-  (slime-wait-condition "reading" #'slime-reading-p 5)
-  (slime-interrupt)
-  (slime-wait-condition "Debugger visible" 
-                        (lambda () 
-                          (and (slime-sldb-level= 1)
-                               (get-buffer-window (sldb-get-default-buffer))))
-                        5)
-  (with-current-buffer (sldb-get-default-buffer)
-    (sldb-continue))
-  (slime-wait-condition "reading" #'slime-reading-p 5)
-  (with-current-buffer (slime-output-buffer)
-    (insert "X")
     (call-interactively 'slime-repl-return)
-    (slime-sync-to-top-level 5)
-    (slime-test-expect "Buffer contains result" 
-                       "SWANK> (read-char)
+    (slime-wait-condition "reading" #'slime-reading-p 5)
+    (slime-interrupt)
+    (slime-wait-condition "Debugger visible" 
+                          (lambda () 
+                            (and (slime-sldb-level= 1)
+                                 (get-buffer-window (sldb-get-default-buffer))))
+                          5)
+    (with-current-buffer (sldb-get-default-buffer)
+      (sldb-continue))
+    (slime-wait-condition "reading" #'slime-reading-p 5)
+    (with-current-buffer (slime-output-buffer)
+      (insert "X")
+      (call-interactively 'slime-repl-return)
+      (slime-sync-to-top-level 5)
+      (slime-test-expect "Buffer contains result" 
+                         "SWANK> (read-char)
 X
 #\\X
-SWANK> " (buffer-string))))
+SWANK> " (buffer-string)))))
 
 (let ((byte-compile-warnings '()))
   (mapc #'byte-compile

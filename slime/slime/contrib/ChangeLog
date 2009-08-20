@@ -1,3 +1,441 @@
+2009-08-15  Helmut Eller  <heller@common-lisp.net>
+
+	* slime-typeout-frame.el (slime-typeout-message): Don't call
+	slime-autodoc-stop-timer which no longer exists since 2009-01-01.
+	(slime-typeout-frame-init): Don't create a frame in a tty-only
+	session.
+	(slime-typeout-tty-only-p): New predicate.
+
+2009-08-15  Helmut Eller  <heller@common-lisp.net>
+
+	Disable slime-autodoc for XEmacs.
+
+	* slime-autodoc.el, slime-fancy.el: XEmacs's version of eldoc
+	doesn't have the neccessary hooks.
+
+2009-08-11  Tobias C. Rittweiler  <tcr@freebits.de>
+
+	* slime-autodoc.el (slime-arglist): Pass properly formed argument
+	in the rpc call.
+
+2009-08-09  Stas Boukarev  <stassats@gmail.com>
+
+	* slime-fuzzy.el (slime-fuzzy-complete-symbol): change
+	`comint-completion-addsuffix' to not add space after completing a
+	filename.
+
+2009-08-05  Stas Boukarev  <stassats@gmail.com>
+
+	* swank-fancy-inspector.lisp (emacs-inspect): add buttons for removing
+	 compiler-macros and unbinding variables.
+
+2009-07-22  Stas Boukarev  <stassats@gmail.com>
+
+	* swank-fuzzy.lisp (fuzzy-convert-matching-for-emacs): format
+	floats on the lisp side, because Emacs doesn't accept d0 or s0,
+	which could get there as a result of *read-default-float-format*
+	modification.
+
+	* slime-fuzzy.el (slime-fuzzy-insert-completion-choice): ditto.
+
+2009-07-15  Tobias C. Rittweiler  <tcr@freebits.de>
+
+	* swank-sbcl-exts.lisp (compute-enriched-decoded-arglist): Filter
+	uninteresting arguments for SB-ASSEM:INST.
+
+2009-07-21  Helmut Eller  <heller@common-lisp.net>
+
+	* swank-goo.goo, swank-jolt.k (create-repl): Implemented.
+
+2009-07-19  Helmut Eller  <heller@common-lisp.net>
+
+	* swank-kawa.scm (operator-arglist): Implemented, at least for
+	some kind of function.
+
+2009-07-12  Helmut Eller  <heller@common-lisp.net>
+
+	* swank-kawa.scm (swank-writer): Use set! for now, as the svn
+	version has problems to resolve setLength.
+	(<faked-frame>:init): Don't forget the self slot.
+
+2009-07-12  Helmut Eller  <heller@common-lisp.net>
+
+	* swank-mit-scheme.scm (swank:create-repl): Implement it.
+	* swank-kawa.scm, swank-goo.scm, swank.rb (frame-source-location):
+	Renamed from frame-source-location-for-emacs.
+
+2009-07-11  Stas Boukarev  <stassats@gmail.com>
+
+	* slime-parse.el (slime-make-form-spec-from-string):
+	set syntax table to lisp-mode-syntax-table in a temporary buffer.
+	Necessary for some parsing functions to work correctly.
+
+2009-07-04  Tobias C. Rittweiler  <tcr@freebits.de>
+
+	Fix font-lock magic for s-code.lisp in the series package.
+
+	* slime-fontifying-fu.el (slime-beginning-of-tlf): Use
+	`syntax-ppss-toplevel-pos' on GNU Emacs. Old definition is
+	retained for systems where it's not available. Also wrap an
+	`ignore-errors' around the call to `up-list' in the old definition
+	to guard against unbalanced parentheses.
+
+	Reported by Stelian Ionescu, Raymond Toy.
+
+2009-07-02  Stas Boukarev  <stassats@gmail.com>
+
+	* slime-repl.el (slime-repl-delete-current-input): Make it interactive.
+
+2009-06-28  Stas Boukarev  <stassats@gmail.com>
+
+	* slime-fuzzy.el (slime-fuzzy-complete-symbol): show message in the
+	minibuffer after showing completion list, because completion
+	itself can take place in the minibuffer.
+	(slime-fuzzy-choices-buffer): if completion was started in the minibuffer,
+	don't switch to minibuffer in the other window, but select minibuffer window
+	instead.
+
+2009-06-23  Helmut Eller  <heller@common-lisp.net>
+
+	* swank-ikarus.ss, swank-larceny.scm, swank-r6rs.scm: New files.
+
+2009-06-16  Tobias C. Rittweiler  <tcr@freebits.de>
+
+	* slime-fontifying-fu.el (slime-search-suppressed-form):
+	Additional exit constraint for the loop; make sure we'r still in
+	the limit.
+	(slime-compute-region-for-font-lock): Simplify.
+
+2009-06-14  Tobias C. Rittweiler  <tcr@freebits.de>
+
+	* slime-fontifying-fu.el (slime-search-suppressed-form): Retry the
+	search differently; handlers are not active anymore inside a
+	handler in `condition-case'.
+
+2009-06-12  Tobias C. Rittweiler  <tcr@freebits.de>
+
+	* slime-fontifying-fu.el (slime-compute-region-for-font-lock): Fix
+	for `#+foo (... #+bar (... |) ...)'.
+	([test] font-lock-magic): Moved here.
+
+2009-05-28  Tobias C. Rittweiler  <tcr@freebits.de>
+
+	* slime-repl.el (slime-repl-disconnect): Disconnect current connection.
+	(slime-repl-disconnect-all): New; disconnect all connections.
+
+	Patch by Stas Boukarev.
+
+2009-05-20  Tobias C. Rittweiler  <tcr@freebits.de>
+
+	* swank-arglists.lisp (arglist-dispatch [define-compiler-macro]):
+	guard against when we're in the body of a compiler-macro
+	definition for a function not yet compiled into the image.
+
+2009-05-20  Tobias C. Rittweiler  <tcr@freebits.de>
+
+	* slime-fontifying-fu.el (slime-search-for-suppressed-forms):
+	Retrieve match data early now that `slime-current-parser-state'
+	does not save it anymore.
+
+2009-05-17  Tobias C. Rittweiler  <tcr@freebits.de>
+
+	* slime-fontifying-fu.el (slime-search-for-suppressed-forms):
+	Shadow SBCL-specific #!+, #!- conditionals correctly.
+	(slime-compute-region-for-font-lock): Fix small thinko.
+
+2009-05-16  Tobias C. Rittweiler  <tcr@freebits.de>
+
+	* slime-fontifying-fu.el (slime-beginning-of-tlf): Make sure to
+	skip outside of comments and strings first.
+
+2009-05-16  Tobias C. Rittweiler  <tcr@freebits.de>
+
+	Optimize font-lock-magic.
+
+	* slime-fontifying-fu.el (slime-search-suppressed-forms-match-data):
+	New var, to inhibit consing.
+	(slime-search-suppressed-forms-internal): Use it.
+	(slime-extend-region-for-font-lock): Do not call
+	`slime-connected-p', it's not needed in this place.
+	(slime-search-directly-preceding-reader-conditional): Do not use
+	`values', and `multiple-value-bind'.
+	(slime-beginning-of-tlf): When we know the current paren depth,
+	use it to jump directly over all parens rather than jumping to
+	each open paren in turn.
+	(slime-compute-region-for-font-lock): Use it.
+
+2009-05-15  Tobias C. Rittweiler  <tcr@freebits.de>
+
+	* slime-fontifying-fu.el (slime-search-suppressed-forms-internal):
+	Use `slime-reader-conditionals-regexp'.
+	(slime-search-directly-preceding-reader-conditional): Catch scan
+	errors due to improper feature expressions.
+
+2009-05-15  Tobias C. Rittweiler  <tcr@freebits.de>
+
+	* slime-repl.el (with-canonicalized-slime-repl-buffer): XEmacs
+	chokes on symbol-names with an initial dot.
+
+	Patch by François-René Rideau.
+
+2009-05-15  Tobias C. Rittweiler  <tcr@freebits.de>
+
+	Moved font-lock-magic from slime.el to slime-fontifying-fu.el.
+
+	N.B. slime-fontifying-fu is automatically loaded by
+	slime-fancy. I.e. if you use slime-fancy, font-lock-magic will be
+	enabled for just like before.
+
+	* slime-fontifying-fu.el (slime-highlight-suppressed-forms),
+	(slime-reader-conditional-face),
+	(slime-search-suppressed-forms-internal),
+	(slime-search-suppressed-forms),
+	(slime-search-directly-preceding-reader-conditional),
+	(slime-extend-region-for-font-lock),
+	(slime-compute-region-for-font-lock),
+	(slime-activate-font-lock-magic): Moved here.
+
+2009-05-14  Tobias C. Rittweiler  <tcr@freebits.de>
+
+	Optionally sort slots displayed for STANDARD-OBJECTS not
+	alphabetically, but by inheritance. That is group the slots
+	according to the class they're direct slots of.
+
+	* swank-fancy-inspector.lisp ([struct] inspector-checklist): New
+	slot `count'.
+	(make-checklist-button): Adapted accordingly.
+	(reinitialize-checklist): New.
+	(box, ref, (setf ref)): New.
+	(all-slots-for-inspector): Add button to group slots by
+	inheritance rather than alphabetically. Adapted accordingly.
+	(list-all-slots-by-inheritance): New. Does the bulk work.
+	(make-slot-listing): Factored out from `all-slots-for-inspector'.
+	(slot-home-class-using-class): New helper.
+	(stable-sort-by-inheritance): Also new.
+
+2009-05-08  Tobias C. Rittweiler  <tcr@freebits.de>
+
+	The inspector page for standard-objects does not append
+	"[set value]" and "[make unbound]" buttons after each entry
+	anymore. Instead we use a checklist.
+
+	* swank-fancy-inspector.lisp ([struct] inspector-checklist): New.
+	(make-checklist-button): New.
+	(do-checklist): New.
+	(slot-value-for-inspector): Previously `inspect-slot-for-emacs'.
+	(query-and-set-slot): New.
+	(all-slots-for-inspector): Adapted for changes described above.
+
+2009-05-02  Tobias C. Rittweiler  <tcr@freebits.de>
+
+	* slime-autodoc.el (slime-fontify-string): Deactivate autodoc
+	itself in the temporary help buffer. And deactivate slime's
+	font-lock magic.
+
+2009-05-01  Tobias C. Rittweiler  <tcr@freebits.de>
+
+	* slime-parse.el (slime-parse-extended-operator/check-type):
+	Forgot to delete debugging code.
+
+2009-04-30  Tobias C. Rittweiler  <tcr@freebits.de>
+
+	* slime-parse.el (slime-parse-extended-operator/check-type): New.
+	(slime-parse-extended-operator/the): New.
+	(slime-extended-operator-name-parser-alist): Add entries for
+	CHECK-TYPE, TYPEP, and THE.
+	([tesŧ] enclosing-form-specs.1): Add tests for the new entries.
+
+	Adapted from patch by Stas Boukarev.
+
+2009-04-30  Tobias C. Rittweiler  <tcr@freebits.de>
+
+	* slime-parse.el (slime-parse-extended-operator/proclaim): New.
+	(slime-extended-oprator-name-parser-alist): Adapt the entry for
+	PROCLAIM.
+
+	Adapted from patch by Stas Boukarev.
+
+2009-04-21  Tobias C. Rittweiler  <tcr@freebits.de>
+
+	* slime-indentantion-fu.el (slime-update-local-indentation): Save
+	original global indentation spec in another symbol because we
+	cannot reuse 'slime-indent. Make sure that later redefinition of
+	global macros (which may affect the indentation spec) is taken
+	into consideration.
+
+2009-04-03  Tobias C. Rittweiler  <tcr@freebits.de>
+
+	* slime-repl.el (slime-inspector-mode-map): Add binding for M-RET.
+	(slime-inspector-copy-down-to-repl): Moved here from slime.el.
+
+2009-03-27  Tobias C. Rittweiler  <tcr@freebits.de>
+
+	* slime-indentantion-fu.el (slime-indent-fu): Correctly deal with
+	MACROLETs that define macros without &BODY in their arglists.
+	([test] local-indentation.1): Updated to test against this case.
+
+2009-03-25  Helmut Eller  <heller@common-lisp.net>
+
+	* slime-repl.el (slime-repl-event-hook-function): Handle
+	:read-abort.   Reported by Stas Boukarev.
+	(slime-repl-remove-hooks): New function.
+
+2009-03-22  Tobias C. Rittweiler  <tcr@freebits.de>
+
+	* swank-arglists.lisp ([method] arglist-dispatch): Forgot to
+	remove debugging code when adding extended arglist display for
+	DEFINE-COMPILER-MACRO.
+
+	Reported by Bart Botta.
+
+2009-03-09  Tobias C. Rittweiler  <tcr@freebits.de>
+
+	* slime-autodoc.el (slime-compute-autodoc-rpc-form):
+	New. Extracted from `slime-autodoc-thing-at-point'.
+	(slime-compute-autodoc-internal): New. Extracted from
+	`slime-compute-autodoc'.
+	(slime-compute-autodoc): Explicitly save match data.
+	(slime-autodoc-hook): New. Run everytime autodoc is computed.
+
+	* slime-enclosing-context.el (slime-enclosing-bound-macros): New.
+	(slime-find-bound-macros): New, too.
+
+	* slime-indentation-fu.el, swank-indentation-fu.lisp: New contrib
+	to properly indent &BODY arguments of local macro definitions.
+	Suggested by Lorenz Moesenlechner.
+
+2009-03-09  Helmut Eller  <heller@common-lisp.net>
+
+	* swank-kawa.scm: Use foo: style keywords because :foo is now
+	a symbol.
+	(copy-stack): Use null to mark absent src-loc information.
+
+2009-03-08  Tobias C. Rittweiler  <tcr@freebits.de>
+
+	* slime-repl.el ([test] interrupt-in-blocking-read): Wrap
+	`with-canonicalized-slime-repl-buffer' around the whole
+	test. Otherwise the changed repl prompt doesn't extend to the
+	actual `slime-test-expect'.
+
+2009-03-08  Tobias C. Rittweiler  <tcr@freebits.de>
+
+	* swank-fancy-inspector.lisp (make-visit-file-thunk): New helper;
+	extracted from emacs-inspect [file-stream].
+	([method] emacs-inspect file-stream): Use it.
+	([method] emacs-inspect stream-error): Use it, too.
+
+2009-03-04  Tobias C. Rittweiler  <tcr@freebits.de>
+
+	* slime-asdf.el: Really do the commit from entry 2009-02-28.
+
+2009-03-04  Tobias C. Rittweiler  <tcr@freebits.de>
+
+	* slime-repl.el (slime-check-buffer-contents): Fix typo.
+	(with-canonicalized-slime-repl-buffer): Refactored from test
+	cases. A lot of test cases implemented this somewhat
+	wrongly. Making them fail when not called from the SWANK package.
+	([test] repl-test): Use above.
+	([test] repl-return): Ditto.
+	([test] repl-read): Ditto.
+	([test] repl-read-lines): Ditto.
+	([test] repl-type-ahead): Ditto.
+	([test] interrupt-in-blocking-read): Ditto.
+
+2009-02-28  Stas Boukarev  <stassats@gmail.com>
+
+	* slime-asdf.el (slime-read-system-name): Display default value as
+	part of the prompt, instead of inserting it as an input
+	candidate.
+	(slime-find-asd): Do not call `file-name-sans-extension' twice.
+
+2009-02-28  Stas Boukarev  <stassats@gmail.com>
+
+	* swank-arglists.lisp (variable-desc-for-echo-area): Print
+	values of special variables with ~S, not with ~A.
+
+2009-02-27  Tobias C. Rittweiler  <tcr@freebits.de>
+
+	* swank-arglists.lisp (read-conversatively-for-autodoc): Make it
+	understand sharpquote forms, so contextual autodoc will work for
+	`(apply #'foo ...)'.
+
+	* slime-autodoc.el ([test] autodoc.1): New test case, for the
+	above and more.
+	(slime-check-autodoc-at-point): New helper.
+
+2009-02-27  Tobias C. Rittweiler  <tcr@freebits.de>
+
+	* slime-parse.el (slime-check-enclosing-form-specs): Use
+	`slime-test-expect' rather than `slime-check'.
+	([test] enclosing-form-specs.1): Add two more cases.
+
+2009-02-27  Tobias C. Rittweiler  <tcr@freebits.de>
+
+	* bridge.el: Replace old-style backquoting.
+
+	* slime-presentations.el
+	(slime-presentation-sldb-insert-frame-variable-value): Fix typo.
+
+	Patch by Stelian Ionescu.
+
+2009-02-27  Tobias C. Rittweiler  <tcr@freebits.de>
+
+	* slime-autodoc.el, slime-c-p-c.el, slime-enclosing-context.el
+	* slime-package-fu.el, slime-parse.el, slime-presentations.el
+	* slime-xref-browser: Rename `slime-symbol-name-at-point' to
+	`slime-symbol-at-point'
+
+2009-02-27  Tobias C. Rittweiler  <tcr@freebits.de>
+
+	* slime-parse.el (slime-make-extended-operator-parser/look-ahead):
+	If there's no closing paren (no paredit!) we cannot determine the
+	end of the list. Check for this.
+	([test] enclosing-form-specs.1): Extend test case.
+	(slime-check-enclosing-form-specs): New helper.
+
+2009-02-26  Tobias C. Rittweiler  <tcr@freebits.de>
+
+	* swank-fancy-inspector.lisp (emacs-inspect (stream-error)): Do
+	not run FILE-POSITION on a closed stream.
+
+2009-02-26  Tobias C. Rittweiler  <tcr@freebits.de>
+
+	* slime-parse.el (slime-parse-symbol-name-at-point):
+	Removed. Superfluous due to recent changes on
+	`slime-symbol-name-at-point'.
+	(slime-parse-sexp-at-point): Simplified; use
+	`slime-sexp-at-point'.
+	(slime-inside-string-p, slime-beginning-of-string): Use
+	`slime-current-parser-state'.
+	([test] enclosing-form-specs.1): Add some simple cases.
+
+	* slime-enclosing-context.el (slime-find-bound-names): Replace
+	`slime-parse-symbol-name-at-point' with
+	`slime-symbol-name-at-point'
+	(slime-find-bound-functions): No need for `slime-ensure-list'
+	anymore.
+	([test] enclosing-context.1): Adapted due to the changes.
+
+2009-02-25  Luís Oliveira  <loliveira@common-lisp.net>
+
+	* slime-compiler-notes-tree.el: Fix typo in the `provide' form.
+
+2009-02-21  Tobias C. Rittweiler  <tcr@freebits.de>
+
+	* slime-package-fu.el: Removed misplaced comma, deleted some
+	end-of-line whitespace, added newline to the end of the file.
+
+	Patch by Robert Brown.
+
+2009-02-17  Helmut Eller  <heller@common-lisp.net>
+
+	* slime-repl.el (slime-repl-connected-hook-function): Bind
+	slime-current-thread to avoid problems with killed threads.
+
+2009-02-14  Helmut Eller  <heller@common-lisp.net>
+
+	* swank.rb: New file.
+
 2009-02-02  Tobias C. Rittweiler  <tcr@freebits.de>
 
 	* swank-arglists.lisp (arglist-for-echo-area): Bleh, can't use
@@ -323,7 +761,7 @@
 
 	* slime-fancy.el: Add slime-fontifying-fu.
 
-2008-08-20  Lu�s Oliveira  <loliveira@common-lisp.net>
+2008-08-20  Luís Oliveira  <loliveira@common-lisp.net>
 
 	* contrib/slime-indentation.el: fix indentation of IF forms.
 
@@ -410,7 +848,7 @@
 	(slime-qualify-cl-symbol-name): Moved back to `slime.el' as
 	they're still used there.
 
-2008-04-17  G�bor Melis <mega@retes.hu>
+2008-04-17  Gábor Melis <mega@retes.hu>
 
 	* swank-fancy-inspector.lisp (inspect-slot-for-emacs):
 	slime-read-object has been gone for a long time, replaced with
