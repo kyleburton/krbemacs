@@ -1,0 +1,50 @@
+Notes for the workshop:
+
+TODO: download emacs for various platforms:
+  - Windows: GNU Emacs; LispBox, ClojureBox
+  - Linux: source code; LispBox, ClojureBox, Clojure Starter Kit
+  - Mac OS X: Aquamacs; ReadyLisp; ClojureBox, 
+
+TODO: get a copy of SLIME
+TODO: donwload up to date Clojure
+TODO: download up to date Clojure-Contrib
+TODO: download up to date swank-clojure
+TODO: jochu-clojure mode
+
+
+TODO: krbmeacs.git:
+ - figure out how to bring this to the workshop
+ - or have people download it before hand
+
+TODO: get some emacs Reference Cards
+
+TODO: Put much of this into a 'starter kit'?  On one or more Thumb
+      Drives that we can pass around?
+
+TODO: Give an Example of my personal workflows:
+ - Linux:
+  - Using GNU Screen, T0:Emacs, T1:
+ - OSX: 
+
+
+SLIME Walk-through
+ - Desribe the relationship between Emacs, slime, and Swank
+ - Create a diagram of how these relate
+
+    {{ Emacs [swank client] }} ==> [RPC] ==> {{ [swank server] Lisp Process }}
+
+   These can all be running on your machine, or the lisp process and
+   swank server can be running in a completely separate process on
+   another machine, even across the internet.
+
+ - Demonstrate this by running a Clojure Proess on my linode and use
+   ssh-port forwarding to connect to it from a local Emacs/Slime session.
+
+
+TODO: Narrative / Examples on Multiple Windows, splitting, resizing
+      with the mouse as well as the keyboard.>
+
+
+Demonstrate all of these: ESHell, Tramp Mode, Artist Mode
+
+Demonstrate vc-mode, make some changes to a file, then C-xv=, and more...

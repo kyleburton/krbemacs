@@ -253,6 +253,7 @@ the backing files."
 (krb-push-file-ext-and-mode-binding 'clojure-mode "\\.clj$")
 (add-hook 'clojure-mode-hook 'krb-clojure-clojure-mode-init)
 (add-hook 'clojure-mode-hook 'paredit-mode)
+(add-hook 'clojure-mode-hook 'slime-mode)
 
 (add-hook
  'paredit-mode-hook
