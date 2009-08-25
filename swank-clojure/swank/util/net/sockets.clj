@@ -5,7 +5,7 @@
 
 (defn socket-server
   ([port handle-socket]
-     (returning server (ServerSocket. port)
+     (returning server (ServerSocket. port 5 (java.net.InetAddress/getByName "localhost"))
        (dothread-keeping-clj nil
          (thread-set-name (str "Server " port " [" (thread-id) "]"))
          (with-open [server server]

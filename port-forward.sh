@@ -1,3 +1,4 @@
+set -x
 LOCAL_PORT=$1
 REMOTE_PORT=$2
 HOST=$3
