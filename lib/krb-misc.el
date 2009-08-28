@@ -60,6 +60,7 @@ buffer and places the cursor at that position."
   (rest (split-string buffer-file-name "/")))
 
 ;; (krb-get-pwd-as-list)
+;; (buffer-file-name)
 
 (defun krb-string-find (buff pat pos)
   (let ((pos 0) (loop t) (max (- (length buff) (length pat))))
@@ -148,3 +149,5 @@ buffer and places the cursor at that position."
     new-vec))
 
 
+
+(provide 'krb-misc)

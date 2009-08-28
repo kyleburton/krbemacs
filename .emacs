@@ -34,6 +34,7 @@
      *krb-lib-dirs*)
 
 ;; pull in all the libs we want to use
+(require 'krb-misc)
 (require 'highlight-parentheses)
 (require 'yaml-mode)
 (require 'color-theme)
@@ -399,27 +400,3 @@ the backing files."
  (fname (expand-file-name "~/.emacs-local"))
  (load-file fname))
 
-
-;; try to hook git-grep into a function that we can use to visit the returned file names...
-;; start by loading the output into a buffer...
-
-;; (defn krb-find-containing-parent-directory-of-current-buffer (target-file-name &optional starting-directory)
-;;   (let ((starting-directory (or starting-directory (buffer-file-name)))))
-;;   )
-
-;; (directory-file-name (buffer-file-name))
-
-
-;; (defn krb-git-grep (search-term)
-;;   "Inovke `git-grep' given search term.  git-grep will be run in the project root directory.
-;; The project's root directory will be found by looking backwards up the file hierarchy until a
-;; .git directory is found."
-;;   (interactive)
-;;   ;; TODO: emit the output into a special buffer with an interactive mode...
-;;   (let ((project-home (krb-find-containing-parent-directory-of-current-buffer ".git")))
-;;     (shell-command (format "cd '%s'; git grep '%s'"
-;;                            project-home
-;;                            search-term)
-;;                    nil ;; output buffer
-;;                    nil ;; error buffer
-;;                    )))
