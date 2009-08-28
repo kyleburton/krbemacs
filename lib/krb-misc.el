@@ -149,5 +149,67 @@ buffer and places the cursor at that position."
     new-vec))
 
 
+(defun krb-path-strip (path)
+"
+    (krb-path-strip buffer-file-name)                  => \"/Users/\"
+    (krb-path-strip (krb-path-strip buffer-file-name)) => \"/\"
+    (krb-path-strip \"/Users/\")                       => \"/\"
+    (krb-path-strip \"/Users\")                        => \"/\"
+    (krb-path-strip \"/\")                             => \"/\"
+    (krb-path-strip nil)                               => nil
+
+"
+  (cond ((null path)
+         nil)
+        (t
+         (file-name-directory (directory-file-name (file-name-directory path))))))
+
+  
+(defun krb-find-containing-parent-directory-of-current-buffer (target-file-name &optional starting-directory)
+  "Search backwards up the directory structure for the directory containing hte given literal file name).
+
+ These examples are from a mac, using a (starting-directory of \"/Users/kburton/.emacs-local\")
+   (krb-find-containing-parent-directory-of-current-buffer \".bashrc\")    => \"/Users/kburton/.bashrc\"
+    (krb-find-containing-parent-directory-of-current-buffer \".localized\") => \"/Users/.localized\"
+    (krb-find-containing-parent-directory-of-current-buffer \"Users\")      => \"/Users\"
+
+"
+  (let* ((path (or starting-directory (file-name-directory (buffer-file-name))))
+         (candidate (format "%s%s" path target-file-name)))
+    (message "krb-find-containing-parent-directory-of-current-buffer: target-file-name=%s path=%s candidate=%s"
+             target-file-name path candidate)
+    (cond 
+     ((file-exists-p candidate)
+      candidate)
+     ((or (null path)
+          (string= "" path)
+          (string= "/" path))
+      nil)
+     (t
+      (krb-find-containing-parent-directory-of-current-buffer target-file-name (krb-path-strip path))))))
+
+(defun krb-find-mvn-proj-root-dir ()
+  "Locate the first directory, going up in the directory hierarchy, where we find a pom.xml file - this will be a suitable place from which to execute the maven (mvn) command."
+  (krb-find-containing-parent-directory-of-current-buffer "pom.xml"))
+
+(defun krb-exec-mvn (&optinoal mvn-options)
+  (interactive)
+  (shell-command (format "cd %s; mvn %s"
+                         (krb-find-mvn-proj-root-dir)
+                         mvn-options)))
+
+(defn krb-git-grep (search-term)
+  "Inovke `git-grep' given search term.  git-grep will be run in the project root directory.
+The project's root directory will be found by looking backwards up the file hierarchy until a
+.git directory is found."
+  (interactive)
+  ;; TODO: emit the output into a special buffer with an interactive mode...
+  (let ((project-home (krb-find-containing-parent-directory-of-current-buffer ".git")))
+    (shell-command (format "cd '%s'; git grep '%s'"
+                           project-home
+                           search-term)
+                   nil ;; output buffer
+                   nil ;; error buffer
+                   )))
 
 (provide 'krb-misc)
