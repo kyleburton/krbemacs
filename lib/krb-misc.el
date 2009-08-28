@@ -180,7 +180,7 @@ buffer and places the cursor at that position."
              target-file-name path candidate)
     (cond 
      ((file-exists-p candidate)
-      candidate)
+      path)
      ((or (null path)
           (string= "" path)
           (string= "/" path))
@@ -192,13 +192,14 @@ buffer and places the cursor at that position."
   "Locate the first directory, going up in the directory hierarchy, where we find a pom.xml file - this will be a suitable place from which to execute the maven (mvn) command."
   (krb-find-containing-parent-directory-of-current-buffer "pom.xml"))
 
-(defun krb-exec-mvn (&optinoal mvn-options)
+(defun krb-exec-mvn (&optional mvn-options)
   (interactive)
-  (shell-command (format "cd %s; mvn %s"
-                         (krb-find-mvn-proj-root-dir)
-                         mvn-options)))
+  (shell-command (format "cd %s; mvn test %s"
+                         (or mvn-options "")
+                         (krb-find-mvn-proj-root-dir))
+                 "*maven-output*"))
 
-(defn krb-git-grep (search-term)
+(defun krb-git-grep (search-term)
   "Inovke `git-grep' given search term.  git-grep will be run in the project root directory.
 The project's root directory will be found by looking backwards up the file hierarchy until a
 .git directory is found."
