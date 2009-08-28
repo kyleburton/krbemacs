@@ -194,9 +194,9 @@ buffer and places the cursor at that position."
 
 (defun krb-exec-mvn (&optional mvn-options)
   (interactive)
-  (shell-command (format "cd %s; mvn test %s"
-                         (or mvn-options "")
-                         (krb-find-mvn-proj-root-dir))
+  (shell-command (format "cd %s; mvn %s test"
+                         (krb-find-mvn-proj-root-dir)
+                         (or mvn-options ""))
                  "*maven-output*"))
 
 (defun krb-git-grep (search-term)
