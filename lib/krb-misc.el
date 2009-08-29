@@ -188,16 +188,72 @@ buffer and places the cursor at that position."
      (t
       (krb-find-containing-parent-directory-of-current-buffer target-file-name (krb-path-strip path))))))
 
-(defun krb-find-mvn-proj-root-dir ()
+(defun krb-java-find-mvn-proj-root-dir (&optional start-dir)
   "Locate the first directory, going up in the directory hierarchy, where we find a pom.xml file - this will be a suitable place from which to execute the maven (mvn) command."
-  (krb-find-containing-parent-directory-of-current-buffer "pom.xml"))
+  (krb-find-containing-parent-directory-of-current-buffer "pom.xml" start-dir))
 
-(defun krb-exec-mvn (&optional mvn-options)
+(defun krb-java-exec-mvn (&optional mvn-options)
   (interactive)
-  (shell-command (format "cd %s; mvn %s test"
-                         (krb-find-mvn-proj-root-dir)
+  (shell-command (format "echo %s; cd %s; mvn %s test"
+                         (krb-java-find-mvn-proj-root-dir)
+                         (krb-java-find-mvn-proj-root-dir)
                          (or mvn-options ""))
                  "*maven-output*"))
+
+(defvar *krb-ruby-ruby-location* "ruby")
+
+(defun krb-ruby-find-proj-root-dir (&optional start-dir)
+    (krb-find-containing-parent-directory-of-current-buffer "Rakefile" start-dir))
+
+(defun krb-ruby-exec-rake (&optional rake-options)
+  (interactive)
+  (shell-command (format "echo %s; cd %s; rake %s spec"
+                         (krb-ruby-find-proj-root-dir)
+                         (krb-ruby-find-proj-root-dir)
+                         (or rake-options ""))
+                 "*rake-output*"))
+
+(defun krb-ruby-calculate-spec-name (&optional file-name)
+  "Returns the spec file name for the current buffer by default
+  or the given file name.  The spec location will be based off of
+  the location of the rakefile relative to the file name being
+  used, additionally by appending a '_spec' before the '.rb'
+  extension.  Eg:
+
+    /foo/bar/app/controllers/my_controller.rb
+       => foo/bar/spec/controllers/my_controller_spec.rb
+
+    /foo/bar/app/models/my_model.rb
+       => foo/bar/spec/models/my_controller_spec.rb
+
+File paths must be absolute paths for this function to operate
+correctly.  The rakefile is located via
+`krb-ruby-find-proj-root-dir'.
+"
+  (let* ((file-name (or file-name buffer-file-name))
+         (proj-root (krb-ruby-find-proj-root-dir))
+         (file-path-within-project (replace-regexp-in-string
+                                    "^[^/]+" "spec"
+                                    (substring file-name (length proj-root)))))
+    (concat proj-root
+     (replace-regexp-in-string ".rb$" "_spec.rb" file-path-within-project))))
+
+(defun krb-ruby-ruby-location ()
+  "This is here to support being overridden"
+  (or *krb-ruby-ruby-location* "ruby"))
+
+(defun krb-ruby-exec-spec-for-buffer (&optional rake-options)
+  (interactive)
+  (shell-command (format "cd %s; %s %s %s"
+                         (krb-ruby-find-proj-root-dir)
+                         (krb-ruby-ruby-location)
+                         (krb-ruby-calculate-spec-name)
+                         (or rake-options ""))
+                 "*rake-output*"))
+
+(defun krb-tmp ()
+  (interactive)
+  (message "result=%s" (krb-ruby-spec-name-for-current-buffer)))
 
 (defun krb-git-grep (search-term)
   "Inovke `git-grep' given search term.  git-grep will be run in the project root directory.
@@ -212,5 +268,17 @@ The project's root directory will be found by looking backwards up the file hier
                    nil ;; output buffer
                    nil ;; error buffer
                    )))
+
+
+;; ruby keybindings
+(defvar krb-ruby-prefix-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map "s" 'krb-ruby-exec-spec-for-buffer)
+    map)
+  "Keybinding prefix map which can be bound for common functions in krb-misc's ruby support.")
+
+(add-hook 'ruby-mode-hook
+          '(lambda ()
+             (local-set-key "\C-cr" krb-ruby-prefix-map)))
 
 (provide 'krb-misc)
