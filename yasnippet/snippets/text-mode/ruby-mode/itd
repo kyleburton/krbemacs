@@ -1,0 +1,5 @@
+#name : it '...' do end
+# --
+it '${descr}' do
+  $0
+end
