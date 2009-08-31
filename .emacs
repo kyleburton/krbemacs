@@ -35,6 +35,7 @@
      *krb-lib-dirs*)
 
 ;; pull in all the libs we want to use
+(require 'krb-misc)
 (require 'highlight-parentheses)
 (require 'yaml-mode)
 (require 'color-theme)
@@ -45,6 +46,7 @@
 (require 'slime)
 (require 'clojure-mode)
 (require 'yasnippet)
+(yas/initialize)
 
 (defun krb-file-ext-case-permute (pattern)
   "Helper for ading file-extension to editor mode bindings.
@@ -398,3 +400,4 @@ the backing files."
 (when-file-exists
  (fname (expand-file-name "~/.emacs-local"))
  (load-file fname))
+
