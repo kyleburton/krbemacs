@@ -19,6 +19,7 @@
 
 (defvar *krb-lib-dirs* 
   '("lib"
+    "lib/http-emacs"
     "git"
     "ruby-mode"
     "slime/slime"

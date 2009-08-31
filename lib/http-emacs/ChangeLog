@@ -1,0 +1,15 @@
+2004-11-29  D Goel  <deego@gnufans.org>
+
+	* simple-wiki-completion.el (swc-pages-completion): Make this
+	variable global, else M-x pcomplete had somehow, stopped working.
+	This way, something is better than nothing..  This way, of course,
+	is still problematic when using the same emacs to edit multiple
+	wikis at the same time, but that facility is already lost because
+	of other problems as well.
+	
+
+2004-11-21  D Goel  <deego@gnufans.org>
+
+	* simple-wiki-definitions.el (swd-wiki-defs-list): Restore
+	swd-additional-headers (useful for passwords, etc.)
+
