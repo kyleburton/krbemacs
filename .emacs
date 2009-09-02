@@ -9,7 +9,12 @@
 (require 'cl)
 
 (defvar *krbemacs-home*
-  (expand-file-name "~/personal/projects/krbemacs")
+  (let* ((candidate-path (replace-regexp-in-string "/$" "" (file-name-directory (file-chase-links (expand-file-name "~/.emacs")))))
+         (test-file (format "%s/lib/krb-misc.el" candidate-path)))
+    (cond ((file-exists-p test-file)
+           candidate-path)
+          (t
+           (error  "Unable to find the location of the emacs package (assuming you've pulled from git://github.com/kyleburton/krbemacs).  Please see your ~/.emacs file and add a default location."))))
   "The install location of my emacs configuration.  All other
   modules will be relative to this location.")
 
@@ -344,11 +349,11 @@ the backing files."
 (setq compilation-scroll-output t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Abbreviations and yasnippet...
-(setq abbrev-file-name (krb-file "abbrev-defs.el"))
-(read-abbrev-file abbrev-file-name t)
+;;; yasnippet
 
-;;; Abbreviations and yasnippet...
+(yas/load-directory (krb-file "yasnippet/snippets"))
+
+;;; end yasnippet
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun krb-html-escape ()
