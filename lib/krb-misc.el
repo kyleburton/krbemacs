@@ -7,7 +7,7 @@
   (backward-delete-char 1))
 
 (defun krb-join-lines (num)
-  (interactive (list (read-string "Num Lines: " 1)))
+  (interactive (list (read-string "Num Lines: " "1")))
   (if (> num 0)
       (progn
         (join-line 1)
@@ -68,9 +68,9 @@ buffer and places the cursor at that position."
       (cond ((string= pat (substring buff pos (+ pos (length pat))))
              (setq loop nil))
             (t
-             (setq pos (+ 1 pos)))
-            ))
+             (setq pos (+ 1 pos)))))
     (if (= pos max) -1 pos)))
+
 
 (defun krb-string-strip-lib-prefix (name)
   (let ((pos (krb-string-find name "clj" 0)))
@@ -247,10 +247,6 @@ buffer and places the cursor at that position."
   "Simply tests if the current buffer file name ends in '.rb'"
   (string-match "\\.rb$" (buffer-file-name)))
 
-(defun krb-tmp ()
-  (interactive)
-  (message "krb-ruby-in-ruby-file? %s" (krb-ruby-in-ruby-file?)))
-
 (defun krb-ruby-exec-rake-spec (&optional rake-options)
   (interactive)
   (let ((cmd (format "echo %s; cd %s; rake %s spec"
@@ -322,27 +318,9 @@ correctly.  The rakefile is located via
      "*rake-output*"
      (krb-insf-into-buffer "*rake-output*" "Executing: %s\n" cmd)
      (shell-command cmd "*rake-output*")
-     (set-buffer "*rake-output*")
-     (local-set-key "\C-cr" krb-ruby-output-mode-prefix-map))))
-
-(defun krb-tmp ()
-  (interactive)
-  (message "result=%s" (krb-ruby-spec-name-for-current-buffer)))
-
-(defun krb-git-grep (search-term)
-  "Inovke `git-grep' given search term.  git-grep will be run in the project root directory.
-The project's root directory will be found by looking backwards up the file hierarchy until a
-.git directory is found."
-  (interactive)
-  ;; TODO: emit the output into a special buffer with an interactive mode...
-  (let* ((project-home (krb-find-containing-parent-directory-of-current-buffer ".git"))
-         (cmd (format "cd '%s'; git grep '%s'"
-                      project-home
-                      search-term)))
-    (krb-with-fresh-output-buffer
-     "*git-output*"
-     (krb-insf-into-buffer "*git-output*" "Executing: %s\n" cmd)
-     (shell-command cmd "*git-output*"))))
+     (save-excursion
+       (set-buffer "*rake-output*")
+       (local-set-key "\C-cr" krb-ruby-output-mode-prefix-map)))))
 
 (defun krb-get-current-line-in-buffer ()
   (save-excursion
@@ -351,46 +329,104 @@ The project's root directory will be found by looking backwards up the file hier
       (end-of-line)
       (buffer-substring start (point)))))
 
-(defun krb-tmp ()
-  (interactive)
-  (message "curr:%s" (krb-get-current-line-in-buffer)))
-
 (defvar *krb-jump-stack* (list))
 
+(defun krb-jump-stack-clear ()
+  (setq *krb-jump-stack* (list)))
+
+;; (krb-jump-stack-clear)
+
+(defun krb-try-resolve-file-path (fname)
+  ;; if *krb-output-base-directory* is set, and the given fname
+  ;; doens't exist, try pre-pending *krb-output-base-directory* and
+  ;; see if that exists, if not fallback to the original and error...
+  (let ((c1 fname)
+        (c2 (format "%s/%s" *krb-output-base-directory* fname)))
+    (message "krb-try-resolve-file-path: fname=%s c1=%s" fname c1)
+    (message "krb-try-resolve-file-path: fname=%s c2=%s" fname c2)
+    (cond ((file-exists-p c1)            c1)
+          ((file-exists-p c2)            c2)
+          (t                             fname))))
+
 (defun krb-jump-stack-push (fname lnum)
+  ;; TODO: for relative file paths (not starting with /), use hueristics
   (let ((lnum (if (numberp lnum)
                   lnum
                 (car (read-from-string lnum)))))
-    (setq *krb-jump-stack* 
-          (cons (list 
-                 (buffer-file-name)
-                 (line-number-at-pos))
-                *krb-jump-stack*))
-    (find-file fname)
+    ;; TODO: also support just a buffer name instead of requiring it to be a filename...
+    (push (list (or  (buffer-file-name) *krb-output-base-file*)
+                (line-number-at-pos)
+                (buffer-name))
+          *krb-jump-stack*)
+    (find-file (krb-try-resolve-file-path fname))
     (goto-line lnum)))
+
 
 (defun krb-jump-stack-pop ()
   (interactive)
-  (let ((pair (pop *krb-jump-stack*)))
-    (find-file (first pair))
-    (goto-line (second pair))))
+  (destructuring-bind
+      (file line buffer)
+      (pop *krb-jump-stack*))
+  (message "krb-jump-stack-pop: %s(%s)/%s" file line buff)
+  (cond (file
+         (find-file file))
+        (buffer
+         (set-buffer buffer)))
+  (goto-line (second pair)))
 
+(defun krb-el-find-symbol-in-current-buffer (symbol-name)
+  (interactive (list (read-string "Symbol: " (format "%s" (symbol-at-point)))))
+  (save-excursion
+    (beginning-of-buffer)
+    (search-forward-regexp (format "(def\\(un\\|var\\|macro\\|parameter\\) %s" symbol-name))
+    (list (buffer-file-name) 
+          (line-number-at-pos))))
+
+(defun krb-tmp (symbol-name) ;;;;;;;;;;;;;;;;;;;;
+  (interactive (list (read-string "Symbol: " (format "%s" (symbol-at-point)))))
+  (message "thing: %s" (krb-el-find-symbol-in-current-buffer symbol-name))
+  '(krb-jump-stack-push))
+
+
+(defun krb-el-visit-symbol-in-current-buffer (symbol-name)
+  (interactive (list (read-string "Symbol: " (format "%s" (symbol-at-point)))))
+  (let ((pos (krb-el-find-symbol-in-current-buffer symbol-name)))
+    (message "krb-el-visit-symbol-in-current-buffer: pos=%s" pos)
+    (krb-jump-stack-push (first pos)
+                         (second pos))))
+
+(defun krb-parse-file/line-from-string (s)
+    (cond ((string-match "^\\([^:]+\\):\\([0-9]+\\).+$" s)
+           (list (match-string 1 s)
+                 (car (read-from-string (match-string 2 s)))))
+          ((string-match "^\\([^:]+\\)(\\([0-9]+\\)).+$" s)
+           (list (match-string 1 s)
+                 (car (read-from-string (match-string 2 s)))))))
+
+;; (krb-parse-file/line-from-string "/Users/kburton/development/algo_collateral_web/spec/controllers/antic_demand_margin_calls_controller_spec.rb:70:")
+;; (krb-parse-file/line-from-string "./spec/controllers/antic_demand_margin_calls_controller_spec.rb:70:")
+;; (krb-parse-file/line-from-string "spec/controllers/antic_demand_margin_calls_controller_spec.rb:70:")
+;; (krb-parse-file/line-from-string "src/main/clj/com/github/kyleburton/sandbox/web.clj(28) ...")
+;; (krb-parse-file/line-from-string "/Users/kburton/personal/projects/sandbox/clojure-utils/src/main/clj/com/github/kyleburton/sandbox/web.clj(28) ...")
+;; (krb-parse-file/line-from-string "app/controllers/antic_demand_margin_calls_controller.rb:    @margin_calls = current_user.antic_demand_margin_calls  ")
+
+
+;; TODO: if the file name starts with a '.', try to find it:
+;;   start by looking for <<proj-root>>/./...
 (defun krb-jump-to-file ()
   "In a buffer, take the current line, parse it as a file /
 line-number.  If a buffer is not open for the file open it.  If
 the window is not split, split the window first.  Visit the
 buffer in the other frame.  In the buffer for that file, send it
 to the given line number."
+  ;; TODO: try multiple regexes, find multiple types of files, make this work on Win32?
   (interactive)
-  (let ((current-line (krb-get-current-line-in-buffer)))
-    (message "current-line: %s" current-line)
-    (cond ((string-match "^\\([^:]+\\):\\([0-9]+\\).+$" current-line)
-           (message "string-matched: %s" current-line)
-           (let ((fname (match-string 1 current-line))
-                 (lnum  (match-string 2 current-line)))
-             (krb-jump-stack-push fname lnum))))))
-
-; (string-match "^\\([^:]+\\):\\d\\+"  "/Users/kburton/development/algo_collateral_web/spec/controllers/antic_demand_margin_calls_controller_spec.rb:69:")
+  (message "krb-jump-to-file: current-line: %s" (krb-get-current-line-in-buffer))
+  (destructuring-bind
+      (fname lnum)
+      (krb-parse-file/line-from-string (krb-get-current-line-in-buffer))
+    (message "krb-jump-to-file: fname=%s lnum=%s" fname lnum)
+    (krb-jump-stack-push fname lnum)))
 
 (define-derived-mode krb-ruby-output-mode text-mode "KRB Ruby Output Mode"
   "Kyle's Ruby Output Mode for interacting with the output of tools like Rake, test and spec."
@@ -401,11 +437,64 @@ to the given line number."
 ;;   (local-set-key "\C-crt" krb-ruby-exec-spec-for-buffer)
 ;;   (local-set-key "\C-crT" krb-ruby-find-spec-file))
 
+;; TODO: if no .git directory is found, come up with some other
+;; hueristic to determine a 'project root' and then use find/xargs or
+;; some other recursive search strategy (spotlight on osx?, does it
+;; have an api? google desktop search if installed? locate?)
+(defun krb-ruby-clean-search-term (term)
+  (replace-regexp-in-string "[:]" "" term))
+
+;; (krb-ruby-clean-search-term ":foo")
+;; (krb-ruby-clean-search-term "foo_bar")
+
+(defun krb-ruby-grep-thing-at-point (thing)
+  (interactive (list (read-string "Search Term: " (krb-ruby-clean-search-term (format "%s" (symbol-at-point))))))
+  (let* ((starting-dir (krb-find-containing-parent-directory-of-current-buffer ".git"))
+         ;; TODO: not shell escape proof :(
+         (cmd (format "cd %s; git grep -i -n '%s'" starting-dir
+                      thing)))
+    (krb-with-fresh-output-buffer
+     "*git-output*"
+     (krb-insf-into-buffer "*git-output*" "Executing: %s\n" cmd)
+     (save-excursion
+       (pop-to-buffer "*git-output*")
+       (shell-command cmd "*git-output*")
+       (set (make-local-variable '*krb-output-base-directory*) starting-dir)
+       (set (make-local-variable '*krb-output-base-file*) (buffer-file-name))
+       (local-set-key "\C-cr." 'krb-jump-to-file)
+       (local-set-key "\C-cr." 'krb-jump-stack-pop)))))
+
+;; TODO: support a prefix command to do things like invert the matching logic (eg: -v)
+;; TODO: support grepping via regex and other git-grep options...a possible strategy for this
+;;   would be to support a prefix argument to then do a read-string to allow the user to specify
+;;   the full grep command line -- defaulted with the 'cd ...; git grep -i ...' so the user
+;;   can modify what's there
+(defun krb-grep-thing-at-point (thing)
+  (interactive (list (read-string "Search For: " (format "%s" (or (symbol-at-point) "")))))
+  (let* ((starting-dir (krb-find-containing-parent-directory-of-current-buffer ".git"))
+         (cmd (format "cd %s; git grep -i -n '%s'" starting-dir thing)))
+    (krb-with-fresh-output-buffer
+     "*git-output*"
+     (krb-insf-into-buffer "*git-output*" "Executing: %s\n" cmd)
+     (save-excursion
+       ;; TODO: factor out most of this into something like
+       ;; krb-with-fresh-output-buffer: the make-local-variable for
+       ;; the output base directory, the use of the buffer name, the
+       ;; pop-to-buffer and the binding of the jump key (since these
+       ;; are all 'output' temporary buffers)
+       (pop-to-buffer "*git-output*")
+       (shell-command cmd "*git-output*")
+       (set (make-local-variable '*krb-output-base-directory*) starting-dir)
+       (set (make-local-variable '*krb-output-base-file*) (buffer-file-name))
+       (local-set-key "\C-cr." 'krb-jump-to-file)
+       (local-set-key "\C-cr." 'krb-jump-stack-pop)))))
+
 (defvar krb-ruby-mode-prefix-map
   (let ((map (make-sparse-keymap)))
     (define-key map "\C-s" 'krb-ruby-exec-rake-spec)
     (define-key map "t" 'krb-ruby-exec-spec-for-buffer)
     (define-key map "T" 'krb-ruby-find-spec-file)
+    (define-key map "." 'krb-ruby-grep-thing-at-point)
     (define-key map "," 'krb-jump-stack-pop)
     map))
 
@@ -416,9 +505,25 @@ to the given line number."
     map))
 
 ;; (local-set-key "\C-cr" krb-ruby-output-mode-prefix-map)
+(global-set-key "\C-crg" 'krb-grep-thing-at-point)
 
 (add-hook 'ruby-mode-hook
           '(lambda ()
-             (local-set-key "\C-cr" krb-ruby-mode-prefix-map)))
+             (local-set-key "\C-cr" krb-ruby-mode-prefix-map)
+             (local-set-key "\C-c\t" 'yas/expand)))
+
+(add-hook 'java-mode-hook
+          '(lambda ()
+             (local-set-key "\C-c\t" 'yas/expand)))
+
+(add-hook 'javascript-mode-hook
+          '(lambda ()
+             (local-set-key "\C-c\t" 'yas/expand)))
 
 (provide 'krb-misc)
+
+
+;; TODO: keybinding for running rake js:lint
+;; TODO: keybinding for running script/jslint public/javascripts/algo/movements.js
+;; TODO: go get Steve Yegge's j2-mode
+;; TODO: yasnippet, javascript templates (at least for a function, maybe also for a multi-line string?, if, for, and a whole mess of jQuery goodness)
