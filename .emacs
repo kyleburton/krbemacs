@@ -256,6 +256,7 @@ the backing files."
 (add-hook 'clojure-mode-hook 'krb-clojure-clojure-mode-init)
 (add-hook 'clojure-mode-hook 'paredit-mode)
 (add-hook 'clojure-mode-hook 'slime-mode)
+(add-hook 'clojure-mode-hook 'yas/minor-mode-on)
 
 (add-hook
  'paredit-mode-hook
