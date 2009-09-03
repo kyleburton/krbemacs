@@ -235,6 +235,7 @@ buffer and places the cursor at that position."
      (shell-command "*maven-output*"))))
 
 (defvar *krb-ruby-ruby-location* "ruby")
+(defvar *krb-ruby-spec-location* "spec")
 
 (defun krb-ruby-find-proj-root-dir (&optional start-dir)
     (krb-find-containing-parent-directory-of-current-buffer "Rakefile" start-dir))
@@ -304,6 +305,10 @@ correctly.  The rakefile is located via
   "This is here to support being overridden"
   (or *krb-ruby-ruby-location* "ruby"))
 
+(defun krb-ruby-spec-location ()
+  "This is here to support being overridden"
+  (or *krb-ruby-spec-location* "spec"))
+
 (defun krb-ruby-exec-spec-for-buffer (&optional rake-options)
   (interactive)
   (let* ((spec-file-name (if (krb-ruby-in-spec-file?)
@@ -314,6 +319,27 @@ correctly.  The rakefile is located via
                       (krb-ruby-ruby-location)
                       spec-file-name
                       (or rake-options ""))))
+    (krb-with-fresh-output-buffer 
+     "*rake-output*"
+     (krb-insf-into-buffer "*rake-output*" "Executing: %s\n" cmd)
+     (shell-command cmd "*rake-output*")
+     (save-excursion
+       (set-buffer "*rake-output*")
+       (local-set-key "\C-cr" krb-ruby-output-mode-prefix-map)))))
+
+
+(defun krb-ruby-exec-inner-spec ()
+  "Somehow compute the spec string that should be run given the current position of the cursor within the spec test itself (eg, the 'it' or 'describe' block)."
+  ;; looks like we can do this by specifying the line number to the spec runner: spec -l <<lnum>> spec_file.rb looks like it'll work
+  (interactive)
+  (let* ((spec-file-name (if (krb-ruby-in-spec-file?)
+                             (buffer-file-name)
+                           (krb-ruby-calculate-spec-name)))
+         (cmd (format "cd %s; %s -l %s %s"
+                      (krb-ruby-find-proj-root-dir)
+                      (krb-ruby-spec-location)
+                      (buffer-line-at-point)
+                      (buffer-file-name))))
     (krb-with-fresh-output-buffer 
      "*rake-output*"
      (krb-insf-into-buffer "*rake-output*" "Executing: %s\n" cmd)
@@ -494,6 +520,7 @@ to the given line number."
     (define-key map "\C-s" 'krb-ruby-exec-rake-spec)
     (define-key map "t" 'krb-ruby-exec-spec-for-buffer)
     (define-key map "T" 'krb-ruby-find-spec-file)
+    (define-key map "\T" 'krb-ruby-exec-inner-spec)
     (define-key map "." 'krb-ruby-grep-thing-at-point)
     (define-key map "," 'krb-jump-stack-pop)
     map))
