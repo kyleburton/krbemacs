@@ -51,6 +51,15 @@
 (require 'clojure-mode)
 (require 'yasnippet)
 (yas/initialize)
+(require 'js2-mode)
+
+;; (byte-compile-file (krb-file "lib/js2-mode.el"))
+
+(dolist (file (directory-files (krb-file "lib/") t "el$"))
+  (let ((cfile (format "%sc" file)))
+    (when (not (file-exists-p cfile))
+      (byte-compile-file file))))
+
 
 (defun krb-file-ext-case-permute (pattern)
   "Helper for ading file-extension to editor mode bindings.
@@ -335,6 +344,10 @@ the backing files."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; end Java 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(krb-push-file-ext-and-mode-binding 'js2-mode "\\.js$")
+(setq c-syntactic-indentation t)
+(setq c-electric-flag t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Other
