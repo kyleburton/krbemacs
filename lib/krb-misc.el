@@ -234,20 +234,30 @@ buffer and places the cursor at that position."
      (krb-insf-into-buffer "*maven-output*" "Executing: %s\n" cmd)
      (shell-command "*maven-output*"))))
 
-(defvar *krb-ruby-ruby-location* "ruby")
+;; TODO: make these parameters into a 'customize-variables', a
+;; customization group
+(defvar *krb-ruby-ruby-location* "ruby"
+  "The location of the ruby binary, default is to use the spec binary on the PATH.")
+(defvar *krb-ruby-spec-location* "spec"
+  "The location of the rspec spec runner, default is to use the spec binary on the PATH.")
 
 (defun krb-ruby-find-proj-root-dir (&optional start-dir)
-    (krb-find-containing-parent-directory-of-current-buffer "Rakefile" start-dir))
+  "Based on the given starting location (which will default to
+the directory containing the current buffer), look upwards in the
+directory hierarchy until the Rakefile is found.  Returns the
+directory containing the Rakefile or nil if none is found."
+  (krb-find-containing-parent-directory-of-current-buffer "Rakefile" start-dir))
 
 (defun krb-ruby-in-spec-file? ()
-  "Simply tests if the current buffer file name ends in '_spec.rb'"
+  "Tests if the current buffer file name ends in '_spec.rb'.  See also `krb-ruby-in-ruby-file?'"
   (string-match "_spec\\.rb$" (buffer-file-name)))
 
 (defun krb-ruby-in-ruby-file? ()
-  "Simply tests if the current buffer file name ends in '.rb'"
+  "Tests if the current buffer file name ends in '.rb'.  See also `krb-ruby-in-spec-file?'"
   (string-match "\\.rb$" (buffer-file-name)))
 
 (defun krb-ruby-exec-rake-spec (&optional rake-options)
+  "Execute the full rake spec suite by running 'rake spec'.  See also `krb-ruby-exec-spec-for-buffer' and `krb-ruby-exec-inner-spec'."
   (interactive)
   (let ((cmd (format "echo %s; cd %s; rake %s spec"
                      (krb-ruby-find-proj-root-dir)
@@ -284,7 +294,8 @@ correctly.  The rakefile is located via
      (replace-regexp-in-string ".rb$" "_spec.rb" file-path-within-project))))
 
 (defun krb-ruby-calculate-base-name-for-spec-buffer (&optional file-name)
-  "See `krb-ruby-calculate-spec-name'."
+  "Computes the base module name for the given spec file name.
+For how this is computed, see `krb-ruby-calculate-spec-name'."
   (let* ((file-name (or file-name buffer-file-name))
          (proj-root (krb-ruby-find-proj-root-dir))
          (file-path-within-project (replace-regexp-in-string
@@ -294,17 +305,25 @@ correctly.  The rakefile is located via
      (replace-regexp-in-string "_spec.rb$" ".rb" file-path-within-project))))
 
 (defun krb-ruby-find-spec-file ()
-  "If in a spec file, attempts to open it's corresponding implementation file (.../spec/a/b/c.rb => .../app/a/b/c.rb)"
+  "If in a spec file, attempts to open it's corresponding implementation file (.../spec/a/b/c.rb => .../app/a/b/c.rb).  See `krb-ruby-calculate-spec-name', and `krb-ruby-calculate-base-name-for-spec-buffer'."
   (interactive)
   (if (krb-ruby-in-spec-file?)
       (find-file (krb-ruby-calculate-base-name-for-spec-buffer))
     (find-file (krb-ruby-calculate-spec-name))))
 
+;; TODO: this should ensure that the identified 'ruby' command exists
+;; and is executable, otherwise throw an appropriate error.
 (defun krb-ruby-ruby-location ()
-  "This is here to support being overridden"
+  "Returns the value of *krb-ruby-ruby-location*, or 'ruby' as the default."
   (or *krb-ruby-ruby-location* "ruby"))
 
+;; TODO: same todo as for krb-ruby-ruby-location
+(defun krb-ruby-spec-location ()
+  "This is here to support being overridden"
+  (or *krb-ruby-spec-location* "spec"))
+
 (defun krb-ruby-exec-spec-for-buffer (&optional rake-options)
+  "Runs the spec test for the curent buffer, not the whole suite.  See also `krb-ruby-exec-inner-spec' and `krb-ruby-exec-rake-spec'."
   (interactive)
   (let* ((spec-file-name (if (krb-ruby-in-spec-file?)
                              (buffer-file-name)
@@ -322,20 +341,46 @@ correctly.  The rakefile is located via
        (set-buffer "*rake-output*")
        (local-set-key "\C-cr" krb-ruby-output-mode-prefix-map)))))
 
+
+(defun krb-ruby-exec-inner-spec ()
+  "Given that the point (cursor) is within a spec test, run that single test.  This is accomplished by executing spec (see `*krb-ruby-spec-location*') in the project-root (see `krb-ruby-find-proj-root-dir') with the line number of the point."
+  (interactive)
+  (let* ((spec-file-name (if (krb-ruby-in-spec-file?)
+                             (buffer-file-name)
+                           (krb-ruby-calculate-spec-name)))
+         (cmd (format "cd %s; %s -l %s %s"
+                      (krb-ruby-find-proj-root-dir)
+                      (krb-ruby-spec-location)
+                      (buffer-line-at-point)
+                      (buffer-file-name))))
+    (krb-with-fresh-output-buffer 
+     "*rake-output*"
+     (krb-insf-into-buffer "*rake-output*" "Executing: %s\n" cmd)
+     (shell-command cmd "*rake-output*")
+     (save-excursion
+       (set-buffer "*rake-output*")
+       (local-set-key "\C-cr" krb-ruby-output-mode-prefix-map)))))
+
 (defun krb-get-current-line-in-buffer ()
+  "Returns the text of the current line in the buffer."
   (save-excursion
     (beginning-of-line)
     (let ((start (point)))
       (end-of-line)
       (buffer-substring start (point)))))
 
-(defvar *krb-jump-stack* (list))
+(defvar *krb-jump-stack* (list)
+  "Stack to support push/pop location operations.  Similar to TAGS, used by my krb-* functions.")
 
 (defun krb-jump-stack-clear ()
+  "Reset the stack"
+  (interactive)
   (setq *krb-jump-stack* (list)))
 
 ;; (krb-jump-stack-clear)
 
+;; TODO: this needs bettter documetnation and probably a better name...
+;; TODO: take an optional list of directories to look in (eg: similar to how PATH is used, loop through, returning the first one found - the 
 (defun krb-try-resolve-file-path (fname)
   ;; if *krb-output-base-directory* is set, and the given fname
   ;; doens't exist, try pre-pending *krb-output-base-directory* and
@@ -348,7 +393,9 @@ correctly.  The rakefile is located via
           ((file-exists-p c2)            c2)
           (t                             fname))))
 
+;; TODO: needs to support an optional buffer name as well...
 (defun krb-jump-stack-push (fname lnum)
+  "Push the current location onto the jump stack and jump to the new given location."
   ;; TODO: for relative file paths (not starting with /), use hueristics
   (let ((lnum (if (numberp lnum)
                   lnum
@@ -361,8 +408,8 @@ correctly.  The rakefile is located via
     (find-file (krb-try-resolve-file-path fname))
     (goto-line lnum)))
 
-
 (defun krb-jump-stack-pop ()
+  "Pop the top entry off of the jump stack (discard it) and jump to that location."
   (interactive)
   (destructuring-bind
       (file line buffer)
@@ -375,6 +422,7 @@ correctly.  The rakefile is located via
   (goto-line (second pair)))
 
 (defun krb-el-find-symbol-in-current-buffer (symbol-name)
+  "Find the elisp symbol in the current buffer - starting at the top of the buffer, search forward for the declaration of the symbol (not just any usage).  Returns the buffer file name and the line number, but does not go to the location."
   (interactive (list (read-string "Symbol: " (format "%s" (symbol-at-point)))))
   (save-excursion
     (beginning-of-buffer)
@@ -382,20 +430,17 @@ correctly.  The rakefile is located via
     (list (buffer-file-name) 
           (line-number-at-pos))))
 
-(defun krb-tmp (symbol-name) ;;;;;;;;;;;;;;;;;;;;
-  (interactive (list (read-string "Symbol: " (format "%s" (symbol-at-point)))))
-  (message "thing: %s" (krb-el-find-symbol-in-current-buffer symbol-name))
-  '(krb-jump-stack-push))
-
-
 (defun krb-el-visit-symbol-in-current-buffer (symbol-name)
+  "Find the given elisp symbole (see `krb-el-find-symbol-in-current-buffer') and jump to it."
   (interactive (list (read-string "Symbol: " (format "%s" (symbol-at-point)))))
   (let ((pos (krb-el-find-symbol-in-current-buffer symbol-name)))
     (message "krb-el-visit-symbol-in-current-buffer: pos=%s" pos)
     (krb-jump-stack-push (first pos)
                          (second pos))))
 
+;; TODO: need much better hueristics for this...
 (defun krb-parse-file/line-from-string (s)
+  "Given a string that contains a file path, extract the file path and line number."
     (cond ((string-match "^\\([^:]+\\):\\([0-9]+\\).+$" s)
            (list (match-string 1 s)
                  (car (read-from-string (match-string 2 s)))))
@@ -442,12 +487,15 @@ to the given line number."
 ;; some other recursive search strategy (spotlight on osx?, does it
 ;; have an api? google desktop search if installed? locate?)
 (defun krb-ruby-clean-search-term (term)
+  "Strip uncommon characters to make searching and workign with ruby symbols and names simpler."
   (replace-regexp-in-string "[:]" "" term))
 
 ;; (krb-ruby-clean-search-term ":foo")
 ;; (krb-ruby-clean-search-term "foo_bar")
 
+;; TODO: how is this ruby specific?
 (defun krb-ruby-grep-thing-at-point (thing)
+  "Perform a git-grep for the term at point (see `symbol-at-point')."
   (interactive (list (read-string "Search Term: " (krb-ruby-clean-search-term (format "%s" (symbol-at-point))))))
   (let* ((starting-dir (krb-find-containing-parent-directory-of-current-buffer ".git"))
          ;; TODO: not shell escape proof :(
@@ -494,6 +542,7 @@ to the given line number."
     (define-key map "\C-s" 'krb-ruby-exec-rake-spec)
     (define-key map "t" 'krb-ruby-exec-spec-for-buffer)
     (define-key map "T" 'krb-ruby-find-spec-file)
+    (define-key map "\C-T" 'krb-ruby-exec-inner-spec)
     (define-key map "." 'krb-ruby-grep-thing-at-point)
     (define-key map "," 'krb-jump-stack-pop)
     map))
@@ -506,15 +555,14 @@ to the given line number."
 
 ;; (local-set-key "\C-cr" krb-ruby-output-mode-prefix-map)
 (global-set-key "\C-crg" 'krb-grep-thing-at-point)
+(global-set-key "\C-cr\t" 'yas/expand)
 
 (add-hook 'ruby-mode-hook
           '(lambda ()
-             (local-set-key "\C-cr" krb-ruby-mode-prefix-map)
-             (local-set-key "\C-c\t" 'yas/expand)))
+             (local-set-key "\C-cr" krb-ruby-mode-prefix-map)))
 
 (add-hook 'java-mode-hook
-          '(lambda ()
-             (local-set-key "\C-c\t" 'yas/expand)))
+          '(lambda ()))
 
 (add-hook 'javascript-mode-hook
           '(lambda ()

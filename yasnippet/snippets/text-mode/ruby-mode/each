@@ -1,0 +1,3 @@
+each { |${args}|
+  $0
+end

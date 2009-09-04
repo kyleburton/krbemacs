@@ -52,6 +52,11 @@
 (require 'yasnippet)
 (yas/initialize)
 
+(dolist (file (directory-files (krb-file "lib/") t "^[^#]+\\.el$"))
+  (let ((cfile (format "%sc" file)))
+    (when (not (file-exists-p cfile))
+      (byte-compile-file file))))
+
 (defun krb-file-ext-case-permute (pattern)
   "Helper for ading file-extension to editor mode bindings.
 
@@ -64,6 +69,8 @@
                           (equal (car ent) pat))
                         auto-mode-alist))))
 
+;; auto-mode-alist
+
 (defun krb-push-file-ext-and-mode-binding (mode-name &rest patterns)
   "Bind the given mode name to the given set of file
 extensions (patterns). Eg:
@@ -71,10 +78,12 @@ extensions (patterns). Eg:
   (krb-push-file-ext-and-mode-binding 'cperl-mode \"\\.pl$\" \"\\.pm$\" \"\\.al$\")
 "
   (dolist (pattern (apply #'append (mapcar #'krb-file-ext-case-permute patterns)))
-    (when (not (krb-pattern-on-auto-mode-alist? pattern))
-      (setq auto-mode-alist
-            (cons (cons pattern mode-name)
-                  auto-mode-alist)))))
+    (setq auto-mode-alist
+          (cons (cons pattern mode-name)
+                (remove-if (lambda (elt)
+                             (string= (car elt)
+                                      pattern))
+                           auto-mode-alist)))))
 
 ;; I like this one, you may like something else
 (load "themes/color-theme-library.el")
@@ -258,10 +267,6 @@ the backing files."
 
 (slime-setup)
 (krb-push-file-ext-and-mode-binding 'clojure-mode "\\.clj$")
-(add-hook 'clojure-mode-hook 'krb-clojure-clojure-mode-init)
-(add-hook 'clojure-mode-hook 'paredit-mode)
-(add-hook 'clojure-mode-hook 'slime-mode)
-(add-hook 'clojure-mode-hook 'yas/minor-mode-on)
 
 (add-hook
  'paredit-mode-hook
@@ -310,6 +315,15 @@ the backing files."
 ;; (autoload 'clojure-test-mode "clojure-test-mode" "Clojure test mode" t)
 ;; (autoload 'clojure-test-maybe-enable "clojure-test-mode" "" t)
 ;; (add-hook 'clojure-mode-hook 'clojure-test-maybe-enable)
+(add-hook 'clojure-mode-hook
+          (lambda ()
+            (message "KRB: clojure-mode-hook: enabling paredit-mode...")
+            (paredit-mode +1)
+            (message "KRB: clojure-mode-hook: enabling highlight-parentheses-mode...")
+            (highlight-parentheses-mode t)
+            (yas/minor-mode-on)
+            (krb-clojure-clojure-mode-init)
+            (slime-mode)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -335,6 +349,11 @@ the backing files."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; end Java 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(autoload 'js2-mode "js2" nil t)
+(krb-push-file-ext-and-mode-binding 'js2-mode "\\.js$")
+(setq c-syntactic-indentation t)
+(setq c-electric-flag t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Other
