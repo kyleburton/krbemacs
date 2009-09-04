@@ -542,7 +542,7 @@ to the given line number."
     (define-key map "\C-s" 'krb-ruby-exec-rake-spec)
     (define-key map "t" 'krb-ruby-exec-spec-for-buffer)
     (define-key map "T" 'krb-ruby-find-spec-file)
-    (define-key map "\T" 'krb-ruby-exec-inner-spec)
+    (define-key map "\C-T" 'krb-ruby-exec-inner-spec)
     (define-key map "." 'krb-ruby-grep-thing-at-point)
     (define-key map "," 'krb-jump-stack-pop)
     map))
@@ -555,15 +555,14 @@ to the given line number."
 
 ;; (local-set-key "\C-cr" krb-ruby-output-mode-prefix-map)
 (global-set-key "\C-crg" 'krb-grep-thing-at-point)
+(global-set-key "\C-cr\t" 'yas/expand)
 
 (add-hook 'ruby-mode-hook
           '(lambda ()
-             (local-set-key "\C-cr" krb-ruby-mode-prefix-map)
-             (local-set-key "\C-c\t" 'yas/expand)))
+             (local-set-key "\C-cr" krb-ruby-mode-prefix-map)))
 
 (add-hook 'java-mode-hook
-          '(lambda ()
-             (local-set-key "\C-c\t" 'yas/expand)))
+          '(lambda ()))
 
 (add-hook 'javascript-mode-hook
           '(lambda ()

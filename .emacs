@@ -69,6 +69,8 @@
                           (equal (car ent) pat))
                         auto-mode-alist))))
 
+;; auto-mode-alist
+
 (defun krb-push-file-ext-and-mode-binding (mode-name &rest patterns)
   "Bind the given mode name to the given set of file
 extensions (patterns). Eg:
@@ -265,10 +267,6 @@ the backing files."
 
 (slime-setup)
 (krb-push-file-ext-and-mode-binding 'clojure-mode "\\.clj$")
-(add-hook 'clojure-mode-hook 'krb-clojure-clojure-mode-init)
-(add-hook 'clojure-mode-hook 'paredit-mode)
-(add-hook 'clojure-mode-hook 'slime-mode)
-(add-hook 'clojure-mode-hook 'yas/minor-mode-on)
 
 (add-hook
  'paredit-mode-hook
@@ -317,6 +315,15 @@ the backing files."
 ;; (autoload 'clojure-test-mode "clojure-test-mode" "Clojure test mode" t)
 ;; (autoload 'clojure-test-maybe-enable "clojure-test-mode" "" t)
 ;; (add-hook 'clojure-mode-hook 'clojure-test-maybe-enable)
+(add-hook 'clojure-mode-hook
+          (lambda ()
+            (message "KRB: clojure-mode-hook: enabling paredit-mode...")
+            (paredit-mode +1)
+            (message "KRB: clojure-mode-hook: enabling highlight-parentheses-mode...")
+            (highlight-parentheses-mode t)
+            (yas/minor-mode-on)
+            (krb-clojure-clojure-mode-init)
+            (slime-mode)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
