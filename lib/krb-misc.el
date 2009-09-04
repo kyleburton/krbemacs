@@ -1,5 +1,9 @@
 ;; Utiliites
 
+(defun krb-buffer-line-at-point ()
+ (or (cdr (nth 2 (posn-at-point))) 0))
+
+
 (defun krb-insert-date ()
   "Inserts a date into the current buffer."
   (interactive)
@@ -351,7 +355,7 @@ For how this is computed, see `krb-ruby-calculate-spec-name'."
          (cmd (format "cd %s; %s -l %s %s"
                       (krb-ruby-find-proj-root-dir)
                       (krb-ruby-spec-location)
-                      (buffer-line-at-point)
+                      (krb-buffer-line-at-point)
                       (buffer-file-name))))
     (krb-with-fresh-output-buffer 
      "*rake-output*"
