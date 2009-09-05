@@ -1,3 +1,9 @@
 #name : ns ...
 # --
-(ns $1)
+(ns ${namespace:$
+    ;; calculate a suitable namespace name based on buffer-file-name
+    ;; stripping up to the 'src/clj' - assuming maven semantics?
+    }
+    (:require [${requires}]))
+
+$0

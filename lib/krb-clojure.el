@@ -1,5 +1,9 @@
 ;; Clojure-mode extensions
 
+;; TODO: need a keybinding / function for fixing the :import, :require
+;; and/or :use statements - something to automatically add them as
+;; needed...the kind of thing eclipse and intellij do automatically...can use the classes / jars from the maven classpath...
+
 (require 'cl)
 
 (defun krb-clj-clojure-mode-init ()
