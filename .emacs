@@ -153,6 +153,9 @@ the backing files."
  (load-file fname))
 
 
+;; stolen from http://github.com/dysinger/home
+(add-hook 'write-file-functions 'delete-trailing-whitespace)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Perl Development customization
 (setq cperl-hairy t)
@@ -216,6 +219,10 @@ the backing files."
                     (if (buffer-live-p tmp-buf)
                         (with-current-buffer tmp-buf
                           (longlines-restore))))))))
+
+
+(require 'ido)
+(ido-mode t)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
