@@ -781,4 +781,3 @@ For how this is computed, see `krb-ruby-calculate-spec-name'."
 
 (provide 'krb-ruby)
 ;;; krb-ruby.el ends here
-

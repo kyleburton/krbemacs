@@ -50,6 +50,8 @@
 (require 'inf-ruby)
 (require 'slime)
 (require 'clojure-mode)
+(require 'krb-clojure)
+(require 'krb-ruby)
 (require 'yasnippet)
 (yas/initialize)
 

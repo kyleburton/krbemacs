@@ -28,3 +28,7 @@
 ;; (krb-clj-ns-to-file-path "com.github.krb-util")
 ;; (krb-clj-ns-for-file-name "/foo/bar_qux.clj")
 ;; (krb-clj-ns-for-file-name "/projects/sandbox/src/main/clj/com/github/kyleburton/bar_qux.clj")
+
+(provide 'krb-clojure)
+;; hend of krb-clojure.el
+
