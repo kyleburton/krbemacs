@@ -22,14 +22,14 @@
   "Helper for locating files relative to the installation root."
   (concat *krbemacs-home* "/" file))
 
-(defvar *krb-lib-dirs* 
+(defvar *krb-lib-dirs*
   '("lib"
     "lib/http-emacs"
     "git"
     "ruby-mode"
     "slime/slime"
     "clojure-mode"
-    "distel-4.03/elisp" 
+    "distel-4.03/elisp"
     "swank-clojure"
     "yasnippet")
   "List of my customization module directories.")
@@ -155,6 +155,18 @@ the backing files."
 
 ;; stolen from http://github.com/dysinger/home
 (add-hook 'write-file-functions 'delete-trailing-whitespace)
+;; stolen from http://github.com/dysinger/home
+(defun krb-indent-or-expand ()
+  (interactive)
+  (if (and
+       (or (bobp) (= ?w (char-syntax (char-before))))
+       (or (eobp)
+           (not (= ?w (char-syntax (char-after))))))
+      (yas/expand)
+      (indent-according-to-mode)))
+
+(defun krb-tab-fix ()
+  (local-set-key [tab] 'krb-indent-or-expand))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Perl Development customization
@@ -210,8 +222,8 @@ the backing files."
        (with-current-buffer (ad-get-arg 0)
          (longlines-suspend)))
 
-     
-     (add-hook 'ediff-cleanup-hook 
+
+     (add-hook 'ediff-cleanup-hook
                '(lambda ()
                   (dolist (tmp-buf (list ediff-buffer-A
                                          ediff-buffer-B
@@ -295,16 +307,16 @@ the backing files."
 ;; jvm+emacs+inferior-lisp instances on the same host w/o them
 ;; interfering with each other.
 (add-to-list 'slime-lisp-implementations
-             '(clojure2 ("clojure2") 
+             '(clojure2 ("clojure2")
                         :init swank-clojure-init
                         :init-function krb-swank-clojure-init) t)
 
-(add-to-list 'slime-lisp-implementations 
+(add-to-list 'slime-lisp-implementations
              '(clojure3 ("clojure3")
                         :init swank-clojure-init
                         :init-function krb-swank-clojure-init) t)
 
-(add-to-list 'slime-lisp-implementations 
+(add-to-list 'slime-lisp-implementations
              '(sbcl ("sbcl")) t)
 
 (add-hook 'lisp-mode-hook
@@ -330,9 +342,7 @@ the backing files."
             (message "KRB: clojure-mode-hook: enabling highlight-parentheses-mode...")
             (highlight-parentheses-mode t)
             (yas/minor-mode-on)
-            (krb-clojure-clojure-mode-init)
             (slime-mode)))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; end Lisp and Clojure
@@ -349,13 +359,13 @@ the backing files."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Java 
+;; Java
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (krb-push-file-ext-and-mode-binding 'archive-mode "\\.war$" "\\.ear$" "\\.jar$")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; end Java 
+;; end Java
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (autoload 'js2-mode "js2" nil t)
@@ -418,7 +428,7 @@ the backing files."
 (setq default-buffer-file-coding-system 'utf-8)
 ;; From Emacs wiki
 (setq x-select-request-type '(UTF8_STRING COMPOUND_TEXT TEXT STRING))
-;; ;; MS Windows clipboard is UTF-16LE 
+;; ;; MS Windows clipboard is UTF-16LE
 ;; (set-clipboard-coding-system 'utf-16le-dos)
 
 (defun google-region (&optional flags)
@@ -433,3 +443,7 @@ the backing files."
  (fname (expand-file-name "~/.emacs-local"))
  (load-file fname))
 
+(loop for mode in '(clojure shell-script java js2 ruby perl cperl python scheme yaml xml nxml html confluence elisp lisp erlang)
+      do
+      (add-hook (intern (format "%s-mode" mode))
+                'krb-tab-fix))
