@@ -3,6 +3,8 @@
 (defun krb-buffer-line-at-point ()
  (or (cdr (nth 2 (posn-at-point))) 0))
 
+(defmacro gsub! (sym reg rep)
+  `(set ',sym (replace-regexp-in-string ,reg ,rep ,sym)))
 
 (defun krb-insert-date ()
   "Inserts a date into the current buffer."
@@ -25,7 +27,7 @@ As opposed to pop which works on the left."
      (car rev)))
 
 (defun goto-percent (pct)
-  "Computes the character position of the given percentage of the current 
+  "Computes the character position of the given percentage of the current
 buffer and places the cursor at that position."
   (interactive "nGoto percent: ")
   (let* ((size (point-max))
@@ -59,7 +61,7 @@ buffer and places the cursor at that position."
           do
           (setq string (concat string delim item)))
     string))
-        
+
 (defun krb-get-pwd-as-list ()
   (rest (split-string buffer-file-name "/")))
 
@@ -168,7 +170,7 @@ buffer and places the cursor at that position."
         (t
          (file-name-directory (directory-file-name (file-name-directory path))))))
 
-  
+
 (defun krb-find-containing-parent-directory-of-current-buffer (target-file-name &optional starting-directory)
   "Search backwards up the directory structure for the directory containing hte given literal file name).
 
@@ -182,7 +184,7 @@ buffer and places the cursor at that position."
          (candidate (format "%s%s" path target-file-name)))
     (message "krb-find-containing-parent-directory-of-current-buffer: target-file-name=%s path=%s candidate=%s"
              target-file-name path candidate)
-    (cond 
+    (cond
      ((file-exists-p candidate)
       path)
      ((or (null path)
@@ -233,7 +235,7 @@ buffer and places the cursor at that position."
                      (krb-java-find-mvn-proj-root-dir)
                      (krb-java-find-mvn-proj-root-dir)
                      (or mvn-options ""))))
-    (krb-with-fresh-output-buffer 
+    (krb-with-fresh-output-buffer
      "*maven-output*"
      (krb-insf-into-buffer "*maven-output*" "Executing: %s\n" cmd)
      (shell-command "*maven-output*"))))
@@ -267,7 +269,7 @@ directory containing the Rakefile or nil if none is found."
                      (krb-ruby-find-proj-root-dir)
                      (krb-ruby-find-proj-root-dir)
                      (or rake-options ""))))
-    (krb-with-fresh-output-buffer 
+    (krb-with-fresh-output-buffer
      "*rake-output*"
      (krb-insf-into-buffer "*rake-output*" "Executing: %s\n" cmd)
      (shell-command cmd "*rake-output*"))))
@@ -337,7 +339,7 @@ For how this is computed, see `krb-ruby-calculate-spec-name'."
                       (krb-ruby-ruby-location)
                       spec-file-name
                       (or rake-options ""))))
-    (krb-with-fresh-output-buffer 
+    (krb-with-fresh-output-buffer
      "*rake-output*"
      (krb-insf-into-buffer "*rake-output*" "Executing: %s\n" cmd)
      (shell-command cmd "*rake-output*")
@@ -357,7 +359,7 @@ For how this is computed, see `krb-ruby-calculate-spec-name'."
                       (krb-ruby-spec-location)
                       (krb-buffer-line-at-point)
                       (buffer-file-name))))
-    (krb-with-fresh-output-buffer 
+    (krb-with-fresh-output-buffer
      "*rake-output*"
      (krb-insf-into-buffer "*rake-output*" "Executing: %s\n" cmd)
      (shell-command cmd "*rake-output*")
@@ -384,7 +386,7 @@ For how this is computed, see `krb-ruby-calculate-spec-name'."
 ;; (krb-jump-stack-clear)
 
 ;; TODO: this needs bettter documetnation and probably a better name...
-;; TODO: take an optional list of directories to look in (eg: similar to how PATH is used, loop through, returning the first one found - the 
+;; TODO: take an optional list of directories to look in (eg: similar to how PATH is used, loop through, returning the first one found - the
 (defun krb-try-resolve-file-path (fname)
   ;; if *krb-output-base-directory* is set, and the given fname
   ;; doens't exist, try pre-pending *krb-output-base-directory* and
@@ -431,7 +433,7 @@ For how this is computed, see `krb-ruby-calculate-spec-name'."
   (save-excursion
     (beginning-of-buffer)
     (search-forward-regexp (format "(def\\(un\\|var\\|macro\\|parameter\\) %s" symbol-name))
-    (list (buffer-file-name) 
+    (list (buffer-file-name)
           (line-number-at-pos))))
 
 (defun krb-el-visit-symbol-in-current-buffer (symbol-name)
