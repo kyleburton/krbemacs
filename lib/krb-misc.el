@@ -1,5 +1,9 @@
 ;; Utiliites
 
+
+(defmacro gsub! (sym reg rep)
+  `(set ',sym (replace-regexp-in-string ,reg ,rep ,sym)))
+
 (defun krb-buffer-line-at-point ()
  (or (cdr (nth 2 (posn-at-point))) 0))
 
@@ -479,44 +483,6 @@ to the given line number."
     (message "krb-jump-to-file: fname=%s lnum=%s" fname lnum)
     (krb-jump-stack-push fname lnum)))
 
-(define-derived-mode krb-ruby-output-mode text-mode "KRB Ruby Output Mode"
-  "Kyle's Ruby Output Mode for interacting with the output of tools like Rake, test and spec."
-  (local-set-key "\C-cr." krb-ruby-jump-to-file-at-point))
-
-;; (define-derived-mode krb-ruby-mode ruby-mode "KRB Ruby Output Mode"
-;;   "Kyle's Ruby Extension Mode for developing with Rails."
-;;   (local-set-key "\C-crt" krb-ruby-exec-spec-for-buffer)
-;;   (local-set-key "\C-crT" krb-ruby-find-spec-file))
-
-;; TODO: if no .git directory is found, come up with some other
-;; hueristic to determine a 'project root' and then use find/xargs or
-;; some other recursive search strategy (spotlight on osx?, does it
-;; have an api? google desktop search if installed? locate?)
-(defun krb-ruby-clean-search-term (term)
-  "Strip uncommon characters to make searching and workign with ruby symbols and names simpler."
-  (replace-regexp-in-string "[:]" "" term))
-
-;; (krb-ruby-clean-search-term ":foo")
-;; (krb-ruby-clean-search-term "foo_bar")
-
-;; TODO: how is this ruby specific?
-(defun krb-ruby-grep-thing-at-point (thing)
-  "Perform a git-grep for the term at point (see `symbol-at-point')."
-  (interactive (list (read-string "Search Term: " (krb-ruby-clean-search-term (format "%s" (symbol-at-point))))))
-  (let* ((starting-dir (krb-find-containing-parent-directory-of-current-buffer ".git"))
-         ;; TODO: not shell escape proof :(
-         (cmd (format "cd %s; git grep -i -n '%s'" starting-dir
-                      thing)))
-    (krb-with-fresh-output-buffer
-     "*git-output*"
-     (krb-insf-into-buffer "*git-output*" "Executing: %s\n" cmd)
-     (save-excursion
-       (pop-to-buffer "*git-output*")
-       (shell-command cmd "*git-output*")
-       (set (make-local-variable '*krb-output-base-directory*) starting-dir)
-       (set (make-local-variable '*krb-output-base-file*) (buffer-file-name))
-       (local-set-key "\C-cr." 'krb-jump-to-file)
-       (local-set-key "\C-cr." 'krb-jump-stack-pop)))))
 
 ;; TODO: support a prefix command to do things like invert the matching logic (eg: -v)
 ;; TODO: support grepping via regex and other git-grep options...a possible strategy for this
@@ -543,29 +509,8 @@ to the given line number."
        (local-set-key "\C-cr." 'krb-jump-to-file)
        (local-set-key "\C-cr." 'krb-jump-stack-pop)))))
 
-(defvar krb-ruby-mode-prefix-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map "\C-s" 'krb-ruby-exec-rake-spec)
-    (define-key map "t" 'krb-ruby-exec-spec-for-buffer)
-    (define-key map "T" 'krb-ruby-find-spec-file)
-    (define-key map "\C-T" 'krb-ruby-exec-inner-spec)
-    (define-key map "." 'krb-ruby-grep-thing-at-point)
-    (define-key map "," 'krb-jump-stack-pop)
-    map))
-
-(defvar krb-ruby-output-mode-prefix-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map "." 'krb-jump-to-file)
-    (define-key map "," 'krb-jump-stack-pop)
-    map))
-
-;; (local-set-key "\C-cr" krb-ruby-output-mode-prefix-map)
 (global-set-key "\C-crg" 'krb-grep-thing-at-point)
 (global-set-key "\C-cr\t" 'yas/expand)
-
-(add-hook 'ruby-mode-hook
-          '(lambda ()
-             (local-set-key "\C-cr" krb-ruby-mode-prefix-map)))
 
 (add-hook 'java-mode-hook
           '(lambda ()))
@@ -574,10 +519,90 @@ to the given line number."
           '(lambda ()
              (local-set-key "\C-c\t" 'yas/expand)))
 
+
+
+;; TODO: Write a similar interactive mode for *git-output* and *rake-output* buffers...
+;; (defun krb-perl-follow-stack-trace ()
+;;   (interactive)
+;;   (let ((stack-lines
+;;          (remove-if (lambda (line)
+;;                       (string-match "(eval [^)]+)([0-9]+)" line))
+;;                     (split-string (hms-perl-get-stack-trace-from-buffer) "\n")))
+;;         (initial-buffer (current-buffer))
+;;         (go-back-to-initial-buffer t)
+;;         (stop nil)
+;;         (pos 0))
+;;     (while (and (not stop) (not (null stack-lines)))
+;;       (let ((line (nth pos stack-lines))
+;;             (class "")
+;;             (file "")
+;;             (line-no ""))
+;;         (message "line: %s" line)
+;;         (string-match " \\([a-zA-Z_0-9:]+\\)->\\(.+\\)(\\([0-9]+\\))" line)
+;;         (setf class (match-string 1 line))
+;;         (setf file (match-string 2 line))
+;;         (setf line-no (match-string 3 line))
+;;         (message "class:%s file:%s line-no:%s" class file line-no)
+;;         (hms-perl-jump-to-file-and-line file (read-from-string line-no))
+;;         (let ((response (read-char "(x) exit, (q) stop here, (n) next, (p) prev:")))
+;;           (cond ((or (char-equal ?q response)
+;;                      (char-equal ?Q response)
+;;                      (char-equal ?\r response)
+;;                      (char-equal ?\n response))
+;;                  (setf go-back-to-initial-buffer nil)
+;;                  (setf stop t))
+;;                 ((or (char-equal ?x response)
+;;                      (char-equal ?X response))
+;;                  (setf stop t))
+;;                 ((or (char-equal ?n response)
+;;                      (char-equal ?N response))
+;;                  (if (= pos (- (length stack-lines) 1))
+;;                      (progn (message "at bottom of stack") (sleep-for 0 500))
+;;                    (setf pos (+ 1 pos))))
+;;                 ((or (char-equal ?t response)
+;;                      (char-equal ?T response))
+;;                  (setf pos 0))
+;;                 ((or (char-equal ?p response)
+;;                      (char-equal ?P response))
+;;                  (if (not (= pos 0))
+;;                      (setf pos (- pos 1))
+;;                    (progn (message "at top of stack") (sleep-for 0 500))))
+;;                 ;; anything else quits
+;;                 (t
+;;                  t)))))
+;;   (if go-back-to-initial-buffer
+;;       (switch-to-buffer initial-buffer))))
+
+
+;; each output-buffer shall have a buffer-local *basedir*, to which
+;; all relatively pathed file paths will need to be appended to
+
+;; (defun krb-extract-actual-file-paths-from-line (line &rest basedirs)
+;;   "Given a string (line) of text, extract all of the portions of
+;;   the string that correspond to file names that exist in the file system."
+;;   ;; string-match
+;;   )
+
+
+;; (assert (equalp '(a b c)
+;;            (cons 'a '(b c))))
+
+;; (assert (equalp
+;;          '("/projects/some_app/spec/controllers/cont1_spec.rb")
+;;          (krb-extract-actual-file-paths-from-line "/projects/some_app/spec/controllers/cont1_spec.rb")))
+
+;; (assert (equalp
+;;          '("spec/controllers/cont1_spec.rb")
+;;          (krb-extract-actual-file-paths-from-line "spec/controllers/cont1_spec.rb"
+;;                                                   "/projects/some_app")))
+
+;; (krb-parse-file/line-from-string "/Users/kburton/development/algo_collateral_web/spec/controllers/antic_demand_margin_calls_controller_spec.rb:70:")
+;; (krb-parse-file/line-from-string "./spec/controllers/antic_demand_margin_calls_controller_spec.rb:70:")
+;; (krb-parse-file/line-from-string "spec/controllers/antic_demand_margin_calls_controller_spec.rb:70:")
+;; (krb-parse-file/line-from-string "src/main/clj/com/github/kyleburton/sandbox/web.clj(28) ...")
+;; (krb-parse-file/line-from-string "/Users/kburton/personal/projects/sandbox/clojure-utils/src/main/clj/com/github/kyleburton/sandbox/web.clj(28) ...")
+;; (krb-parse-file/line-from-string "app/controllers/antic_demand_margin_calls_controller.rb:    @margin_calls = current_user.antic_demand_margin_calls  ")
+
+
 (provide 'krb-misc)
 
-
-;; TODO: keybinding for running rake js:lint
-;; TODO: keybinding for running script/jslint public/javascripts/algo/movements.js
-;; TODO: go get Steve Yegge's j2-mode
-;; TODO: yasnippet, javascript templates (at least for a function, maybe also for a multi-line string?, if, for, and a whole mess of jQuery goodness)
