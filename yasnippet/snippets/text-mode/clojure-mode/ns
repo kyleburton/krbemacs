@@ -1,9 +1,7 @@
 #name : ns ...
 # --
-(ns ${namespace:$
-    ;; calculate a suitable namespace name based on buffer-file-name
-    ;; stripping up to the 'src/clj' - assuming maven semantics?
-    }
+(ns ${1:$
+    (krb-clj-ns-for-file-name (buffer-file-name))}
     (:require [${requires}]))
 
 $0
