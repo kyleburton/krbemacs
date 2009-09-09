@@ -367,7 +367,7 @@ to the given line number."
 (defun krb-grep-thing-at-point (thing)
   (interactive (list (read-string "Search For: " (format "%s" (or (symbol-at-point) "")))))
   (let* ((starting-dir (krb-find-containing-parent-directory-of-current-buffer ".git"))
-         (cmd (format "cd %s; git grep -i -n '%s'" starting-dir thing)))
+         (cmd (format "cd %s; git grep --full-name -i -n '%s'" starting-dir thing)))
     (krb-with-fresh-output-buffer
      "*git-output*"
      (krb-insf-into-buffer "*git-output*" "Executing: %s\n" cmd)
@@ -379,6 +379,9 @@ to the given line number."
        ;; are all 'output' temporary buffers)
        (pop-to-buffer "*git-output*")
        (shell-command cmd "*git-output*")
+       (goto-char (point-min))
+       (replace-regexp "^" starting-dir)
+       (goto-char (point-min))
        (set (make-local-variable '*krb-output-base-directory*) starting-dir)
        (set (make-local-variable '*krb-output-base-file*) (buffer-file-name))
        (compilation-mode)

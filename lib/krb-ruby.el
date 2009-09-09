@@ -662,9 +662,9 @@ For how this is computed, see `krb-ruby-calculate-spec-name'."
      "*rake-output*"
      (krb-insf-into-buffer "*rake-output*" "Executing: %s\n" cmd)
      (shell-command cmd "*rake-output*")
-     (compilation-mode)
      (save-excursion
        (set-buffer "*rake-output*")
+       (compilation-mode)
        (local-set-key "\C-cr" krb-ruby-output-mode-prefix-map)))))
 
 
@@ -742,11 +742,14 @@ For how this is computed, see `krb-ruby-calculate-spec-name'."
                       thing)))
     (krb-with-fresh-output-buffer
      "*git-output*"
-     (compilation-mode)
      (krb-insf-into-buffer "*git-output*" "Executing: %s\n" cmd)
      (save-excursion
        (pop-to-buffer "*git-output*")
        (shell-command cmd "*git-output*")
+       (goto-char (point-min))
+       (replace-regexp "^" starting-dir)
+       (goto-char (point-min))
+       (compilation-mode)
        (set (make-local-variable '*krb-output-base-directory*) starting-dir)
        (set (make-local-variable '*krb-output-base-file*) (buffer-file-name))
        (local-set-key "\C-cr." 'krb-jump-to-file)
