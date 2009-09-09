@@ -590,6 +590,7 @@ directory containing the Rakefile or nil if none is found."
     (krb-with-fresh-output-buffer
      "*rake-output*"
      (krb-insf-into-buffer "*rake-output*" "Executing: %s\n" cmd)
+     (compilation-mode)
      (shell-command cmd "*rake-output*"))))
 
 (defun krb-ruby-calculate-spec-name (&optional file-name)
@@ -661,6 +662,7 @@ For how this is computed, see `krb-ruby-calculate-spec-name'."
      "*rake-output*"
      (krb-insf-into-buffer "*rake-output*" "Executing: %s\n" cmd)
      (shell-command cmd "*rake-output*")
+     (compilation-mode)
      (save-excursion
        (set-buffer "*rake-output*")
        (local-set-key "\C-cr" krb-ruby-output-mode-prefix-map)))))
@@ -679,6 +681,7 @@ For how this is computed, see `krb-ruby-calculate-spec-name'."
                       (buffer-file-name))))
     (krb-with-fresh-output-buffer
      "*rake-output*"
+     (compilation-mode)
      (krb-insf-into-buffer "*rake-output*" "Executing: %s\n" cmd)
      (shell-command cmd "*rake-output*")
      (save-excursion
@@ -739,6 +742,7 @@ For how this is computed, see `krb-ruby-calculate-spec-name'."
                       thing)))
     (krb-with-fresh-output-buffer
      "*git-output*"
+     (compilation-mode)
      (krb-insf-into-buffer "*git-output*" "Executing: %s\n" cmd)
      (save-excursion
        (pop-to-buffer "*git-output*")
