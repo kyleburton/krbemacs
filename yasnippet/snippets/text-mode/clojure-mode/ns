@@ -4,8 +4,7 @@
     (krb-clj-ns-for-file-name (buffer-file-name))}
     (:require
       ${2:$
-        (krb-string-join "\n  " *krb-clj-default-requires*)}
-      [${requires}]))
+        (krb-string-join "\n  " *krb-clj-default-requires*)}))
 
 ${3:$
   (krb-string-join "\n" *krb-clj-default-declarations*)}
