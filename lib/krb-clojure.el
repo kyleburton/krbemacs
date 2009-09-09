@@ -29,6 +29,10 @@
 ;; (krb-clj-ns-for-file-name "/foo/bar_qux.clj")
 ;; (krb-clj-ns-for-file-name "/projects/sandbox/src/main/clj/com/github/kyleburton/bar_qux.clj")
 
+(defvar *krb-clj-default-requires*
+  nil
+  "For the `yas/expand' `ns' expansion, this list of strings will be added into every namespace declaration.  Typically used for things like logging.")
+
 (provide 'krb-clojure)
 ;; hend of krb-clojure.el
 

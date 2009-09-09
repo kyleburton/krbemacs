@@ -343,22 +343,22 @@
   (string= (upcase s1)
            s1))
 
-;; TODO: FYI, this is unfinished...should just use jdee
-(defun krb-java-find-at-point (&optional word)
-  (interactive)
-  (let ((symbol (or word (krb-java-get-symbol-at-point))))
-    (cond
-     ;; is all uppercase?  look for constant definition (decl or assignment)
-     ((is-upper-case? symbol)
-      (krb-find-xargs-grep (format "%s[ \t]*[;=]" symbol)))
-     ;; starts w/capitol, assume class name
-     ((starts-with-capitol symbol)
-      (krb-find-xargs-grep (format "class %s" symbol)))
-     (t
-      ;; it's either a method or a variable declaration, assume method
-      (krb-find-xargs-grep (format "%s[ \t]*(")))))
-)
-
+;; ;; TODO: FYI, this is unfinished...should just use jdee
+;; (defun krb-java-find-at-point (&optional word)
+;;   (interactive)
+;;   (let ((symbol (or word (krb-java-get-symbol-at-point))))
+;;     (cond
+;;      ;; is all uppercase?  look for constant definition (decl or assignment)
+;;      ((is-upper-case? symbol)
+;;       (krb-find-xargs-grep (format "%s[ \t]*[;=]" symbol)))
+;;      ;; starts w/capitol, assume class name
+;;      ((starts-with-capitol symbol)
+;;       (krb-find-xargs-grep (format "class %s" symbol)))
+;;      (t
+;;       ;; it's either a method or a variable declaration, assume method
+;;       (krb-find-xargs-grep (format "%s[ \t]*(" symbol)))))
+;; )
+ 
 
 (defun krb-java-class-name-to-path (string)
   (replace-regexp-in-string "\\." "/" string))

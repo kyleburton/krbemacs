@@ -55,10 +55,36 @@
 (require 'yasnippet)
 (yas/initialize)
 
+
+(defun krb-file-newer (f1 f2)
+  (let ((f1-mtime (nth 5 (file-attributes f1)))
+        (f2-mtime (nth 5 (file-attributes f2))))
+    (cond ((> (car f1-mtime)
+              (car f2-mtime))
+           t)
+          ((< (car f1-mtime)
+              (car f2-mtime))
+           nil)
+          ((> (cadr f1-mtime)
+              (cadr f2-mtime))
+           t)
+          (t
+           nil))))
+
+;; (krb-file-newer
+;;  (krb-file "lib/krb-misc.el")
+;;  (krb-file "lib/krb-misc.elc"))
+
+;; (krb-file-newer
+;;  (krb-file "lib/krb-misc.elc")
+;;  (krb-file "lib/krb-misc.el"))
+
 (dolist (file (directory-files (krb-file "lib/") t "^[^#]+\\.el$"))
   (let ((cfile (format "%sc" file)))
-    (when (not (file-exists-p cfile))
+    (when (or (not (file-exists-p cfile))
+              (krb-file-newer file cfile))
       (byte-compile-file file))))
+
 
 (defun krb-file-ext-case-permute (pattern)
   "Helper for ading file-extension to editor mode bindings.

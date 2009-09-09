@@ -1,0 +1,1 @@
+(log/tracef "${fmt}" $0)

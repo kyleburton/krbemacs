@@ -1,0 +1,1 @@
+(log/warnf "${fmt}" $0)

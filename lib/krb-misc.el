@@ -7,9 +7,6 @@
 (defun krb-buffer-line-at-point ()
  (or (cdr (nth 2 (posn-at-point))) 0))
 
-(defmacro gsub! (sym reg rep)
-  `(set ',sym (replace-regexp-in-string ,reg ,rep ,sym)))
-
 (defun krb-insert-date ()
   "Inserts a date into the current buffer."
   (interactive)
@@ -37,7 +34,7 @@ buffer and places the cursor at that position."
   (let* ((size (point-max))
          (charpos (/ (* size pct) 100)))
     (goto-char charpos)
-    (message "Moved to charpos: %d/5d." charpos size)))
+    (message "Moved to charpos: %d/%d." charpos size)))
 
 (defun match-paren (arg)
   "Go to the matching paren if on an open paren; otherwise insert %."
@@ -207,7 +204,7 @@ buffer and places the cursor at that position."
   (if (get-buffer buffer-name)
       (save-excursion
         (set-buffer buffer-name)
-        (end-of-buffer)
+        (goto-char (point-max))
         (kill-region 1 (point)))))
 
 (defun krb-ensure-buffer-exists (buffer-name)
@@ -242,6 +239,7 @@ buffer and places the cursor at that position."
     (krb-with-fresh-output-buffer
      "*maven-output*"
      (krb-insf-into-buffer "*maven-output*" "Executing: %s\n" cmd)
+     (compilation-mode)
      (shell-command "*maven-output*"))))
 
 
@@ -262,6 +260,9 @@ buffer and places the cursor at that position."
   (setq *krb-jump-stack* (list)))
 
 ;; (krb-jump-stack-clear)
+
+(defvar *krb-output-base-directory* nil "Intended to become buffer-local...")
+(defvar *krb-output-base-file* nil "Intended to become buffer-local...")
 
 ;; TODO: this needs bettter documetnation and probably a better name...
 ;; TODO: take an optional list of directories to look in (eg: similar to how PATH is used, loop through, returning the first one found - the
@@ -297,19 +298,19 @@ buffer and places the cursor at that position."
   (interactive)
   (destructuring-bind
       (file line buffer)
-      (pop *krb-jump-stack*))
-  (message "krb-jump-stack-pop: %s(%s)/%s" file line buff)
-  (cond (file
-         (find-file file))
-        (buffer
-         (set-buffer buffer)))
-  (goto-line (second pair)))
+      (pop *krb-jump-stack*)
+    (message "krb-jump-stack-pop: %s(%s)/%s" file line buffer)
+    (cond (file
+           (find-file file))
+          (buffer
+           (set-buffer buffer)))
+    (goto-line line)))
 
 (defun krb-el-find-symbol-in-current-buffer (symbol-name)
   "Find the elisp symbol in the current buffer - starting at the top of the buffer, search forward for the declaration of the symbol (not just any usage).  Returns the buffer file name and the line number, but does not go to the location."
   (interactive (list (read-string "Symbol: " (format "%s" (symbol-at-point)))))
   (save-excursion
-    (beginning-of-buffer)
+    (goto-char (point-max))
     (search-forward-regexp (format "(def\\(un\\|var\\|macro\\|parameter\\) %s" symbol-name))
     (list (buffer-file-name)
           (line-number-at-pos))))
@@ -366,7 +367,7 @@ to the given line number."
 (defun krb-grep-thing-at-point (thing)
   (interactive (list (read-string "Search For: " (format "%s" (or (symbol-at-point) "")))))
   (let* ((starting-dir (krb-find-containing-parent-directory-of-current-buffer ".git"))
-         (cmd (format "cd %s; git grep -i -n '%s'" starting-dir thing)))
+         (cmd (format "cd %s; git grep --full-name -i -n '%s'" starting-dir thing)))
     (krb-with-fresh-output-buffer
      "*git-output*"
      (krb-insf-into-buffer "*git-output*" "Executing: %s\n" cmd)
@@ -378,8 +379,12 @@ to the given line number."
        ;; are all 'output' temporary buffers)
        (pop-to-buffer "*git-output*")
        (shell-command cmd "*git-output*")
+       (goto-char (point-min))
+       (replace-regexp "^" starting-dir)
+       (goto-char (point-min))
        (set (make-local-variable '*krb-output-base-directory*) starting-dir)
        (set (make-local-variable '*krb-output-base-file*) (buffer-file-name))
+       (compilation-mode)
        (local-set-key "\C-cr." 'krb-jump-to-file)
        (local-set-key "\C-cr." 'krb-jump-stack-pop)))))
 

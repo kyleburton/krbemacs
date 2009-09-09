@@ -1,0 +1,1 @@
+(log/errorf "${fmt}" $0)
