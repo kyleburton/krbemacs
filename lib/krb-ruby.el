@@ -688,29 +688,43 @@ For how this is computed, see `krb-ruby-calculate-spec-name'."
        (set-buffer "*rake-output*")
        (local-set-key "\C-cr" krb-ruby-output-mode-prefix-map)))))
 
-(defun krb-run-ruby ()
-  "Execute ruby, either the rails console, if we're in a rais project, or plain irb if we're not."
+(defun krb-ruby-run-ruby ()
+  "Execute ruby, either the rails console, if we're in a rais project, or plain irb if we're not.
+This makes use of ruby-mode's inf-ruby.el's `run-ruby' function.
+Due to how comint executes the ruy program, and the way the rails
+console often needs to be in the pwd of the project, this
+function writes out a shell-script for executing the console and
+executes that script.  The contents of the script will be similar to:
+
+  cd <<project-directory>>
+  script/console
+
+"
   (interactive)
-  ;; should have 1 running interactive buffer per ruby project, for now support only 1
-  ;; determine project root for current buffer
-  ;; if there is a script/console, run it in the same directory as the rakefile...
-  ;; if no script/console, run irb from either the rakefile dir or the buffer's pwd
   (let* ((proj-root (or (krb-ruby-find-proj-root-dir) "."))
          (console-bin (format "%s/script/console" proj-root))
          (irb nil)
-         (cmd nil))
+         (cmd nil)
+         ;; NB: this is unix / posix specific (using bash), sorry
+         ;; NB: this only supports a single rails project / console per emacs based on how it's implemented,
+         ;; though I think that may also be true for inf-ruby and many of the other inf-* modes as well
+         (script-file (expand-file-name "~/tmp/rails-console.sh")))
     (cond ((file-exists-p console-bin)
-           (set 'irb console-bin))
+           (setq irb (format "%s/script/jruby %s/script/console" proj-root proj-root)))
           (t
-           (set 'irb "irb")))
-    (set 'cmd (format "cd %s; %s" proj-root irb))
-    (message "command: %s" cmd)
-    (if (not (comint-check-proc "*ruby*"))
-        (progn
-          (set-buffer (apply 'make-comint "ruby" irb)
-                      nil nil)
-          (inferior-ruby-mode)))
-    ))
+           (setq irb "irb")))
+    (save-excursion
+      (find-file script-file)
+      (insert "cd " proj-root "\n"
+              irb)
+      (save-buffer)
+      (shell-command (format "chmod 755 %s >/dev/null 2>/dev/null" script-file)))
+    ;; TODO: seek out the internals of inf-ruby.el, see how 'cmd' is
+    ;; used/parsed in `run-ruby' for ideas, need to set the pwd before
+    ;; it executes...
+    '(run-ruby irb)
+    '(comint-send-string (ruby-proc) (format "Dir.chdir '%s'\n" proj-root))
+    (run-ruby script-file)))
 
 (define-derived-mode krb-ruby-output-mode text-mode "KRB Ruby Output Mode"
   "Kyle's Ruby Output Mode for interacting with the output of tools like Rake, test and spec."
@@ -763,7 +777,7 @@ For how this is computed, see `krb-ruby-calculate-spec-name'."
     (define-key map "\C-T" 'krb-ruby-exec-inner-spec)
     (define-key map "." 'krb-ruby-grep-thing-at-point)
     (define-key map "," 'krb-jump-stack-pop)
-    (define-key map "z" 'krb-run-ruby)
+    (define-key map "z" 'krb-ruby-run-ruby)
     map))
 
 (defvar krb-ruby-output-mode-prefix-map
@@ -776,9 +790,11 @@ For how this is computed, see `krb-ruby-calculate-spec-name'."
 
 (add-hook 'ruby-mode-hook
           '(lambda ()
-             (local-set-key "\C-cr" krb-ruby-mode-prefix-map)))
+             (local-set-key "\C-cr" 'krb-ruby-mode-prefix-map)
+             (local-set-key "\C-c\C-z" 'krb-ruby-run-ruby)))
 
 
+(krb-push-file-ext-and-mode-binding 'ruby-mode "\\.rb$" "\\.erb$")
 
 ;; TODO: keybinding for running rake js:lint
 ;; TODO: keybinding for running script/jslint public/javascripts/algo/movements.js

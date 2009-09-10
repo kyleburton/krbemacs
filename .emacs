@@ -39,23 +39,6 @@
          (add-to-list 'load-path (krb-file path)))
      *krb-lib-dirs*)
 
-;; pull in all the libs we want to use
-(require 'krb-misc)
-(require 'highlight-parentheses)
-(require 'yaml-mode)
-(require 'color-theme)
-(require 'saveplace)
-(require 'git)
-(require 'ruby-mode)
-(require 'inf-ruby)
-(require 'slime)
-(require 'clojure-mode)
-(require 'krb-clojure)
-(require 'krb-ruby)
-(require 'yasnippet)
-(yas/initialize)
-
-
 (defun krb-file-newer (f1 f2)
   (let ((f1-mtime (nth 5 (file-attributes f1)))
         (f2-mtime (nth 5 (file-attributes f2))))
@@ -113,6 +96,27 @@ extensions (patterns). Eg:
                              (string= (car elt)
                                       pattern))
                            auto-mode-alist)))))
+
+
+
+;; now that many of the libs are byte-compiled, pull in all the ones we want to use
+(require 'krb-misc)
+(require 'highlight-parentheses)
+(require 'yaml-mode)
+(require 'color-theme)
+(require 'saveplace)
+(require 'git)
+(require 'ruby-mode)
+(require 'inf-ruby)
+(require 'slime)
+(require 'clojure-mode)
+(require 'krb-clojure)
+(require 'krb-ruby)
+(require 'yasnippet)
+(yas/initialize)
+
+
+
 
 ;; I like this one, you may like something else
 (load "themes/color-theme-library.el")
@@ -174,11 +178,6 @@ the backing files."
     `(let ((,var (expand-file-name ,file-path)))
        (when (file-exists-p ,var)
          ,@body))))
-
-(when-file-exists
- (fname (expand-file-name (format "~/.emacs.local/%s.el" krb-local-host-name)))
- (message "loading host specific (%s) customization file: %s" krb-local-host-name fname)
- (load-file fname))
 
 
 ;; stolen from http://github.com/dysinger/home
@@ -281,12 +280,6 @@ the backing files."
 ;; End of Confluence Settings
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Ruby
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(krb-push-file-ext-and-mode-binding 'ruby-mode "\\.rb$" "\\.erb$")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Lisp and Clojure
@@ -466,12 +459,27 @@ the backing files."
                                   (region-end))))
     (browse-url (concat "http://www.google.com/search?ie=utf-8&oe=utf-8&q=" query))))
 
-
-(when-file-exists
- (fname (expand-file-name "~/.emacs-local"))
- (load-file fname))
-
+;; set our tab-override for all these modes...
 (loop for mode in '(clojure shell-script java js2 ruby perl cperl python scheme yaml xml nxml html confluence elisp lisp erlang)
       do
       (add-hook (intern (format "%s-mode" mode))
                 'krb-tab-fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; The following two customiztion points are for other users of my
+;; emacs configuration - these allow you to base your configurations
+;; off of my github project (so you can benefit from the updates)
+;; while still maintaining your own customizations and override my
+;; default settings.
+
+;; local customization per $HOME (think nfs mount)
+(when-file-exists
+ (fname (expand-file-name "~/.emacs-local"))
+ (load-file fname))
+
+;; customization per _hostname_, (think grid of boxes)
+(when-file-exists
+ (fname (expand-file-name (format "~/.emacs.local/%s.el" krb-local-host-name)))
+ (message "loading host specific (%s) customization file: %s" krb-local-host-name fname)
+ (load-file fname))
+
