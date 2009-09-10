@@ -713,12 +713,14 @@ executes that script.  The contents of the script will be similar to:
            (setq irb (format "%s/script/jruby %s/script/console" proj-root proj-root)))
           (t
            (setq irb "irb")))
-    (save-excursion
-      (find-file script-file)
-      (insert "cd " proj-root "\n"
-              irb)
-      (save-buffer)
-      (shell-command (format "chmod 755 %s >/dev/null 2>/dev/null" script-file)))
+    (unless (file-exists-p script-file)
+      (save-excursion
+        (find-file script-file)
+        (insert "cd " proj-root "\n"
+                irb)
+        (save-buffer)
+        (kill-buffer (current-buffer))
+        (shell-command (format "chmod 755 %s >/dev/null 2>/dev/null" script-file))))
     ;; TODO: seek out the internals of inf-ruby.el, see how 'cmd' is
     ;; used/parsed in `run-ruby' for ideas, need to set the pwd before
     ;; it executes...
