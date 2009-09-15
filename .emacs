@@ -356,14 +356,6 @@ the backing files."
 ;; (autoload 'clojure-test-mode "clojure-test-mode" "Clojure test mode" t)
 ;; (autoload 'clojure-test-maybe-enable "clojure-test-mode" "" t)
 ;; (add-hook 'clojure-mode-hook 'clojure-test-maybe-enable)
-(add-hook 'clojure-mode-hook
-          (lambda ()
-            (message "KRB: clojure-mode-hook: enabling paredit-mode...")
-            (paredit-mode +1)
-            (message "KRB: clojure-mode-hook: enabling highlight-parentheses-mode...")
-            (highlight-parentheses-mode t)
-            (yas/minor-mode-on)
-            (slime-mode)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; end Lisp and Clojure

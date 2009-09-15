@@ -195,10 +195,6 @@ buffer and places the cursor at that position."
      (t
       (krb-find-containing-parent-directory-of-current-buffer target-file-name (krb-path-strip path))))))
 
-(defun krb-java-find-mvn-proj-root-dir (&optional start-dir)
-  "Locate the first directory, going up in the directory hierarchy, where we find a pom.xml file - this will be a suitable place from which to execute the maven (mvn) command."
-  (krb-find-containing-parent-directory-of-current-buffer "pom.xml" start-dir))
-
 (defun krb-clear-buffer (buffer-name)
   (interactive "bBuffer: ")
   (if (get-buffer buffer-name)
