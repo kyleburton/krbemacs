@@ -119,8 +119,10 @@ For how this is computed, see `krb-clj-calculate-test-name'."
 
 (defvar krb-clj-mode-prefix-map
   (let ((map (make-sparse-keymap)))
+    (define-key map "g" 'krb-grep-thing-at-point)
     (define-key map "t" 'krb-java-exec-mvn-test)
     (define-key map "T" 'krb-clj-find-test-file)
+    (define-key map "r" 'krb-tmp)
     map))
 
 (defun krb-clj-mode-hook ()
@@ -133,6 +135,62 @@ For how this is computed, see `krb-clj-calculate-test-name'."
 
 (remove-hook 'clojure-mode-hook 'krb-clj-mode-hook)
 (add-hook 'clojure-mode-hook 'krb-clj-mode-hook t)
+
+'(
+
+(defun krb-import-thing-at-point (sym &optional shortname)
+  "For the symbol at the point (that the cursor is on), ensure it
+is imported.
+
+If the symbol looks like a java class name, ensure it is imported
+and strip the package name off of the current usage.  If the
+point is within 'java.io.File'
+
+   (java.io.File. \"foo\")
+
+This function will place an import in the namespace delcaration:
+
+   (ns some-namespace
+     (import [java.io File])) ;; <== causes this import
+
+And strip off the package name from that usage:
+
+   (File. \"foo\")
+
+If the symbol looks like a clojure function call, it will prompt
+the user for a short-name (unless one was supplied) and encode a
+require statement using that short-name in the ':as' clause.
+
+  (some.package/a-function \"an argument\")
+
+With a short-name of 'sp', will insert or modify the require:
+
+   (ns some-namespace
+     (require [some.package :as sp])) ;; <== causes this require statement
+
+and transforms the usage into:
+
+  (sp/a-function \"an argument\")
+
+Imports and requires will not be added if they are already
+present, additional symbols or classnames will be inserted into
+the pre-existing package statements.
+
+*** TODO: Once this has been written, it should be easy to write
+*** another function to scan the buffer and fix the import/uses -
+*** it can look at the current set of use statements for the
+*** ':as' clauses to figure out how to simplify forms in the
+*** current buffer.
+"
+  (interactive (list (read-string "Import: " (format "%s" (or (symbol-at-point) "")))))
+  (cond ((string-match "/" sym)
+         (message "has slash, split at that point: %s" sym))
+        ((not (string-match "\\." sym))
+         (message "no dots even? %s" sym))
+        (t
+         (message "no slash, split off the last word after the dot: %s" sym))))
+
+)
 
 
 (provide 'krb-clojure)
