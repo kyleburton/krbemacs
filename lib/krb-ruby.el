@@ -796,10 +796,11 @@ executes that script.  The contents of the script will be similar to:
 
 ;; (local-set-key "\C-cr" krb-ruby-output-mode-prefix-map)
 
-(add-hook 'ruby-mode-hook
-          '(lambda ()
-             (local-set-key "\C-cr" 'krb-ruby-mode-prefix-map)
-             (local-set-key "\C-c\C-z" 'krb-ruby-run-ruby)))
+(defun krb-ruby-mode-hook ()
+  (local-set-key "\C-cr" krb-ruby-mode-prefix-map)
+  (local-set-key "\C-c\C-z" 'krb-ruby-run-ruby))
+
+(add-hook 'ruby-mode-hook 'krb-ruby-mode-hook)
 
 
 (krb-push-file-ext-and-mode-binding 'ruby-mode "\\.rb$" "\\.erb$")
