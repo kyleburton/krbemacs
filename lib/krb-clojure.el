@@ -5,6 +5,10 @@
 ;; needed...the kind of thing eclipse and intellij do automatically...can use the classes / jars from the maven classpath...
 
 (require 'cl)
+(require 'krb-misc)
+(require 'paredit)
+(require 'highlight-parentheses)
+(require 'yasnippet)
 
 (defun krb-clj-ns-for-file-name (file-name)
   "Compute a viable clojure namespace for the given file name."
@@ -82,6 +86,19 @@ For how this is computed, see `krb-clj-calculate-test-name'."
   (if (krb-clj-in-test-file?)
       (find-file (krb-clj-calculate-base-name-for-test-buffer))
     (find-file (krb-clj-calculate-test-name))))
+
+(defun krb-java-exec-mvn (&optional mvn-options)
+  (interactive)
+  (let ((cmd (format "echo %s; cd %s; mvn %s test"
+                     (krb-java-find-mvn-proj-root-dir)
+                     (krb-java-find-mvn-proj-root-dir)
+                     (or mvn-options ""))))
+    (krb-with-fresh-output-buffer
+     "*maven-output*"
+     (krb-insf-into-buffer "*maven-output*" "Executing: %s\n" cmd)
+     (compilation-mode)
+     (shell-command "*maven-output*"))))
+
 
 (defun krb-java-exec-mvn-test (&optional mvn-options)
   "Run mvn test."

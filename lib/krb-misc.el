@@ -221,23 +221,12 @@ buffer and places the cursor at that position."
   `(let ((*krb-buffer-name* ,buffer-name)
          ;; prevents it from additionally being displayed in a minibuffer when the output is small
          (max-mini-window-height 0))
+    (when (get-buffer ,buffer-name)
+      (kill-buffer ,buffer-name))
      (krb-clear-buffer ,buffer-name)
      ,@body
      (save-excursion
        (pop-to-buffer ,buffer-name))))
-
-(defun krb-java-exec-mvn (&optional mvn-options)
-  (interactive)
-  (let ((cmd (format "echo %s; cd %s; mvn %s test"
-                     (krb-java-find-mvn-proj-root-dir)
-                     (krb-java-find-mvn-proj-root-dir)
-                     (or mvn-options ""))))
-    (krb-with-fresh-output-buffer
-     "*maven-output*"
-     (krb-insf-into-buffer "*maven-output*" "Executing: %s\n" cmd)
-     (compilation-mode)
-     (shell-command "*maven-output*"))))
-
 
 (defun krb-get-current-line-in-buffer ()
   "Returns the text of the current line in the buffer."
@@ -376,7 +365,9 @@ to the given line number."
        (pop-to-buffer "*git-output*")
        (shell-command cmd "*git-output*")
        (goto-char (point-min))
-       (replace-regexp "^" starting-dir)
+       ;; (replace-regexp "^" starting-dir)
+       (while (re-search-forward "^" nil t)
+         (replace-match starting-dir nil nil))
        (goto-char (point-min))
        (set (make-local-variable '*krb-output-base-directory*) starting-dir)
        (set (make-local-variable '*krb-output-base-file*) (buffer-file-name))
