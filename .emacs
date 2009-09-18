@@ -39,10 +39,6 @@
          (add-to-list 'load-path (krb-file path)))
      *krb-lib-dirs*)
 
-;; need this sooner (it has macros) than the other libraries, so it has to be included here...
-(require 'krb-misc)
-
-
 (defun krb-file-newer (f1 f2)
   (let ((f1-mtime (nth 5 (file-attributes f1)))
         (f2-mtime (nth 5 (file-attributes f2))))
@@ -66,12 +62,6 @@
 ;;  (krb-file "lib/krb-misc.elc")
 ;;  (krb-file "lib/krb-misc.el"))
 
-(dolist (file (directory-files (krb-file "lib/") t "^[^#]+\\.el$"))
-  (let ((cfile (format "%sc" file)))
-    (when (or (not (file-exists-p cfile))
-              (krb-file-newer file cfile))
-      (byte-compile-file file))))
-
 
 (defun krb-file-ext-case-permute (pattern)
   "Helper for ading file-extension to editor mode bindings.
@@ -85,8 +75,8 @@
                           (equal (car ent) pat))
                         auto-mode-alist))))
 
-;; auto-mode-alist
 
+;; auto-mode-alist
 (defun krb-push-file-ext-and-mode-binding (mode-name &rest patterns)
   "Bind the given mode name to the given set of file
 extensions (patterns). Eg:
@@ -101,6 +91,33 @@ extensions (patterns). Eg:
                                       pattern))
                            auto-mode-alist)))))
 
+;; need this sooner (it has macros) than the other libraries, so it has to be included here...
+(require 'krb-misc)
+
+
+
+(string-match "krb-.*el" "/foo/bar/krb-misc.el")
+(string-match "krb-.*el" "/foo/bar/kb-misc.el")
+
+(defun krb-files-to-compile ()
+  (append
+   (remove-if
+    (lambda (elt)
+      (not (string-match "krb-.*el$" elt)))
+    (directory-files (krb-file "lib/") t "^[^#]+\\.el$"))
+   (mapcar
+    (lambda (elt)
+      (krb-file (format "lib/%s" elt)))
+    '("erlang-start.el" "highlight-parentheses.el" "js2.el" "paredit.el" "toggle-case.el" "yaml-mode.el"))))
+
+(krb-files-to-compile)
+(append '(a b c) '(d e f))
+
+(dolist (file (directory-files (krb-file "lib/") t "^[^#]+\\.el$"))
+  (let ((cfile (format "%sc" file)))
+    (when (or (not (file-exists-p cfile))
+              (krb-file-newer file cfile))
+      (byte-compile-file file))))
 
 
 ;; now that many of the libs are byte-compiled, pull in all the ones we want to use
@@ -117,8 +134,6 @@ extensions (patterns). Eg:
 (require 'krb-ruby)
 (require 'yasnippet)
 (yas/initialize)
-
-
 
 
 ;; I like this one, you may like something else

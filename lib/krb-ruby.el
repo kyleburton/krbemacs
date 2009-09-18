@@ -28,10 +28,12 @@
 
 (require 'comint)
 (require 'ruby-mode)
+(require 'inf-ruby)
+(require 'krb-misc)
 
-(defgroup krb-ruby nil
-  "ruby-mode enhancements."
-  :prefix "krb-ruby-")
+;; (defgroup krb-ruby nil
+;;   "ruby-mode enhancements."
+;;   :prefix "krb-ruby-")
 
 ;; (defcustom krb-ruby-path-to-ruby nil
 ;;   "The path to the Ruby binary used for executing ruby.  This may
@@ -318,93 +320,93 @@
 ;;             (return-from function (list start (point))))))))))
 
 
-(defun krb-ruby-electric-brace (arg)
-  "For opening delmiters (braces, quotes, parenthesis, etc.) it
-automatically inserts the closing delimiter.  This helps prevent
-certin types of invalid syntax."
-  (interactive "P")
-  (cond
-   ((and (char-equal (aref "\"" 0) last-command-char)
-         (krb-ruby-in-string-p)
-         (looking-at "\""))
-    (forward-char 1))
-   ((and (char-equal (aref "\"" 0) last-command-char)
-         (krb-ruby-in-string-p))
-    (insert "\\\""))
-   ;; other delmited char type
-   (t
-    (insert-char last-command-char 1)
-    (insert (cdr (assoc
-                  (format "%c" last-command-char)
-                  '(("("  . ")")
-                    ("["  . "]")
-                    ("{"  . "}")
-                    ("\"" . "\"")))))
-    (backward-char 1))))
+;; (defun krb-ruby-electric-brace (arg)
+;;   "For opening delmiters (braces, quotes, parenthesis, etc.) it
+;; automatically inserts the closing delimiter.  This helps prevent
+;; certin types of invalid syntax."
+;;   (interactive "P")
+;;   (cond
+;;    ((and (char-equal (aref "\"" 0) last-command-char)
+;;          (krb-ruby-in-string-p)
+;;          (looking-at "\""))
+;;     (forward-char 1))
+;;    ((and (char-equal (aref "\"" 0) last-command-char)
+;;          (krb-ruby-in-string-p))
+;;     (insert "\\\""))
+;;    ;; other delmited char type
+;;    (t
+;;     (insert-char last-command-char 1)
+;;     (insert (cdr (assoc
+;;                   (format "%c" last-command-char)
+;;                   '(("("  . ")")
+;;                     ("["  . "]")
+;;                     ("{"  . "}")
+;;                     ("\"" . "\"")))))
+;;     (backward-char 1))))
 
-;; override, if at a close delim (']', '}', ')', "'", or '"'), step past it
-(defun krb-ruby-close-delim (arg)
-  "When typing closing delimiters, none will be inserted.  If the
-point is at a closing delimiter, the point will be moved outside
-of its scope.  This helps prevent certin types of invalid
-syntax."
-  (interactive "P")
-  (cond ((looking-at "[\])}'\"]")
-         (forward-char 1))
-        (t
-         (message "er, no, that'd make things unbalanced, C-q %c if you really want to" last-command-char))))
+;; ;; override, if at a close delim (']', '}', ')', "'", or '"'), step past it
+;; (defun krb-ruby-close-delim (arg)
+;;   "When typing closing delimiters, none will be inserted.  If the
+;; point is at a closing delimiter, the point will be moved outside
+;; of its scope.  This helps prevent certin types of invalid
+;; syntax."
+;;   (interactive "P")
+;;   (cond ((looking-at "[\])}'\"]")
+;;          (forward-char 1))
+;;         (t
+;;          (message "er, no, that'd make things unbalanced, C-q %c if you really want to" last-command-char))))
 
-;; override C-d, if at an open delim, move fwd
-(defun krb-ruby-del-left ()
-  "Delete backwards, making an attempt at preservation of valid
-syntax."
-  (interactive)
-  (cond
-   ((looking-back "\\\\\"" 1)
-    (message "at escaped char, delete-backward-char both...")
-    (delete-backward-char 2))
-   ((and (looking-back "\"" 1)
-         (looking-at   "\""))
-    (delete-char 1)
-    (delete-backward-char 1))
-   ((and (looking-back "\\((\\|\\[\\|{\\)" 1)
-         (looking-at   "\\()\\|]\\|}\\)"))
-    (message "within empty open/close, remove it")
-    (delete-backward-char 1)
-    (delete-char 1))
-   ((and (looking-back "\\()\\|\\]\\|}\\|\"\\)" 2))
-    (message "step into form")
-    (backward-char 1))
-   (t
-    (delete-backward-char 1))))
+;; ;; override C-d, if at an open delim, move fwd
+;; (defun krb-ruby-del-left ()
+;;   "Delete backwards, making an attempt at preservation of valid
+;; syntax."
+;;   (interactive)
+;;   (cond
+;;    ((looking-back "\\\\\"" 1)
+;;     (message "at escaped char, delete-backward-char both...")
+;;     (delete-backward-char 2))
+;;    ((and (looking-back "\"" 1)
+;;          (looking-at   "\""))
+;;     (delete-char 1)
+;;     (delete-backward-char 1))
+;;    ((and (looking-back "\\((\\|\\[\\|{\\)" 1)
+;;          (looking-at   "\\()\\|]\\|}\\)"))
+;;     (message "within empty open/close, remove it")
+;;     (delete-backward-char 1)
+;;     (delete-char 1))
+;;    ((and (looking-back "\\()\\|\\]\\|}\\|\"\\)" 2))
+;;     (message "step into form")
+;;     (backward-char 1))
+;;    (t
+;;     (delete-backward-char 1))))
 
-;; override DEL, if close delim is to the left, move into
-(defun krb-ruby-del-right (arg)
-  "Delete forward, making an attempt at preservation of valid
-syntax."
-  (interactive "P")
-  (message "delete to the right...")
-  (cond ((looking-at "\\((\\|\\[\\|{\\)")
-          (forward-char 1))
-        ((and (looking-at "\\()\\|]\\|}\\)")
-              (looking-back "\\((\\|\\[\\|{\\)" 2))
-         (backward-char 1)
-         (delete-char 2))
-        (t
-         (delete-char 1))))
+;; ;; override DEL, if close delim is to the left, move into
+;; (defun krb-ruby-del-right (arg)
+;;   "Delete forward, making an attempt at preservation of valid
+;; syntax."
+;;   (interactive "P")
+;;   (message "delete to the right...")
+;;   (cond ((looking-at "\\((\\|\\[\\|{\\)")
+;;           (forward-char 1))
+;;         ((and (looking-at "\\()\\|]\\|}\\)")
+;;               (looking-back "\\((\\|\\[\\|{\\)" 2))
+;;          (backward-char 1)
+;;          (delete-char 2))
+;;         (t
+;;          (delete-char 1))))
 
-(defun krb-ruby-backward-kill (arg)
-  "Delete backwards, attempting to delete recognized expressions.
-This helps preserve valid syntax and help the author work more
-efficiently."
-  (interactive "P")
-  (cond ((and (not (krb-ruby-in-string-p))
-              (looking-back "\\()\\|\]\\|}\\|\"\\|'\\) *" 3))
-         (let ((start-point (point)))
-           (ruby-backward-sexp)
-           (kill-region (point) start-point))
-         (t
-          (backward-kill-word 1)))))
+;; (defun krb-ruby-backward-kill (arg)
+;;   "Delete backwards, attempting to delete recognized expressions.
+;; This helps preserve valid syntax and help the author work more
+;; efficiently."
+;;   (interactive "P")
+;;   (cond ((and (not (krb-ruby-in-string-p))
+;;               (looking-back "\\()\\|\]\\|}\\|\"\\|'\\) *" 3))
+;;          (let ((start-point (point)))
+;;            (ruby-backward-sexp)
+;;            (kill-region (point) start-point))
+;;          (t
+;;           (backward-kill-word 1)))))
 
 ;; (defun krb-ruby-get-default-ruby-path ()
 ;;   (or krb-ruby-path-to-ruby
@@ -564,6 +566,10 @@ efficiently."
   "The location of the ruby binary, default is to use the spec binary on the PATH.")
 (defvar *krb-ruby-spec-location* "spec"
   "The location of the rspec spec runner, default is to use the spec binary on the PATH.")
+
+(defvar krb-ruby-output-mode-prefix-map nil)
+(defvar *krb-output-base-directory*)
+(defvar *krb-output-base-file*)
 
 (defun krb-ruby-find-proj-root-dir (&optional start-dir)
   "Based on the given starting location (which will default to
@@ -734,8 +740,7 @@ executes that script.  The contents of the script will be similar to:
     (run-ruby script-file)))
 
 (define-derived-mode krb-ruby-output-mode text-mode "KRB Ruby Output Mode"
-  "Kyle's Ruby Output Mode for interacting with the output of tools like Rake, test and spec."
-  (local-set-key "\C-cr." krb-ruby-jump-to-file-at-point))
+  "Kyle's Ruby Output Mode for interacting with the output of tools like Rake, test and spec.")
 
 ;; (define-derived-mode krb-ruby-mode ruby-mode "KRB Ruby Output Mode"
 ;;   "Kyle's Ruby Extension Mode for developing with Rails."
@@ -768,7 +773,8 @@ executes that script.  The contents of the script will be similar to:
        (pop-to-buffer "*git-output*")
        (shell-command cmd "*git-output*")
        (goto-char (point-min))
-       (replace-regexp "^" starting-dir)
+       (while (re-search-forward "^" nil t)
+         (replace-match starting-dir nil nil))
        (goto-char (point-min))
        (set-buffer "*git-output*")
        (compilation-mode)
@@ -788,7 +794,7 @@ executes that script.  The contents of the script will be similar to:
     (define-key map "z" 'krb-ruby-run-ruby)
     map))
 
-(defvar krb-ruby-output-mode-prefix-map
+(setq krb-ruby-output-mode-prefix-map
   (let ((map (make-sparse-keymap)))
     (define-key map "." 'krb-jump-to-file)
     (define-key map "," 'krb-jump-stack-pop)
