@@ -222,6 +222,7 @@ buffer and places the cursor at that position."
          ;; prevents it from additionally being displayed in a minibuffer when the output is small
          (max-mini-window-height 0))
     (when (get-buffer ,buffer-name)
+      (message "krb-with-fresh-output-buffer: killing buffer: %s" ,buffer-name)
       (kill-buffer ,buffer-name))
      (krb-clear-buffer ,buffer-name)
      ,@body

@@ -39,6 +39,10 @@
          (add-to-list 'load-path (krb-file path)))
      *krb-lib-dirs*)
 
+;; need this sooner (it has macros) than the other libraries, so it has to be included here...
+(require 'krb-misc)
+
+
 (defun krb-file-newer (f1 f2)
   (let ((f1-mtime (nth 5 (file-attributes f1)))
         (f2-mtime (nth 5 (file-attributes f2))))
@@ -100,7 +104,6 @@ extensions (patterns). Eg:
 
 
 ;; now that many of the libs are byte-compiled, pull in all the ones we want to use
-(require 'krb-misc)
 (require 'highlight-parentheses)
 (require 'yaml-mode)
 (require 'color-theme)
@@ -456,6 +459,8 @@ the backing files."
       do
       (add-hook (intern (format "%s-mode" mode))
                 'krb-tab-fix))
+
+;; (load-file (expand-file-name "~/personal/projects/sandbox/clojure-utils/kburton-clojure-utils/bin/slime-incl.el"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; The following two customiztion points are for other users of my
