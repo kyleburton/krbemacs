@@ -489,6 +489,14 @@ the backing files."
  (fname (expand-file-name "~/.emacs-local"))
  (load-file fname))
 
+(when-file-exists
+ (local-extensions (expand-file-name "~/.emacs.local.d"))
+ (loop for file in (directory-files local-extensions t "^[^#]+\\.el$")
+       do
+       (message "loading file: %s" file)
+       (load-file file)))
+
+
 ;; customization per _hostname_, (think grid of boxes)
 (when-file-exists
  (fname (expand-file-name (format "~/.emacs.local/%s.el" krb-local-host-name)))
