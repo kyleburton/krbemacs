@@ -117,24 +117,26 @@ For how this is computed, see `krb-clj-calculate-test-name'."
      (goto-char (point-max)))))
 
 
-(defvar krb-clj-mode-prefix-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map "g" 'krb-grep-thing-at-point)
-    (define-key map "t" 'krb-java-exec-mvn-test)
-    (define-key map "T" 'krb-clj-find-test-file)
-    (define-key map "r" 'krb-tmp)
-    map))
+(defvar krb-clj-mode-prefix-map nil)
+(setq krb-clj-mode-prefix-map
+      (let ((map (make-sparse-keymap)))
+        (define-key map "g" 'krb-grep-thing-at-point)
+        (define-key map "t" 'krb-java-exec-mvn-test)
+        (define-key map "T" 'krb-clj-find-test-file)
+        (define-key map "r" 'krb-tmp)
+        map))
 
 (defun krb-clj-mode-hook ()
+  (interactive)
   (paredit-mode +1)
   (highlight-parentheses-mode t)
   (yas/minor-mode-on)
   ;(slime-mode +1)
-  (local-set-key "\C-cr" 'krb-clj-mode-prefix-map))
+  (local-set-key "\C-cr" krb-clj-mode-prefix-map))
 
 
 (remove-hook 'clojure-mode-hook 'krb-clj-mode-hook)
-(add-hook 'clojure-mode-hook 'krb-clj-mode-hook t)
+(add-hook    'clojure-mode-hook 'krb-clj-mode-hook t)
 
 '(
 
