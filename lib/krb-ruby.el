@@ -687,7 +687,7 @@ For how this is computed, see `krb-ruby-calculate-spec-name'."
          (cmd (format "cd %s; %s -l %s %s"
                       (krb-ruby-find-proj-root-dir)
                       (krb-ruby-spec-location)
-                      (krb-buffer-line-at-point)
+                      (current-line)
                       (buffer-file-name))))
     (krb-with-fresh-output-buffer
      "*rake-output*"

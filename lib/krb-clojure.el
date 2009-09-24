@@ -67,7 +67,6 @@ correctly.  The pom.xml file is located via
     (concat proj-root
      (replace-regexp-in-string ".clj$" "_test.clj" file-path-within-project))))
 
-
 (defun krb-clj-calculate-base-name-for-test-buffer (&optional file-name proj-root)
   "Computes the base file name for the given test file name.
 For how this is computed, see `krb-clj-calculate-test-name'."
@@ -99,7 +98,6 @@ For how this is computed, see `krb-clj-calculate-test-name'."
      (compilation-mode)
      (shell-command "*maven-output*"))))
 
-
 (defun krb-java-exec-mvn-test (&optional mvn-options)
   "Run mvn test."
   (interactive)
@@ -115,7 +113,6 @@ For how this is computed, see `krb-clj-calculate-test-name'."
      (set-buffer "*mvn-output*")
      (compilation-mode)
      (goto-char (point-max)))))
-
 
 (defvar krb-clj-mode-prefix-map nil)
 (setq krb-clj-mode-prefix-map
