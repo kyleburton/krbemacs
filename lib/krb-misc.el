@@ -7,6 +7,12 @@
 (defun krb-buffer-line-at-point ()
  (or (cdr (nth 2 (posn-at-point))) 0))
 
+(defun krb-current-file-line-number ()
+  (let ((start (point)))
+    (save-excursion
+      (count-lines (point-min)
+                   start))))
+
 (defun krb-insert-date ()
   "Inserts a date into the current buffer."
   (interactive)
