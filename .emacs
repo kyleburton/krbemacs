@@ -149,7 +149,8 @@ extensions (patterns). Eg:
 (setq-default
  indent-tabs-mode nil
  c-basic-offset 2
- c-default-style "user")
+ c-default-style "user"
+ js2-basic-offset 4)
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom -- don't edit or cut/paste it!
@@ -209,6 +210,7 @@ the backing files."
            (not (= ?w (char-syntax (char-after))))))
       (yas/expand)
       (indent-according-to-mode)))
+
 
 (defun krb-tab-fix ()
   (local-set-key [tab] 'krb-indent-or-expand))
@@ -470,10 +472,12 @@ the backing files."
     (browse-url (concat "http://www.google.com/search?ie=utf-8&oe=utf-8&q=" query))))
 
 ;; set our tab-override for all these modes...
-(loop for mode in '(clojure shell-script java js2 ruby perl cperl python scheme yaml xml nxml html confluence elisp lisp erlang)
+(loop for mode in '(clojure shell-script java js2 javascript ruby perl cperl python scheme yaml xml nxml html confluence elisp lisp erlang)
       do
-      (add-hook (intern (format "%s-mode" mode))
-                'krb-tab-fix))
+      (let ((hook-name (intern (format "%s-mode-hook" mode))))
+
+        (add-hook hook-name 'yas/minor-mode)
+        (add-hook hook-name 'krb-tab-fix)))
 
 ;; (load-file (expand-file-name "~/personal/projects/sandbox/clojure-utils/kburton-clojure-utils/bin/slime-incl.el"))
 
