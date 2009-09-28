@@ -1,9 +1,0 @@
-#name: jQuery.ajax({ ...: ...});
-# --
-jQuery.ajax({
-    type:    '${putOrPost}',
-    url:     ${url},
-    data:    ${urlEncodedData},
-    error:   ${errorFn},
-    success: ${successFn}
-});
