@@ -1,0 +1,3 @@
+(defn ${name} [${args}]
+  "${docstr}"
+  $0)

@@ -199,17 +199,40 @@ the backing files."
          ,@body))))
 
 
+(defvar krb/yas-within-snippet nil
+  "Used to determine if the current buffer is within a snippet expansion...see `krb-indent-or-expand'")
+(make-variable-buffer-local 'krb/yas-within-snippet)
+
 ;; stolen from http://github.com/dysinger/home
 (add-hook 'write-file-functions 'delete-trailing-whitespace)
 ;; stolen from http://github.com/dysinger/home
 (defun krb-indent-or-expand ()
   (interactive)
-  (if (and
-       (or (bobp) (= ?w (char-syntax (char-before))))
-       (or (eobp)
-           (not (= ?w (char-syntax (char-after))))))
-      (yas/expand)
-      (indent-according-to-mode)))
+  (let ((at-whitespace (and
+                        (or (bobp) (= ?w (char-syntax (char-before))))
+                        (or (eobp)
+                            (not (= ?w (char-syntax (char-after))))))))
+    (message "krb/yas-within-snippet=%s" krb/yas-within-snippet)
+    (cond ((or krb/yas-within-snippet at-whitespace)
+           (message "(or krb/yas-within-snippet at-whitespace), calling yas/expand...")
+           (yas/expand))
+
+          (t
+           (message "not at-whitespace, calling indent-according-to-mode...")
+           (indent-according-to-mode)))))
+
+(defun krb/yas-before-expand-snippet ()
+  "Sets krb/yas-within-snippet to t."
+  (message "krb/yas-before-expand-snippet")
+  (setq krb/yas-within-snippet t))
+
+(defun krb/yas-after-expand-snippet ()
+  "Sets krb/yas-within-snippet to nil."
+  (message "krb/yas-after-expand-snippet")
+  (setq krb/yas-within-snippet nil))
+
+(add-hook 'yas/before-expand-snippet-hook 'krb/yas-before-expand-snippet)
+(add-hook 'yas/after-exit-snippet-hook 'krb/yas-after-expand-snippet)
 
 
 (defun krb-tab-fix ()
