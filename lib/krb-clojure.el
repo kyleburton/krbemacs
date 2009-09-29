@@ -114,13 +114,21 @@ For how this is computed, see `krb-clj-calculate-test-name'."
      (compilation-mode)
      (goto-char (point-max)))))
 
+(defun krb-clj-open-pom-file ()
+  "Locate and open the project's pom.xml file."
+  (interactive)
+  (let ((pom-file (format "%s/pom.xml" (krb-java-find-mvn-proj-root-dir))))
+    (message "krb-clj-open-pom-file: pom-file=%s" pom-file)
+    (find-file pom-file)))
+
+
 (defvar krb-clj-mode-prefix-map nil)
 (setq krb-clj-mode-prefix-map
       (let ((map (make-sparse-keymap)))
         (define-key map "g" 'krb-grep-thing-at-point)
         (define-key map "t" 'krb-java-exec-mvn-test)
         (define-key map "T" 'krb-clj-find-test-file)
-        (define-key map "r" 'krb-tmp)
+        (define-key map "p" 'krb-clj-open-pom-file)
         map))
 
 (defun krb-clj-mode-hook ()
