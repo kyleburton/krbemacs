@@ -596,7 +596,7 @@ directory containing the Rakefile or nil if none is found."
     (krb-with-fresh-output-buffer
      "*rake-output*"
      (krb-insf-into-buffer "*rake-output*" "Executing: %s\n" cmd)
-     (shell-command cmd "*rake-output*")
+     (krb-shell-command cmd "*rake-output*")
      (pop-to-buffer "*rake-output*")
      (set-buffer "*rake-output*")
      (compilation-mode))))
@@ -670,7 +670,7 @@ For how this is computed, see `krb-ruby-calculate-spec-name'."
     (krb-with-fresh-output-buffer
      "*rake-output*"
      (krb-insf-into-buffer "*rake-output*" "Executing: %s\n" cmd)
-     (shell-command cmd "*rake-output*")
+     (krb-shell-command cmd "*rake-output*")
      (save-excursion
        (pop-to-buffer "*rake-output*")
        (set-buffer "*rake-output*")
@@ -692,7 +692,7 @@ For how this is computed, see `krb-ruby-calculate-spec-name'."
     (krb-with-fresh-output-buffer
      "*rake-output*"
      (krb-insf-into-buffer "*rake-output*" "Executing: %s\n" cmd)
-     (shell-command cmd "*rake-output*")
+     (krb-shell-command cmd "*rake-output*")
      (save-excursion
        (pop-to-buffer "*rake-output*")
        (set-buffer "*rake-output*")
@@ -731,7 +731,7 @@ executes that script.  The contents of the script will be similar to:
                 irb)
         (save-buffer)
         (kill-buffer (current-buffer))
-        (shell-command (format "chmod 755 %s >/dev/null 2>/dev/null" script-file))))
+        (krb-shell-command (format "chmod 755 %s >/dev/null 2>/dev/null" script-file))))
     ;; TODO: seek out the internals of inf-ruby.el, see how 'cmd' is
     ;; used/parsed in `run-ruby' for ideas, need to set the pwd before
     ;; it executes...
@@ -771,7 +771,7 @@ executes that script.  The contents of the script will be similar to:
      (krb-insf-into-buffer "*git-output*" "Executing: %s\n" cmd)
      (save-excursion
        (pop-to-buffer "*git-output*")
-       (shell-command cmd "*git-output*")
+       (krb-shell-command cmd "*git-output*")
        (goto-char (point-min))
        (while (re-search-forward "^" nil t)
          (replace-match starting-dir nil nil))

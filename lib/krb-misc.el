@@ -243,6 +243,19 @@ buffer and places the cursor at that position."
       (end-of-line)
       (buffer-substring start (point)))))
 
+(defvar *krb-last-exec-cmd* nil)
+
+(defun krb-shell-command (cmd buffer-name)
+  (setq *krb-last-exec-cmd* (list cmd buffer-name))
+  (shell-command cmd buffer-name))
+
+(defun krb-rerun-last-command ()
+  (interactive)
+  (message "krb-rerun-last-command: %s" *krb-last-exec-cmd*)
+  (if *krb-last-exec-cmd*
+      (apply 'shell-command *krb-last-exec-cmd*)))
+
+
 (defvar *krb-jump-stack* (list)
   "Stack to support push/pop location operations.  Similar to TAGS, used by my krb-* functions.")
 
@@ -391,6 +404,7 @@ to the given line number."
 
 (global-set-key "\C-crg" 'krb-grep-thing-at-point-editable)
 (global-set-key "\C-cr\t" 'yas/expand)
+(global-set-key "\C-crr" 'krb-rerun-last-command)
 
 (add-hook 'java-mode-hook
           '(lambda ()))
