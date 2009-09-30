@@ -125,7 +125,6 @@ For how this is computed, see `krb-clj-calculate-test-name'."
 (defvar krb-clj-mode-prefix-map nil)
 (setq krb-clj-mode-prefix-map
       (let ((map (make-sparse-keymap)))
-        (define-key map "g" 'krb-grep-thing-at-point)
         (define-key map "t" 'krb-java-exec-mvn-test)
         (define-key map "T" 'krb-clj-find-test-file)
         (define-key map "p" 'krb-clj-open-pom-file)

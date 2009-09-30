@@ -356,33 +356,40 @@ to the given line number."
 ;;   would be to support a prefix argument to then do a read-string to allow the user to specify
 ;;   the full grep command line -- defaulted with the 'cd ...; git grep -i ...' so the user
 ;;   can modify what's there
+(defun krb-git-grep-do-grep (starting-dir cmd)
+  (krb-with-fresh-output-buffer
+   "*git-output*"
+   (krb-insf-into-buffer "*git-output*" "Executing: %s\n" cmd)
+   (save-excursion
+     ;; TODO: factor out most of this into something like
+     ;; krb-with-fresh-output-buffer: the make-local-variable for
+     ;; the output base directory, the use of the buffer name, the
+     ;; pop-to-buffer and the binding of the jump key (since these
+     ;; are all 'output' temporary buffers)
+     (pop-to-buffer "*git-output*")
+     (shell-command cmd "*git-output*")
+     (goto-char (point-min))
+     (while (re-search-forward "^" nil t)
+       (if (looking-at ".")
+           (insert starting-dir)))
+     (goto-char (point-min))
+     (set (make-local-variable '*krb-output-base-directory*) starting-dir)
+     (set (make-local-variable '*krb-output-base-file*) (buffer-file-name))
+     (compilation-mode))))
+
+(defun krb-grep-thing-at-point-editable (git-cmd)
+  (interactive (list (read-string "Search For: " (format "git grep --full-name -i -n '%s'" (or (symbol-at-point) "")))))
+  (let* ((starting-dir (krb-find-containing-parent-directory-of-current-buffer ".git"))
+         (cmd (format "cd %s; %s" starting-dir git-cmd)))
+    (krb-git-grep-do-grep starting-dir cmd)))
+
 (defun krb-grep-thing-at-point (thing)
   (interactive (list (read-string "Search For: " (format "%s" (or (symbol-at-point) "")))))
   (let* ((starting-dir (krb-find-containing-parent-directory-of-current-buffer ".git"))
          (cmd (format "cd %s; git grep --full-name -i -n '%s'" starting-dir thing)))
-    (krb-with-fresh-output-buffer
-     "*git-output*"
-     (krb-insf-into-buffer "*git-output*" "Executing: %s\n" cmd)
-     (save-excursion
-       ;; TODO: factor out most of this into something like
-       ;; krb-with-fresh-output-buffer: the make-local-variable for
-       ;; the output base directory, the use of the buffer name, the
-       ;; pop-to-buffer and the binding of the jump key (since these
-       ;; are all 'output' temporary buffers)
-       (pop-to-buffer "*git-output*")
-       (shell-command cmd "*git-output*")
-       (goto-char (point-min))
-       ;; (replace-regexp "^" starting-dir)
-       (while (re-search-forward "^" nil t)
-         (replace-match starting-dir nil nil))
-       (goto-char (point-min))
-       (set (make-local-variable '*krb-output-base-directory*) starting-dir)
-       (set (make-local-variable '*krb-output-base-file*) (buffer-file-name))
-       (compilation-mode)
-       (local-set-key "\C-cr." 'krb-jump-to-file)
-       (local-set-key "\C-cr." 'krb-jump-stack-pop)))))
+    (krb-git-grep-do-grep starting-dir cmd)))
 
-(global-set-key "\C-crg" 'krb-grep-thing-at-point)
+(global-set-key "\C-crg" 'krb-grep-thing-at-point-editable)
 (global-set-key "\C-cr\t" 'yas/expand)
 
 (add-hook 'java-mode-hook
