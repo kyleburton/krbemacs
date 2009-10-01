@@ -731,7 +731,7 @@ executes that script.  The contents of the script will be similar to:
                 irb)
         (save-buffer)
         (kill-buffer (current-buffer))
-        (krb-shell-command (format "chmod 755 %s >/dev/null 2>/dev/null" script-file))))
+        (krb-shell-command (format "chmod 755 %s >/dev/null 2>/dev/null" script-file) "*ruby-output*")))
     ;; TODO: seek out the internals of inf-ruby.el, see how 'cmd' is
     ;; used/parsed in `run-ruby' for ideas, need to set the pwd before
     ;; it executes...
