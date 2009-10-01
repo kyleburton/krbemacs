@@ -773,7 +773,7 @@ executes that script.  The contents of the script will be similar to:
        (pop-to-buffer "*git-output*")
        (krb-shell-command cmd "*git-output*")
        (goto-char (point-min))
-       (while (re-search-forward "^" nil t)
+       (while (and (not (eobp)) (re-search-forward "^" nil t))
          (replace-match starting-dir nil nil))
        (goto-char (point-min))
        (set-buffer "*git-output*")
