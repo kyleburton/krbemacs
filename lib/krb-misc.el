@@ -382,7 +382,7 @@ to the given line number."
      (pop-to-buffer "*git-output*")
      (shell-command cmd "*git-output*")
      (goto-char (point-min))
-     (while (re-search-forward "^" nil t)
+     (while (and (not (eobp)) (re-search-forward "^" nil t))
        (if (looking-at ".")
            (insert starting-dir)))
      (goto-char (point-min))
