@@ -382,9 +382,11 @@ to the given line number."
      (pop-to-buffer "*git-output*")
      (shell-command cmd "*git-output*")
      (goto-char (point-min))
+     ;; need to stop when we've hit the end of the buffer...
      (while (and (not (eobp)) (re-search-forward "^" nil t))
-       (if (looking-at ".")
-           (insert starting-dir)))
+       (when (looking-at ".")
+         (insert starting-dir)
+         (forward-char 1)))
      (goto-char (point-min))
      (set (make-local-variable '*krb-output-base-directory*) starting-dir)
      (set (make-local-variable '*krb-output-base-file*) (buffer-file-name))
