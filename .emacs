@@ -130,11 +130,17 @@ extensions (patterns). Eg:
 (require 'inf-ruby)
 (require 'slime)
 (require 'clojure-mode)
+(require 'window-number)
 (require 'krb-clojure)
 (require 'krb-ruby)
 (require 'yasnippet)
 (yas/initialize)
+(window-number-mode)
 
+(global-set-key "\C-c 1" '(lambda () (window-number-select 1)))
+(global-set-key "\C-c 2" '(lambda () (window-number-select 1)))
+(global-set-key "\C-c 3" '(lambda () (window-number-select 1)))
+(global-set-key "\C-c 4" '(lambda () (window-number-select 1)))
 
 ;; I like this one, you may like something else
 (load "themes/color-theme-library.el")
