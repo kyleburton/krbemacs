@@ -4,6 +4,9 @@
 ;; and/or :use statements - something to automatically add them as
 ;; needed...the kind of thing eclipse and intellij do automatically...can use the classes / jars from the maven classpath...
 
+;; TODO: run maven in the background (it's outputting to a buffer anyhow)
+;; TODO: fix the maven output so compilation mode knows how to find the freaking files, sigh
+
 (require 'cl)
 (require 'krb-misc)
 (require 'paredit)
@@ -21,8 +24,15 @@
         (t
          (gsub! file-name "^.+/\\([^/]+\\)$" "\\1")))
   (gsub! file-name "_" "-")
-  (gsub! file-name "\\.clj" "")
+  (gsub! file-name "\\.clj$" "")
   file-name)
+
+;; (krb-clj-ns-for-file-name "~/personal/projects/sandbox/clj-xpath/src/test/clj/com/github/kyleburton/clj_xpath_test.clj")
+;; (replace-regexp-in-string "^.+/clj/" "" "~/personal/projects/sandbox/clj-xpath/src/test/clj/com/github/kyleburton/clj_xpath_test.clj")
+;; (replace-regexp-in-string "/" "." "com/github/kyleburton/clj_xpath_test.clj")
+;; (replace-regexp-in-string "_" "-" "com.github.kyleburton.clj_xpath_test.clj")
+;; (replace-regexp-in-string "\\.clj$" "" "com.github.kyleburton.clj-xpath-test.clj")
+
 
 (defun krb-clj-ns-to-file-path (ns)
   (gsub! ns "\\." "/")
@@ -44,6 +54,20 @@
 (defun krb-java-find-mvn-proj-root-dir (&optional start-dir)
   "Locate the first directory, going up in the directory hierarchy, where we find a pom.xml file - this will be a suitable place from which to execute the maven (mvn) command."
   (krb-find-containing-parent-directory-of-current-buffer "pom.xml" start-dir))
+
+(defun krb-clj-calculate-test-class-name (&optional file-name proj-root)
+  (let* ((file-name       (or file-name buffer-file-name))
+         (proj-root       (or proj-root (krb-java-find-mvn-proj-root-dir)))
+         (test-class-name (if (string-match "_test.clj$" file-name)
+                              file-name
+                            (krb-clj-calculate-test-name file-name proj-root))))
+    (message "starting with: %s" test-class-name)
+    (setq test-class-name (replace-regexp-in-string ".clj" "" test-class-name))
+    (setq test-class-name (substring test-class-name (length proj-root)))
+    (setq test-class-name (substring test-class-name (length "/test/clj/")))
+    (setq test-class-name (replace-regexp-in-string "/" "." test-class-name))
+    (setq test-class-name (replace-regexp-in-string "_" "-" test-class-name))
+    test-class-name))
 
 (defun krb-clj-calculate-test-name (&optional file-name proj-root)
   "Returns the test file name for the current buffer by default
@@ -78,6 +102,7 @@ For how this is computed, see `krb-clj-calculate-test-name'."
     (concat proj-root
      (replace-regexp-in-string "_test.clj$" ".clj" file-path-within-project))))
 
+
 (defun krb-clj-find-test-file ()
   "If in a test file (ends with _test.clj), attempt to open it's corresponding implementation file
 (.../src/test/com/foo/bar_test.clj => .../src/main/com/foo/bar.clj).  See `krb-clj-calculate-test-name', and `krb-clj-calculate-base-name-for-test-buffer'."
@@ -98,21 +123,35 @@ For how this is computed, see `krb-clj-calculate-test-name'."
      (compilation-mode)
      (shell-command "*maven-output*"))))
 
-(defun krb-java-exec-mvn-test (&optional mvn-options)
-  "Run mvn test."
-  (interactive)
-  (let ((cmd (format "echo %s; cd %s; mvn %s test"
-                     (krb-java-find-mvn-proj-root-dir)
-                     (krb-java-find-mvn-proj-root-dir)
-                     (or mvn-options ""))))
+(defun krb-java-exec-mvn-in-proj-root (mvn-command &optional proj-root)
+  (let* ((proj-root (or proj-root (krb-java-find-mvn-proj-root-dir)))
+         (cmd (format "cd '%s'; %s" proj-root cmd)))
     (krb-with-fresh-output-buffer
      "*mvn-output*"
      (krb-insf-into-buffer "*mvn-output*" "Executing: %s\n" cmd)
+     (krb-insf-into-buffer "*mvn-output*" "       In: %s\n" proj-root)
      (pop-to-buffer "*mvn-output*")
      (shell-command cmd "*mvn-output*")
      (set-buffer "*mvn-output*")
      (compilation-mode)
      (goto-char (point-max)))))
+
+(defun krb-java-exec-mvn-test (&optional mvn-options)
+  "Run mvn test."
+  (interactive)
+  (let ((cmd (format "mvn %s test"
+                     (or mvn-options ""))))
+    (krb-java-exec-mvn cmd (krb-java-find-mvn-proj-root-dir))))
+
+(defun krb-clj-exec-mvn-one-test ()
+  "Run a single test suite based on the current buffer's file name."
+  (interactive)
+  ;; com.algorithmics.algoconnect.run-test.tests
+  (let* ((test-class-name ...)
+         (cmd (format "cd %s; mvn -Dcom.algorithmics.algoconnect.run-test.tests=%s test"
+                      (krb-java-find-mvn-proj-root-dir)
+                      test-class-name)))
+    (krb-java-exec-mvn cmd (krb-java-find-mvn-proj-root-dir))))
 
 (defun krb-clj-open-pom-file ()
   "Locate and open the project's pom.xml file."
@@ -121,13 +160,24 @@ For how this is computed, see `krb-clj-calculate-test-name'."
     (message "krb-clj-open-pom-file: pom-file=%s" pom-file)
     (find-file pom-file)))
 
+;; TODO: function for loading the mavne project's repl - function for
+;; creating it for that matter, and associated keybindings...it's too
+;; much effort to set up a new maven project
+;; (defun krb-clj-run-proj-repl ()
+;;   "Within a maven project, execute the project's repl within slime."
+;;   (interactive)
+;;   )
+
+
 
 (defvar krb-clj-mode-prefix-map nil)
 (setq krb-clj-mode-prefix-map
       (let ((map (make-sparse-keymap)))
-        (define-key map "t" 'krb-java-exec-mvn-test)
-        (define-key map "T" 'krb-clj-find-test-file)
-        (define-key map "p" 'krb-clj-open-pom-file)
+        (define-key map "t"    'krb-java-exec-mvn-test)     ;; all the tests
+        (define-key map "T"    'krb-clj-find-test-file)
+        (define-key map "\C-t" 'krb-clj-exec-mvn-one-test)  ;; just test the current buffer...
+        (define-key map "p"    'krb-clj-open-pom-file)
+;;        (define-key map "r     'krb-clj-run-proj-repl")
         map))
 
 (defun krb-clj-mode-hook ()
