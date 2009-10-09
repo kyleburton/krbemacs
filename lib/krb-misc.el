@@ -404,6 +404,18 @@ to the given line number."
          (cmd (format "cd %s; git grep --full-name -i -n '%s'" starting-dir thing)))
     (krb-git-grep-do-grep starting-dir cmd)))
 
+
+(defun krb-run-redcloth (filename)
+  (interactive
+   (list
+    (read-string
+     "Run RedCloth(textile) on: "
+     (buffer-file-name))))
+  (shell-command (format "redcloth \"%s\" > \"%s\""
+                         filename
+                         (replace-regexp-in-string "\\..+" ".html" filename))))
+
+
 (global-set-key "\C-crg" 'krb-grep-thing-at-point-editable)
 (global-set-key "\C-cr\t" 'yas/expand)
 (global-set-key "\C-crr" 'krb-rerun-last-command)
