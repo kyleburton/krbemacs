@@ -405,6 +405,15 @@ to the given line number."
     (krb-git-grep-do-grep starting-dir cmd)))
 
 
+(defun krb-view-textile-in-browser (filename)
+  (interactive
+   (list
+    (read-string
+     "View File: : "
+     (buffer-file-name))))
+  (krb-run-redcloth filename)
+  (browse-url (format "file://%s" (replace-regexp-in-string "\\..+$" ".html" filename))))
+
 (defun krb-run-redcloth (filename)
   (interactive
    (list
@@ -413,7 +422,8 @@ to the given line number."
      (buffer-file-name))))
   (shell-command (format "redcloth \"%s\" > \"%s\""
                          filename
-                         (replace-regexp-in-string "\\..+" ".html" filename))))
+                         (replace-regexp-in-string "\\..+$" ".html" filename))))
+
 
 
 (global-set-key "\C-crg" 'krb-grep-thing-at-point-editable)
