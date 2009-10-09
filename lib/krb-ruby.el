@@ -597,6 +597,7 @@ directory containing the Rakefile or nil if none is found."
      "*rake-output*"
      (krb-insf-into-buffer "*rake-output*" "Executing: %s\n" cmd)
      (krb-shell-command cmd "*rake-output*")
+     ;; TODO: need to fix the file paths just like when running a single spec test...
      (pop-to-buffer "*rake-output*")
      (set-buffer "*rake-output*")
      (compilation-mode))))
@@ -815,6 +816,7 @@ executes that script.  The contents of the script will be similar to:
 
 ;; TODO: keybinding for running rake js:lint
 ;; TODO: keybinding for running script/jslint public/javascripts/algo/movements.js
+;; TODO: keybinding for opening the project's Rakefile?
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
