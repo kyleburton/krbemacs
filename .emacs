@@ -1,3 +1,4 @@
+
 ;; -*- mode: emacs-lisp -*-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Author: Kyle R. Burton <kyle.burton@gmail.com>
@@ -130,12 +131,12 @@ extensions (patterns). Eg:
 (require 'inf-ruby)
 (require 'slime)
 (require 'clojure-mode)
-(require 'window-number)
+;(require 'window-number)
 (require 'krb-clojure)
 (require 'krb-ruby)
 (require 'yasnippet)
 (yas/initialize)
-(window-number-mode)
+;(window-number-mode)
 
 (defun krb-select-window-1 () (interactive) (window-number-select 1))
 (defun krb-select-window-2 () (interactive) (window-number-select 2))
@@ -213,12 +214,25 @@ the backing files."
 
 (defmacro when-file-exists (decl &rest body)
   "(when-file-exists (fname \"/etc/passwd\")
-     (message \"%s exists\" fname)"
+     (message \"%s exists\" fname))"
   (destructuring-bind (var file-path) decl
     `(let ((,var (expand-file-name ,file-path)))
        (when (file-exists-p ,var)
          ,@body))))
 
+(defmacro if-file-exists (decl consequent &optional otherwise)
+  "(if-file-exists (fname \"/etc/passwd\")
+     (message \"%s exists\" fname)
+     (message \"%s does NOT exist\" fname)) "
+  (destructuring-bind (var file-path) decl
+    (if otherwise
+        `(let ((,var (expand-file-name ,file-path)))
+           (if (file-exists-p ,var)
+               ,consequent
+             ,otherwise))
+      `(let ((,var (expand-file-name ,file-path)))
+         (if (file-exists-p ,var)
+             ,consequent)))))
 
 (defvar krb/yas-within-snippet nil
   "Used to determine if the current buffer is within a snippet expansion...see `krb-indent-or-expand'")
@@ -524,6 +538,16 @@ the backing files."
         (add-hook hook-name 'krb-tab-fix)))
 
 ;; (load-file (expand-file-name "~/personal/projects/sandbox/clojure-utils/kburton-clojure-utils/bin/slime-incl.el"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ispell-program-name
+
+;; this is where OSX / Mac Ports installs it...
+;; (if (not ispell-program-name)
+;;     (when-file-exists
+;;      (fname "/opt/local/bin/aspell")
+;;      (setq ispell-program-name fname)))
+;; (setq ispell-program-name "aspell")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; The following two customiztion points are for other users of my

@@ -125,7 +125,7 @@ For how this is computed, see `krb-clj-calculate-test-name'."
 
 (defun krb-java-exec-mvn-in-proj-root (mvn-command &optional proj-root)
   (let* ((proj-root (or proj-root (krb-java-find-mvn-proj-root-dir)))
-         (cmd (format "cd '%s'; %s" proj-root cmd)))
+         (cmd (format "cd '%s'; %s" proj-root mvn-command)))
     (krb-with-fresh-output-buffer
      "*mvn-output*"
      (krb-insf-into-buffer "*mvn-output*" "Executing: %s\n" cmd)
@@ -153,20 +153,68 @@ For how this is computed, see `krb-clj-calculate-test-name'."
                       test-class-name)))
     (krb-java-exec-mvn cmd (krb-java-find-mvn-proj-root-dir))))
 
+(defun krb-clj-pom-file-path ()
+  (format "%s/pom.xml" (krb-java-find-mvn-proj-root-dir)))
+
 (defun krb-clj-open-pom-file ()
   "Locate and open the project's pom.xml file."
   (interactive)
-  (let ((pom-file (format "%s/pom.xml" (krb-java-find-mvn-proj-root-dir))))
+  (let ((pom-file (krb-clj-pom-file-path)))
     (message "krb-clj-open-pom-file: pom-file=%s" pom-file)
     (find-file pom-file)))
 
-;; TODO: function for loading the mavne project's repl - function for
-;; creating it for that matter, and associated keybindings...it's too
-;; much effort to set up a new maven project
-;; (defun krb-clj-run-proj-repl ()
-;;   "Within a maven project, execute the project's repl within slime."
-;;   (interactive)
-;;   )
+(defun krb-clj-get-pom-property (prop-name)
+  "Overly simplistic search within the pom.xml file."
+  (save-excursion
+    (find-file (krb-clj-pom-file-path))
+    (beginning-of-buffer)
+    (search-forward (format "<%s>" prop-name))
+    (let ((start (point)))
+      (search-forward (format "</%s>" prop-name))
+      (backward-char (length (format "</%s>" prop-name)))
+      (buffer-substring start (point)))))
+
+(defun krb-clj-project-name ()
+  (krb-clj-get-pom-property "artifactId"))
+
+(defun krb-clj-ensure-project-lisp-implementation-registered (proj-name)
+  (let* ((pname (intern proj-name))
+         (impl  (assoc pname slime-lisp-implementations)))
+    (unless impl
+      (if-file-exists
+       (slime-incl-file (format "%s/bin/slime-incl.el" (krb-java-find-mvn-proj-root-dir)))
+       (load-file slime-incl-file)
+       ;; TODO: if there is a pom.xml file (i.e. a maven project), should we try to build the project for them?
+       (error (format "Looks like there is no slime-incl.el, did you build your (maven) project? => '%s'" slime-incl-file)))))
+  t)
+
+(defun krb-clj-slime-repl-for-project ()
+  "Determine the 'slime' name for the project's repl.  For this to function, it requires that the project conform to my conventions for clojure projects.  First that it be built with maven (so the pom.xml file can e used to locate the project root directory).  The second is that the project includes a src/main/sh/repl script which is copied and filtered by maven into the bin/ directory for the projec.t  Lastly it requires that there be a slime-incl.el file which is also filtered and copied into the bin/ directory.  If you're using my emacs configuration, these featuers should be available vai the `krb-clj-new-project' function."
+  (interactive)
+  (let* ((project-name (krb-clj-project-name))
+         (slime-buffer-name (format "*slime-repl %s*" project-name)))
+    (if (not (get-buffer slime-buffer-name))
+        (progn
+          (message "krb-clj-slime-repl-for-project: no slime buffer (%s), see if it's available..." slime-buffer-name)
+          (krb-clj-ensure-project-lisp-implementation-registered (krb-clj-project-name))
+          (slime (intern project-name)))
+      (pop-to-buffer slime-buffer-name))))
+
+(defun krb-clj-new-project ()
+  "TODO: NOT IMPLEMENTED YET:
+1. ask the user for a location
+2. use the last path segment as the project-name
+3. create a pom.xml for the project (use the pom.xml snippet)
+4. create the following dirs:
+    bin/
+    src/main/sh
+    src/main/emacs
+    src/main/clj
+    src/main/resources
+    src/test/clj
+    src/test/resources"
+  (interactive)
+  )
 
 
 
@@ -177,6 +225,7 @@ For how this is computed, see `krb-clj-calculate-test-name'."
         (define-key map "T"    'krb-clj-find-test-file)
         (define-key map "\C-t" 'krb-clj-exec-mvn-one-test)  ;; just test the current buffer...
         (define-key map "p"    'krb-clj-open-pom-file)
+        (define-key map "z"    'krb-clj-slime-repl-for-project)
 ;;        (define-key map "r     'krb-clj-run-proj-repl")
         map))
 
