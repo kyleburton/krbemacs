@@ -1,3 +1,4 @@
+
 ;; -*- mode: emacs-lisp -*-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Author: Kyle R. Burton <kyle.burton@gmail.com>
@@ -9,7 +10,12 @@
 (require 'cl)
 
 (defvar *krbemacs-home*
-  (expand-file-name "~/personal/projects/krbemacs")
+  (let* ((candidate-path (replace-regexp-in-string "/$" "" (file-name-directory (file-chase-links (expand-file-name "~/.emacs")))))
+         (test-file (format "%s/lib/krb-misc.el" candidate-path)))
+    (cond ((file-exists-p test-file)
+           candidate-path)
+          (t
+           (error  "Unable to find the location of the emacs package (assuming you've pulled from git://github.com/kyleburton/krbemacs).  Please see your ~/.emacs file and add a default location."))))
   "The install location of my emacs configuration.  All other
   modules will be relative to this location.")
 
@@ -17,13 +23,14 @@
   "Helper for locating files relative to the installation root."
   (concat *krbemacs-home* "/" file))
 
-(defvar *krb-lib-dirs* 
+(defvar *krb-lib-dirs*
   '("lib"
+    "lib/http-emacs"
     "git"
     "ruby-mode"
     "slime/slime"
     "clojure-mode"
-    "distel-4.03/elisp" 
+    "distel-4.03/elisp"
     "swank-clojure"
     "yasnippet")
   "List of my customization module directories.")
@@ -33,18 +40,29 @@
          (add-to-list 'load-path (krb-file path)))
      *krb-lib-dirs*)
 
-;; pull in all the libs we want to use
-(require 'highlight-parentheses)
-(require 'yaml-mode)
-(require 'color-theme)
-(require 'saveplace)
-(require 'git)
-(require 'ruby-mode)
-(require 'inf-ruby)
-(require 'slime)
-(require 'clojure-mode)
-(require 'yasnippet)
-(yas/initialize)
+(defun krb-file-newer (f1 f2)
+  (let ((f1-mtime (nth 5 (file-attributes f1)))
+        (f2-mtime (nth 5 (file-attributes f2))))
+    (cond ((> (car f1-mtime)
+              (car f2-mtime))
+           t)
+          ((< (car f1-mtime)
+              (car f2-mtime))
+           nil)
+          ((> (cadr f1-mtime)
+              (cadr f2-mtime))
+           t)
+          (t
+           nil))))
+
+;; (krb-file-newer
+;;  (krb-file "lib/krb-misc.el")
+;;  (krb-file "lib/krb-misc.elc"))
+
+;; (krb-file-newer
+;;  (krb-file "lib/krb-misc.elc")
+;;  (krb-file "lib/krb-misc.el"))
+
 
 (defun krb-file-ext-case-permute (pattern)
   "Helper for ading file-extension to editor mode bindings.
@@ -58,6 +76,8 @@
                           (equal (car ent) pat))
                         auto-mode-alist))))
 
+
+;; auto-mode-alist
 (defun krb-push-file-ext-and-mode-binding (mode-name &rest patterns)
   "Bind the given mode name to the given set of file
 extensions (patterns). Eg:
@@ -65,10 +85,78 @@ extensions (patterns). Eg:
   (krb-push-file-ext-and-mode-binding 'cperl-mode \"\\.pl$\" \"\\.pm$\" \"\\.al$\")
 "
   (dolist (pattern (apply #'append (mapcar #'krb-file-ext-case-permute patterns)))
-    (when (not (krb-pattern-on-auto-mode-alist? pattern))
-      (setq auto-mode-alist
-            (cons (cons pattern mode-name)
-                  auto-mode-alist)))))
+    (setq auto-mode-alist
+          (cons (cons pattern mode-name)
+                (remove-if (lambda (elt)
+                             (string= (car elt)
+                                      pattern))
+                           auto-mode-alist)))))
+
+;; need this sooner (it has macros) than the other libraries, so it has to be included here...
+(require 'krb-misc)
+
+
+
+(string-match "krb-.*el" "/foo/bar/krb-misc.el")
+(string-match "krb-.*el" "/foo/bar/kb-misc.el")
+
+(defun krb-files-to-compile ()
+  (append
+   (remove-if
+    (lambda (elt)
+      (not (string-match "krb-.*el$" elt)))
+    (directory-files (krb-file "lib/") t "^[^#]+\\.el$"))
+   (mapcar
+    (lambda (elt)
+      (krb-file (format "lib/%s" elt)))
+    '("erlang-start.el" "highlight-parentheses.el" "js2.el" "paredit.el" "toggle-case.el" "yaml-mode.el"))))
+
+(krb-files-to-compile)
+(append '(a b c) '(d e f))
+
+(dolist (file (directory-files (krb-file "lib/") t "^[^#]+\\.el$"))
+  (let ((cfile (format "%sc" file)))
+    (when (or (not (file-exists-p cfile))
+              (krb-file-newer file cfile))
+      (byte-compile-file file))))
+
+
+;; now that many of the libs are byte-compiled, pull in all the ones we want to use
+(require 'highlight-parentheses)
+(require 'yaml-mode)
+(require 'color-theme)
+(require 'saveplace)
+(require 'git)
+(require 'ruby-mode)
+(require 'inf-ruby)
+(require 'slime)
+(require 'clojure-mode)
+;(require 'window-number)
+(require 'krb-clojure)
+(require 'krb-ruby)
+(require 'yasnippet)
+(yas/initialize)
+;(window-number-mode)
+
+(defun krb-select-window-1 () (interactive) (window-number-select 1))
+(defun krb-select-window-2 () (interactive) (window-number-select 2))
+(defun krb-select-window-3 () (interactive) (window-number-select 3))
+(defun krb-select-window-4 () (interactive) (window-number-select 4))
+(defun krb-select-window-5 () (interactive) (window-number-select 5))
+(defun krb-select-window-6 () (interactive) (window-number-select 6))
+(defun krb-select-window-7 () (interactive) (window-number-select 7))
+(defun krb-select-window-8 () (interactive) (window-number-select 8))
+(defun krb-select-window-9 () (interactive) (window-number-select 9))
+
+(global-set-key "\C-c1" 'krb-select-window-1)
+(global-set-key "\C-c2" 'krb-select-window-2)
+(global-set-key "\C-c3" 'krb-select-window-3)
+(global-set-key "\C-c4" 'krb-select-window-4)
+(global-set-key "\C-c5" 'krb-select-window-5)
+(global-set-key "\C-c6" 'krb-select-window-6)
+(global-set-key "\C-c7" 'krb-select-window-7)
+(global-set-key "\C-c8" 'krb-select-window-8)
+(global-set-key "\C-c9" 'krb-select-window-9)
 
 ;; I like this one, you may like something else
 (load "themes/color-theme-library.el")
@@ -83,7 +171,8 @@ extensions (patterns). Eg:
 (setq-default
  indent-tabs-mode nil
  c-basic-offset 2
- c-default-style "user")
+ c-default-style "user"
+ js2-basic-offset 4)
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom -- don't edit or cut/paste it!
@@ -125,17 +214,64 @@ the backing files."
 
 (defmacro when-file-exists (decl &rest body)
   "(when-file-exists (fname \"/etc/passwd\")
-     (message \"%s exists\" fname)"
+     (message \"%s exists\" fname))"
   (destructuring-bind (var file-path) decl
     `(let ((,var (expand-file-name ,file-path)))
        (when (file-exists-p ,var)
          ,@body))))
 
-(when-file-exists
- (fname (expand-file-name (format "~/.emacs.local/%s.el" krb-local-host-name)))
- (message "loading host specific (%s) customization file: %s" krb-local-host-name fname)
- (load-file fname))
+(defmacro if-file-exists (decl consequent &optional otherwise)
+  "(if-file-exists (fname \"/etc/passwd\")
+     (message \"%s exists\" fname)
+     (message \"%s does NOT exist\" fname)) "
+  (destructuring-bind (var file-path) decl
+    (if otherwise
+        `(let ((,var (expand-file-name ,file-path)))
+           (if (file-exists-p ,var)
+               ,consequent
+             ,otherwise))
+      `(let ((,var (expand-file-name ,file-path)))
+         (if (file-exists-p ,var)
+             ,consequent)))))
 
+(defvar krb/yas-within-snippet nil
+  "Used to determine if the current buffer is within a snippet expansion...see `krb-indent-or-expand'")
+(make-variable-buffer-local 'krb/yas-within-snippet)
+
+;; stolen from http://github.com/dysinger/home
+(add-hook 'write-file-functions 'delete-trailing-whitespace)
+;; stolen from http://github.com/dysinger/home
+(defun krb-indent-or-expand ()
+  (interactive)
+  (let ((at-whitespace (and
+                        (or (bobp) (= ?w (char-syntax (char-before))))
+                        (or (eobp)
+                            (not (= ?w (char-syntax (char-after))))))))
+    (message "krb/yas-within-snippet=%s" krb/yas-within-snippet)
+    (cond ((or krb/yas-within-snippet at-whitespace)
+           (message "(or krb/yas-within-snippet at-whitespace), calling yas/expand...")
+           (yas/expand))
+
+          (t
+           (message "not at-whitespace, calling indent-according-to-mode...")
+           (indent-according-to-mode)))))
+
+(defun krb/yas-before-expand-snippet ()
+  "Sets krb/yas-within-snippet to t."
+  (message "krb/yas-before-expand-snippet")
+  (setq krb/yas-within-snippet t))
+
+(defun krb/yas-after-expand-snippet ()
+  "Sets krb/yas-within-snippet to nil."
+  (message "krb/yas-after-expand-snippet")
+  (setq krb/yas-within-snippet nil))
+
+(add-hook 'yas/before-expand-snippet-hook 'krb/yas-before-expand-snippet)
+(add-hook 'yas/after-exit-snippet-hook 'krb/yas-after-expand-snippet)
+
+
+(defun krb-tab-fix ()
+  (local-set-key [tab] 'krb-indent-or-expand))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Perl Development customization
@@ -191,8 +327,8 @@ the backing files."
        (with-current-buffer (ad-get-arg 0)
          (longlines-suspend)))
 
-     
-     (add-hook 'ediff-cleanup-hook 
+
+     (add-hook 'ediff-cleanup-hook
                '(lambda ()
                   (dolist (tmp-buf (list ediff-buffer-A
                                          ediff-buffer-B
@@ -200,6 +336,10 @@ the backing files."
                     (if (buffer-live-p tmp-buf)
                         (with-current-buffer tmp-buf
                           (longlines-restore))))))))
+
+
+(require 'ido)
+(ido-mode t)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -218,12 +358,6 @@ the backing files."
 ;; End of Confluence Settings
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Ruby
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(krb-push-file-ext-and-mode-binding 'ruby-mode "\\.rb$" "\\.erb$")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Lisp and Clojure
@@ -252,9 +386,6 @@ the backing files."
 
 (slime-setup)
 (krb-push-file-ext-and-mode-binding 'clojure-mode "\\.clj$")
-(add-hook 'clojure-mode-hook 'krb-clojure-clojure-mode-init)
-(add-hook 'clojure-mode-hook 'paredit-mode)
-(add-hook 'clojure-mode-hook 'slime-mode)
 
 (add-hook
  'paredit-mode-hook
@@ -275,16 +406,16 @@ the backing files."
 ;; jvm+emacs+inferior-lisp instances on the same host w/o them
 ;; interfering with each other.
 (add-to-list 'slime-lisp-implementations
-             '(clojure2 ("clojure2") 
+             '(clojure2 ("clojure2")
                         :init swank-clojure-init
                         :init-function krb-swank-clojure-init) t)
 
-(add-to-list 'slime-lisp-implementations 
+(add-to-list 'slime-lisp-implementations
              '(clojure3 ("clojure3")
                         :init swank-clojure-init
                         :init-function krb-swank-clojure-init) t)
 
-(add-to-list 'slime-lisp-implementations 
+(add-to-list 'slime-lisp-implementations
              '(sbcl ("sbcl")) t)
 
 (add-hook 'lisp-mode-hook
@@ -304,7 +435,6 @@ the backing files."
 ;; (autoload 'clojure-test-maybe-enable "clojure-test-mode" "" t)
 ;; (add-hook 'clojure-mode-hook 'clojure-test-maybe-enable)
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; end Lisp and Clojure
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -320,14 +450,19 @@ the backing files."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Java 
+;; Java
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (krb-push-file-ext-and-mode-binding 'archive-mode "\\.war$" "\\.ear$" "\\.jar$")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; end Java 
+;; end Java
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(autoload 'js2-mode "js2" nil t)
+(krb-push-file-ext-and-mode-binding 'js2-mode "\\.js$")
+(setq c-syntactic-indentation t)
+(setq c-electric-flag t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Other
@@ -342,11 +477,11 @@ the backing files."
 (setq compilation-scroll-output t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Abbreviations and yasnippet...
-(setq abbrev-file-name (krb-file "abbrev-defs.el"))
-(read-abbrev-file abbrev-file-name t)
+;;; yasnippet
 
-;;; Abbreviations and yasnippet...
+(yas/load-directory (krb-file "yasnippet/snippets"))
+
+;;; end yasnippet
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun krb-html-escape ()
@@ -384,7 +519,7 @@ the backing files."
 (setq default-buffer-file-coding-system 'utf-8)
 ;; From Emacs wiki
 (setq x-select-request-type '(UTF8_STRING COMPOUND_TEXT TEXT STRING))
-;; ;; MS Windows clipboard is UTF-16LE 
+;; ;; MS Windows clipboard is UTF-16LE
 ;; (set-clipboard-coding-system 'utf-16le-dos)
 
 (defun google-region (&optional flags)
@@ -394,7 +529,49 @@ the backing files."
                                   (region-end))))
     (browse-url (concat "http://www.google.com/search?ie=utf-8&oe=utf-8&q=" query))))
 
+;; set our tab-override for all these modes...
+(loop for mode in '(clojure shell-script java js2 javascript ruby perl cperl python scheme yaml xml nxml html confluence elisp lisp erlang)
+      do
+      (let ((hook-name (intern (format "%s-mode-hook" mode))))
 
+        (add-hook hook-name 'yas/minor-mode)
+        (add-hook hook-name 'krb-tab-fix)))
+
+;; (load-file (expand-file-name "~/personal/projects/sandbox/clojure-utils/kburton-clojure-utils/bin/slime-incl.el"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ispell-program-name
+
+;; this is where OSX / Mac Ports installs it...
+;; (if (not ispell-program-name)
+;;     (when-file-exists
+;;      (fname "/opt/local/bin/aspell")
+;;      (setq ispell-program-name fname)))
+;; (setq ispell-program-name "aspell")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; The following two customiztion points are for other users of my
+;; emacs configuration - these allow you to base your configurations
+;; off of my github project (so you can benefit from the updates)
+;; while still maintaining your own customizations and override my
+;; default settings.
+
+;; local customization per $HOME (think nfs mount)
 (when-file-exists
  (fname (expand-file-name "~/.emacs-local"))
  (load-file fname))
+
+(when-file-exists
+ (local-extensions (expand-file-name "~/.emacs.local.d"))
+ (loop for file in (directory-files local-extensions t "^[^#]+\\.el$")
+       do
+       (message "loading file: %s" file)
+       (load-file file)))
+
+
+;; customization per _hostname_, (think grid of boxes)
+(when-file-exists
+ (fname (expand-file-name (format "~/.emacs.local/%s.el" krb-local-host-name)))
+ (message "loading host specific (%s) customization file: %s" krb-local-host-name fname)
+ (load-file fname))
+

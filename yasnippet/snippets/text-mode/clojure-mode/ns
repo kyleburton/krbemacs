@@ -1,3 +1,11 @@
 #name : ns ...
 # --
-(ns $1)
+(ns ${1:$(krb-clj-ns-for-file-name (buffer-file-name))}
+  (:require
+      ${2:$
+        (krb-string-join "\n  " *krb-clj-default-requires*)}))
+
+${3:$
+  (krb-string-join "\n" *krb-clj-default-declarations*)}
+
+$0

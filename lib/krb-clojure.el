@@ -1,99 +1,320 @@
 ;; Clojure-mode extensions
 
+;; TODO: need a keybinding / function for fixing the :import, :require
+;; and/or :use statements - something to automatically add them as
+;; needed...the kind of thing eclipse and intellij do automatically...can use the classes / jars from the maven classpath...
+
+;; TODO: run maven in the background (it's outputting to a buffer anyhow)
+;; TODO: fix the maven output so compilation mode knows how to find the freaking files, sigh
+
 (require 'cl)
+(require 'krb-misc)
+(require 'paredit)
+(require 'highlight-parentheses)
+(require 'yasnippet)
 
-(defun krb-clj-clojure-mode-init ()
-  "Sets up my personal clojure extensions and keybindings."
+(defun krb-clj-ns-for-file-name (file-name)
+  "Compute a viable clojure namespace for the given file name."
   (interactive)
-  (local-set-key "\C-ji" 'krb-clj-add-import)
-  (local-set-key "\C-jf" 'krb-clj-new-function)
-  (local-set-key "\C-jp" 'krb-clj-new-package)
-  (local-set-key "\C-ju" 'krb-clj-add-use)
-  (local-set-key "\C-jv" 'krb-clj-new-var)
-  )
+  (cond ((or (string-match "/src/" file-name)
+             (string-match "/clj/" file-name))
+         (gsub! file-name "^.*/clj/" "")
+         (gsub! file-name "^.*/src/" "")
+         (gsub! file-name "/" "."))
+        (t
+         (gsub! file-name "^.+/\\([^/]+\\)$" "\\1")))
+  (gsub! file-name "_" "-")
+  (gsub! file-name "\\.clj$" "")
+  file-name)
 
-(defun krb-clj-insert (&rest things)
+;; (krb-clj-ns-for-file-name "~/personal/projects/sandbox/clj-xpath/src/test/clj/com/github/kyleburton/clj_xpath_test.clj")
+;; (replace-regexp-in-string "^.+/clj/" "" "~/personal/projects/sandbox/clj-xpath/src/test/clj/com/github/kyleburton/clj_xpath_test.clj")
+;; (replace-regexp-in-string "/" "." "com/github/kyleburton/clj_xpath_test.clj")
+;; (replace-regexp-in-string "_" "-" "com.github.kyleburton.clj_xpath_test.clj")
+;; (replace-regexp-in-string "\\.clj$" "" "com.github.kyleburton.clj-xpath-test.clj")
+
+
+(defun krb-clj-ns-to-file-path (ns)
+  (gsub! ns "\\." "/")
+  (gsub! ns "-" "_")
+  (format "%s.clj" ns))
+
+;; (krb-clj-ns-to-file-path "com.github.krb-util")
+;; (krb-clj-ns-for-file-name "/foo/bar_qux.clj")
+;; (krb-clj-ns-for-file-name "/projects/sandbox/src/main/clj/com/github/kyleburton/bar_qux.clj")
+
+(defvar *krb-clj-default-requires*
+  nil
+  "For the `yas/expand' `ns' expansion, this list of strings will be added into every namespace declaration.  Typically used for things like logging.")
+
+(defun krb-clj-in-test-file? ()
   (interactive)
-  (mapcar #'(lambda (thing)
-              (insert thing)
-              (lisp-indent-line)) things))
+  (string-match "_test\\.clj$" (buffer-file-name)))
 
-(defun krb-clj-new-function (function-name arguments doc-string)
-  (interactive (list (read-string "Name: " (krb-word-under-cursor))
-                     (read-string "Arguments(enter for none): " "")
-                     (read-string "Docstring(enter to ignore): " "")))
-  ;; move to insertion point
-  (krb-clj-insert (format "(defn %s " function-name))
-  (if (> 0 (length doc-string))
-      (progn
-        (krb-clj-insert "\n")
-        (krb-clj-insert (format "\"%s\"\n" doc-string))
-        (krb-clj-insert (format "[%s]\n" arguments)))
-    (progn
-      (krb-clj-insert (format "[%s]\n" arguments))))
-  (krb-clj-insert ")\n")  
-  (backward-char 2))
+(defun krb-java-find-mvn-proj-root-dir (&optional start-dir)
+  "Locate the first directory, going up in the directory hierarchy, where we find a pom.xml file - this will be a suitable place from which to execute the maven (mvn) command."
+  (let ((root-dir (krb-find-containing-parent-directory-of-current-buffer "pom.xml" start-dir)))
+    (if root-dir
+        root-dir
+      (error "krb-java-find-mvn-proj-root-dir: unable to find pom.xml file looking backward from (%s)"
+             (or start-dir (buffer-file-name))))))
 
 
-(defun krb-clj-compute-package-from-file-name ()
-  (let* ((pwd (krb-get-pwd-as-list-no-lib))
-         (file (krb-shift pwd)))
-    (concat (krb-string-join "." pwd) "." (krb-string-strip-file-suffix file))))
+(defun krb-clj-calculate-test-class-name (&optional file-name proj-root)
+  (let* ((file-name       (or file-name buffer-file-name))
+         (proj-root       (or proj-root (krb-java-find-mvn-proj-root-dir)))
+         (test-class-name (if (string-match "_test.clj$" file-name)
+                              file-name
+                            (krb-clj-calculate-test-name file-name proj-root))))
+    (message "starting with: %s" test-class-name)
+    (setq test-class-name (replace-regexp-in-string ".clj" "" test-class-name))
+    (setq test-class-name (substring test-class-name (length proj-root)))
+    (setq test-class-name (substring test-class-name (length "/test/clj/")))
+    (setq test-class-name (replace-regexp-in-string "/" "." test-class-name))
+    (setq test-class-name (replace-regexp-in-string "_" "-" test-class-name))
+    test-class-name))
 
-(defun krb-test ()
+(defun krb-clj-calculate-test-name (&optional file-name proj-root)
+  "Returns the test file name for the current buffer by default
+  or the given file name.  The test location will be based off of
+  the location of the maven pom.xml file relative to the file
+  name being used, additionally by appending a '_test' before the
+  '.clj' extension.  Eg:
+
+    /foo/bar/app/src/main/com/foo/bar.clj
+       => /foo/bar/src/test/com/foo/bar_test.clj
+
+File paths must be absolute paths for this function to operate
+correctly.  The pom.xml file is located via
+`krb-java-find-mvn-proj-root-dir'.
+"
+  (let* ((file-name (or file-name buffer-file-name))
+         (proj-root (or proj-root (krb-java-find-mvn-proj-root-dir)))
+         (file-path-within-project (replace-regexp-in-string
+                                    "/main/" "/test/"
+                                    (substring file-name (length proj-root)))))
+    (concat proj-root
+     (replace-regexp-in-string ".clj$" "_test.clj" file-path-within-project))))
+
+(defun krb-clj-calculate-base-name-for-test-buffer (&optional file-name proj-root)
+  "Computes the base file name for the given test file name.
+For how this is computed, see `krb-clj-calculate-test-name'."
+  (let* ((file-name (or file-name buffer-file-name))
+         (proj-root (or proj-root (krb-java-find-mvn-proj-root-dir)))
+         (file-path-within-project (replace-regexp-in-string
+                                    "/test/" "/main/"
+                                    (substring file-name (length proj-root)))))
+    (concat proj-root
+     (replace-regexp-in-string "_test.clj$" ".clj" file-path-within-project))))
+
+
+(defun krb-clj-find-test-file ()
+  "If in a test file (ends with _test.clj), attempt to open it's corresponding implementation file
+(.../src/test/com/foo/bar_test.clj => .../src/main/com/foo/bar.clj).  See `krb-clj-calculate-test-name', and `krb-clj-calculate-base-name-for-test-buffer'."
   (interactive)
-  (message "%s" (krb-clj-compute-package-from-file-name)))
+  (if (krb-clj-in-test-file?)
+      (find-file (krb-clj-calculate-base-name-for-test-buffer))
+    (find-file (krb-clj-calculate-test-name))))
 
-(defun krb-test2 ()
+(defun krb-java-exec-mvn (&optional mvn-options)
   (interactive)
-  (message "%s" (krb-get-pwd-as-list-no-lib)))
+  (let ((cmd (format "echo %s; cd %s; mvn %s test"
+                     (krb-java-find-mvn-proj-root-dir)
+                     (krb-java-find-mvn-proj-root-dir)
+                     (or mvn-options ""))))
+    (krb-with-fresh-output-buffer
+     "*maven-output*"
+     (krb-insf-into-buffer "*maven-output*" "Executing: %s\n" cmd)
+     (compilation-mode)
+     (shell-command "*maven-output*"))))
 
-(defun krb-clj-new-package (package-name)
-  "Folds underscores to dashes when converting the file name..."
-  (interactive (list (read-string "Package: " (krb-clj-compute-package-from-file-name))))
-  (krb-clj-insert (format "(ns %s)\n" package-name)))
+(defun krb-java-exec-mvn-in-proj-root (mvn-command &optional proj-root)
+  (let* ((proj-root (or proj-root (krb-java-find-mvn-proj-root-dir)))
+         (cmd (format "cd '%s'; %s" proj-root mvn-command)))
+    (krb-with-fresh-output-buffer
+     "*mvn-output*"
+     (krb-insf-into-buffer "*mvn-output*" "Executing: %s\n" cmd)
+     (krb-insf-into-buffer "*mvn-output*" "       In: %s\n" proj-root)
+     (pop-to-buffer "*mvn-output*")
+     (shell-command cmd "*mvn-output*")
+     (set-buffer "*mvn-output*")
+     (compilation-mode)
+     (goto-char (point-max)))))
 
-
-(defun krb-clj-get-ns-decl ()
-  "Pull and return the ns declaration from the current buffer as an s-expr."
+(defun krb-java-exec-mvn-test (&optional mvn-options)
+  "Run mvn test."
   (interactive)
+  (let ((cmd (format "mvn %s test"
+                     (or mvn-options ""))))
+    (krb-java-exec-mvn cmd (krb-java-find-mvn-proj-root-dir))))
+
+(defun krb-clj-exec-mvn-one-test ()
+  "Run a single test suite based on the current buffer's file name."
+  (interactive)
+  ;; com.algorithmics.algoconnect.run-test.tests
+  (let* ((test-class-name ...)
+         (cmd (format "cd %s; mvn -Dcom.algorithmics.algoconnect.run-test.tests=%s test"
+                      (krb-java-find-mvn-proj-root-dir)
+                      test-class-name)))
+    (krb-java-exec-mvn cmd (krb-java-find-mvn-proj-root-dir))))
+
+(defun krb-clj-pom-file-path ()
+  (format "%s/pom.xml" (krb-java-find-mvn-proj-root-dir)))
+
+(defun krb-clj-open-pom-file ()
+  "Locate and open the project's pom.xml file."
+  (interactive)
+  (let ((pom-file (krb-clj-pom-file-path)))
+    (message "krb-clj-open-pom-file: pom-file=%s" pom-file)
+    (find-file pom-file)))
+
+(defun krb-clj-get-pom-property (prop-name)
+  "Overly simplistic search within the pom.xml file."
   (save-excursion
+    (find-file (krb-clj-pom-file-path))
     (beginning-of-buffer)
-    (search-forward "(ns ")
-    (backward-up-list 1)
+    (search-forward (format "<%s>" prop-name))
     (let ((start (point)))
-      (forward-sexp)
-      (first (read-from-string (buffer-substring start (point)))))))
+      (search-forward (format "</%s>" prop-name))
+      (backward-char (length (format "</%s>" prop-name)))
+      (buffer-substring start (point)))))
 
-;; TODO: work in progress
-(defun krb-clj-add-import (package-name class-name)
-  (interactive (list
-                (read-string "Package: ")
-                (read-string "Class: ")))
-  (let* ((ns          (krb-clj-get-ns-decl))
-         (ns-name     (first (rest ns)))
-         (imports     (rest      (find-if (l1 (and (listp %1) (string= ":import" (car %1)))) ns)))
-         (pkg-imports (find-if   (l1 (string= package-name (krb-seq-first %1)))              imports))
-         (new-imports (remove-if (l1 (string= package-name (krb-seq-first %1)))              imports))
-         (new-ns      (remove-if (l1 (and (listp %1) (string= ":import" (car %1))))          (rest (rest ns)))))
-    ;; check if already present
-    (if (and (< 0 (length pkg-imports))
-             (find-if (l1 (string= class-name (format "%s" %1))) (krb-seq->list pkg-imports)))
-        (return))
-    (if (= 0 (length pkg-imports))
-        (setf pkg-imports (krb-seq->vector (list package-name))))
-    ;; add it to the end of pkg-imports as a vector
-    (setf pkg-imports (krb-vector-conj pkg-imports class-name))
-    ;; rewrite the namespace decl
-    (message "%s" (append `(ns ,ns-name) (list (append '(:import) (list pkg-imports) new-imports)) new-ns))))
+(defun krb-clj-project-name ()
+  (krb-clj-get-pom-property "artifactId"))
 
-;; TODO: model off of krb-clj-add-import, need to handle the :as clauses
-(defun krb-clj-add-use (namespace as-name)
-  (interactive (list (read-string "Use Namespace: ")
-                     (read-string "As (enter for default): ")))
-  ;; locate the ns statement
-  ;; add the use if not present
+(defun krb-clj-ensure-project-lisp-implementation-registered (proj-name)
+  (let* ((pname (intern proj-name))
+         (impl  (assoc pname slime-lisp-implementations)))
+    (message "krb-clj-ensure-project-lisp-implementation-registered: proj-name=%s impl=%s" proj-name impl)
+    (unless impl
+      (if-file-exists
+       (slime-incl-file (format "%s/bin/slime-incl.el" (krb-java-find-mvn-proj-root-dir)))
+       (progn
+         (load-file slime-incl-file)
+         (if (not (assoc pname slime-lisp-implementations))
+             (error "Whoops, tried to register '%s' by loading '%s', but it didn't get registered? your slime implementations are: %s"
+                    pname
+                    slime-incl-file
+                    (mapcar 'car slime-lisp-implementations))))
+       ;; TODO: if there is a pom.xml file (i.e. a maven project), should we try to build the project for them?
+       (error (format "Looks like there is no slime-incl.el, did you build your (maven) project? => '%s'" slime-incl-file)))))
+  t)
+
+
+(defun krb-clj-slime-repl-for-project ()
+  "Determine the 'slime' name for the project's repl.  For this to function, it requires that the project conform to my conventions for clojure projects.  First that it be built with maven (so the pom.xml file can e used to locate the project root directory).  The second is that the project includes a src/main/sh/repl script which is copied and filtered by maven into the bin/ directory for the projec.t  Lastly it requires that there be a slime-incl.el file which is also filtered and copied into the bin/ directory.  If you're using my emacs configuration, these featuers should be available vai the `krb-clj-new-project' function."
+  (interactive)
+  (message "krb-clj-slime-repl-for-project: looking for project name")
+  (let* ((project-name (krb-clj-project-name))
+         (slime-buffer-name (format "*slime-repl %s*" project-name)))
+    (message "krb-clj-slime-repl-for-project: project-name=%s" project-name)
+    (if (not (get-buffer slime-buffer-name))
+        (progn
+          (message "krb-clj-slime-repl-for-project: no slime buffer (%s), see if it's available..." slime-buffer-name)
+          (krb-clj-ensure-project-lisp-implementation-registered (krb-clj-project-name))
+          (slime (intern project-name)))
+      (progn
+        (message "krb-clj-slime-repl-for-project: already running, opening buffer=%s" slime-buffer-name)
+        (pop-to-buffer slime-buffer-name)))))
+
+(defun krb-clj-new-project ()
+  "TODO: NOT IMPLEMENTED YET:
+1. ask the user for a location
+2. use the last path segment as the project-name
+3. create a pom.xml for the project (use the pom.xml snippet)
+4. create the following dirs:
+    bin/
+    src/main/sh
+    src/main/emacs
+    src/main/clj
+    src/main/resources
+    src/test/clj
+    src/test/resources"
+  (interactive)
   )
 
 
+
+(defvar krb-clj-mode-prefix-map nil)
+(setq krb-clj-mode-prefix-map
+      (let ((map (make-sparse-keymap)))
+        (define-key map "t"    'krb-java-exec-mvn-test)     ;; all the tests
+        (define-key map "T"    'krb-clj-find-test-file)
+        (define-key map "\C-t" 'krb-clj-exec-mvn-one-test)  ;; just test the current buffer...
+        (define-key map "p"    'krb-clj-open-pom-file)
+        (define-key map "z"    'krb-clj-slime-repl-for-project)
+;;        (define-key map "r     'krb-clj-run-proj-repl")
+        map))
+
+(defun krb-clj-mode-hook ()
+  (interactive)
+  (paredit-mode +1)
+  (highlight-parentheses-mode t)
+  (yas/minor-mode-on)
+  ;(slime-mode +1)
+  (local-set-key "\C-cr" krb-clj-mode-prefix-map))
+
+
+(remove-hook 'clojure-mode-hook 'krb-clj-mode-hook)
+(add-hook    'clojure-mode-hook 'krb-clj-mode-hook t)
+
+'(
+
+(defun krb-import-thing-at-point (sym &optional shortname)
+  "For the symbol at the point (that the cursor is on), ensure it
+is imported.
+
+If the symbol looks like a java class name, ensure it is imported
+and strip the package name off of the current usage.  If the
+point is within 'java.io.File'
+
+   (java.io.File. \"foo\")
+
+This function will place an import in the namespace delcaration:
+
+   (ns some-namespace
+     (import [java.io File])) ;; <== causes this import
+
+And strip off the package name from that usage:
+
+   (File. \"foo\")
+
+If the symbol looks like a clojure function call, it will prompt
+the user for a short-name (unless one was supplied) and encode a
+require statement using that short-name in the ':as' clause.
+
+  (some.package/a-function \"an argument\")
+
+With a short-name of 'sp', will insert or modify the require:
+
+   (ns some-namespace
+     (require [some.package :as sp])) ;; <== causes this require statement
+
+and transforms the usage into:
+
+  (sp/a-function \"an argument\")
+
+Imports and requires will not be added if they are already
+present, additional symbols or classnames will be inserted into
+the pre-existing package statements.
+
+*** TODO: Once this has been written, it should be easy to write
+*** another function to scan the buffer and fix the import/uses -
+*** it can look at the current set of use statements for the
+*** ':as' clauses to figure out how to simplify forms in the
+*** current buffer.
+"
+  (interactive (list (read-string "Import: " (format "%s" (or (symbol-at-point) "")))))
+  (cond ((string-match "/" sym)
+         (message "has slash, split at that point: %s" sym))
+        ((not (string-match "\\." sym))
+         (message "no dots even? %s" sym))
+        (t
+         (message "no slash, split off the last word after the dot: %s" sym))))
+
+)
+
+
+(provide 'krb-clojure)
+;; end of krb-clojure.el
 

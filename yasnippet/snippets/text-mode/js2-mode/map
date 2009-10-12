@@ -1,0 +1,3 @@
+$.map(${object}, function(${key}, ${value}) {
+    $0
+});

@@ -1,0 +1,2 @@
+(defvar ${name} ${initval}
+  "${docstr}")
