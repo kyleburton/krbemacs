@@ -189,14 +189,15 @@ buffer and places the cursor at that position."
 "
   (let* ((path (or starting-directory (file-name-directory (buffer-file-name))))
          (candidate (format "%s%s" path target-file-name)))
-    (message "krb-find-containing-parent-directory-of-current-buffer: target-file-name=%s path=%s candidate=%s"
-             target-file-name path candidate)
+;;     (message "krb-find-containing-parent-directory-of-current-buffer: target-file-name=%s path=%s candidate=%s"
+;;              target-file-name path candidate)
     (cond
      ((file-exists-p candidate)
       path)
      ((or (null path)
           (string= "" path)
           (string= "/" path))
+      (message "krb-find-containing-parent-directory-of-current-buffer: path is empty or '/', failing")
       nil)
      (t
       (krb-find-containing-parent-directory-of-current-buffer target-file-name (krb-path-strip path))))))

@@ -53,7 +53,12 @@
 
 (defun krb-java-find-mvn-proj-root-dir (&optional start-dir)
   "Locate the first directory, going up in the directory hierarchy, where we find a pom.xml file - this will be a suitable place from which to execute the maven (mvn) command."
-  (krb-find-containing-parent-directory-of-current-buffer "pom.xml" start-dir))
+  (let ((root-dir (krb-find-containing-parent-directory-of-current-buffer "pom.xml" start-dir)))
+    (if root-dir
+        root-dir
+      (error "krb-java-find-mvn-proj-root-dir: unable to find pom.xml file looking backward from (%s)"
+             (or start-dir (buffer-file-name))))))
+
 
 (defun krb-clj-calculate-test-class-name (&optional file-name proj-root)
   (let* ((file-name       (or file-name buffer-file-name))
@@ -180,25 +185,37 @@ For how this is computed, see `krb-clj-calculate-test-name'."
 (defun krb-clj-ensure-project-lisp-implementation-registered (proj-name)
   (let* ((pname (intern proj-name))
          (impl  (assoc pname slime-lisp-implementations)))
+    (message "krb-clj-ensure-project-lisp-implementation-registered: proj-name=%s impl=%s" proj-name impl)
     (unless impl
       (if-file-exists
        (slime-incl-file (format "%s/bin/slime-incl.el" (krb-java-find-mvn-proj-root-dir)))
-       (load-file slime-incl-file)
+       (progn
+         (load-file slime-incl-file)
+         (if (not (assoc pname slime-lisp-implementations))
+             (error "Whoops, tried to register '%s' by loading '%s', but it didn't get registered? your slime implementations are: %s"
+                    pname
+                    slime-incl-file
+                    (mapcar 'car slime-lisp-implementations))))
        ;; TODO: if there is a pom.xml file (i.e. a maven project), should we try to build the project for them?
        (error (format "Looks like there is no slime-incl.el, did you build your (maven) project? => '%s'" slime-incl-file)))))
   t)
 
+
 (defun krb-clj-slime-repl-for-project ()
   "Determine the 'slime' name for the project's repl.  For this to function, it requires that the project conform to my conventions for clojure projects.  First that it be built with maven (so the pom.xml file can e used to locate the project root directory).  The second is that the project includes a src/main/sh/repl script which is copied and filtered by maven into the bin/ directory for the projec.t  Lastly it requires that there be a slime-incl.el file which is also filtered and copied into the bin/ directory.  If you're using my emacs configuration, these featuers should be available vai the `krb-clj-new-project' function."
   (interactive)
+  (message "krb-clj-slime-repl-for-project: looking for project name")
   (let* ((project-name (krb-clj-project-name))
          (slime-buffer-name (format "*slime-repl %s*" project-name)))
+    (message "krb-clj-slime-repl-for-project: project-name=%s" project-name)
     (if (not (get-buffer slime-buffer-name))
         (progn
           (message "krb-clj-slime-repl-for-project: no slime buffer (%s), see if it's available..." slime-buffer-name)
           (krb-clj-ensure-project-lisp-implementation-registered (krb-clj-project-name))
           (slime (intern project-name)))
-      (pop-to-buffer slime-buffer-name))))
+      (progn
+        (message "krb-clj-slime-repl-for-project: already running, opening buffer=%s" slime-buffer-name)
+        (pop-to-buffer slime-buffer-name)))))
 
 (defun krb-clj-new-project ()
   "TODO: NOT IMPLEMENTED YET:
