@@ -415,6 +415,7 @@ to the given line number."
   (krb-run-redcloth filename)
   (browse-url (format "file://%s" (replace-regexp-in-string "\\..+$" ".html" filename))))
 
+
 (defun krb-run-redcloth (filename)
   (interactive
    (list
@@ -422,6 +423,25 @@ to the given line number."
      "Run RedCloth(textile) on: "
      (buffer-file-name))))
   (shell-command (format "redcloth \"%s\" > \"%s\""
+                         filename
+                         (replace-regexp-in-string "\\..+$" ".html" filename))))
+
+(defun krb-view-markdown-in-browser (filename)
+  (interactive
+   (list
+    (read-string
+     "View File: : "
+     (buffer-file-name))))
+  (krb-run-maruku filename)
+  (browse-url (format "file://%s" (replace-regexp-in-string "\\..+$" ".html" filename))))
+
+(defun krb-run-maruku (filename)
+  (interactive
+   (list
+    (read-string
+     "Run Maruku(markdown superset) on: "
+     (buffer-file-name))))
+  (shell-command (format "maruku \"%s\" > \"%s\""
                          filename
                          (replace-regexp-in-string "\\..+$" ".html" filename))))
 
