@@ -410,22 +410,36 @@ to the given line number."
   (interactive
    (list
     (read-string
-     "View File: : "
-     (buffer-file-name))))
-  (krb-run-redcloth filename)
-  (browse-url (format "file://%s" (replace-regexp-in-string "\\..+$" ".html" filename))))
-
-(defun krb-run-redcloth (filename)
-  (interactive
-   (list
-    (read-string
-     "Run RedCloth(textile) on: "
+     "View File: "
      (buffer-file-name))))
   (shell-command (format "redcloth \"%s\" > \"%s\""
                          filename
-                         (replace-regexp-in-string "\\..+$" ".html" filename))))
+                         (replace-regexp-in-string "\\..+$" ".html" filename)))
+  (browse-url (format "file://%s" (replace-regexp-in-string "\\..+$" ".html" filename))))
 
+(defun krb-view-markdown-in-browser (filename)
+  (interactive
+   (list
+    (read-string
+     "View File: "
+     (buffer-file-name))))
+  (shell-command (format "redcloth \"%s\" > \"%s\""
+                         filename
+                         (replace-regexp-in-string "\\..+$" ".html" filename)))
+  (browse-url (format "file://%s" (replace-regexp-in-string "\\..+$" ".html" filename))))
 
+(defun krb-view-markup-in-browser (filename)
+  (interactive
+   (list
+    (read-string
+     "View File: " (buffer-file-name))))
+  (cond ((or (string-match ".md$"       filename)
+             (string-match ".markdown$" filename))
+         (krb-view-markdown-in-browser filename))
+        ((string-match ".textile$" filename)
+         (krb-view-textile-in-browser filename))
+        (t
+         (error "Sorry, unrecognized type (not markdown or textile that I could tell): '%s'" filename))))
 
 (global-set-key "\C-crg" 'krb-grep-thing-at-point-editable)
 (global-set-key "\C-cr\t" 'yas/expand)

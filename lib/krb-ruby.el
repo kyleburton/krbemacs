@@ -603,7 +603,7 @@ directory containing the Rakefile or nil if none is found."
      (compilation-mode))))
 
 
-(defun krb-ruby-calculate-spec-name (&optional file-name)
+(defun krb-ruby-calculate-spec-name (&optional file-name proot)
   "Returns the spec file name for the current buffer by default
   or the given file name.  The spec location will be based off of
   the location of the rakefile relative to the file name being
@@ -620,13 +620,35 @@ File paths must be absolute paths for this function to operate
 correctly.  The rakefile is located via
 `krb-ruby-find-proj-root-dir'.
 "
-  (let* ((file-name (or file-name buffer-file-name))
-         (proj-root (krb-ruby-find-proj-root-dir))
-         (file-path-within-project (replace-regexp-in-string
-                                    "^[^/]+" "spec"
-                                    (substring file-name (length proj-root)))))
+  (let* ((proj-root (or proot (krb-ruby-find-proj-root-dir)))
+         (file-name (substring (or file-name buffer-file-name)
+                               (length proj-root)))
+         ;; ok, this should remove the project root, then app (if
+         ;; present), then prefix with the spec directory
+         (file-path-within-project
+          (cond ((string-match "^/\?app/" file-name)
+                 (replace-regexp-in-string
+                  "^/\?app/" "/spec/"
+                  file-name))
+                ((string-match "^/lib/" file-name)
+                 (format "/spec%s" file-name))
+                ((string-match "^lib/" file-name)
+                 (format "/spec/%s" file-name))
+                (t
+                 (error "Error: don't know how to convert: %s into a spec test name (proj-root:%s)."
+                        file-name proj-root)))))
     (concat proj-root
      (replace-regexp-in-string ".rb$" "_spec.rb" file-path-within-project))))
+
+'(
+
+  (krb-ruby-calculate-spec-name "/Users/kburton/personal/projects/fuzzy-string/edist-app/lib/brew.rb"
+                                "/Users/kburton/personal/projects/fuzzy-string/edist-app")
+  (krb-ruby-calculate-spec-name "/Users/kburton/personal/projects/fuzzy-string/edist-app/app/controllers/brew_controller.rb"
+                                "/Users/kburton/personal/projects/fuzzy-string/edist-app")
+  )
+;;
+
 
 (defun krb-ruby-calculate-base-name-for-spec-buffer (&optional file-name)
   "Computes the base module name for the given spec file name.
@@ -786,6 +808,29 @@ executes that script.  The contents of the script will be similar to:
        (local-set-key "\C-cr." 'krb-jump-to-file)
        (local-set-key "\C-cr." 'krb-jump-stack-pop)))))
 
+(defun krb-ruby-ruby-compile-command (&optional file)
+  (format "ruby -wc %s" (or file (buffer-file-name))))e
+
+(defun krb-ruby-compile-check-buffer (cmd)
+  "Run 'ruby -wc' on the current buffer's file."
+  (interactive (list (read-string "Syntax Check: " (krb-ruby-ruby-compile-command (buffer-file-name)))))
+      (krb-with-fresh-output-buffer
+       "*ruby-output*"
+     (krb-insf-into-buffer "*ruby-output*" "Executing: %s\n" cmd)
+     (save-excursion
+       (pop-to-buffer "*ruby-output*")
+       (krb-shell-command cmd "*ruby-output*")
+       (goto-char (point-min))
+       ;; TODO: don't show the buffer if the output is just "Syntax OK" or exitval=0
+       (while (and (not (eobp)) (re-search-forward "^" nil t))
+         (when (looking-at ".")
+           (insert starting-dir)
+           (forward-char 1)))
+       (goto-char (point-min))
+       (set-buffer "*ruby-output*")
+       (compilation-mode))))
+
+
 (defvar krb-ruby-mode-prefix-map
   (let ((map (make-sparse-keymap)))
     (define-key map "\C-s" 'krb-ruby-exec-rake-spec)
@@ -795,6 +840,7 @@ executes that script.  The contents of the script will be similar to:
     (define-key map "." 'krb-ruby-grep-thing-at-point)
     (define-key map "," 'krb-jump-stack-pop)
     (define-key map "z" 'krb-ruby-run-ruby)
+    (define-key map "c" 'krb-ruby-compile-check-buffer)
     map))
 
 (setq krb-ruby-output-mode-prefix-map
