@@ -687,7 +687,7 @@ For how this is computed, see `krb-ruby-calculate-spec-name'."
                            (krb-ruby-calculate-spec-name)))
          (cmd (format "cd %s; %s %s %s"
                       (krb-ruby-find-proj-root-dir)
-                      (krb-ruby-ruby-location)
+                      (krb-ruby-spec-location)
                       spec-file-name
                       (or rake-options ""))))
     (krb-with-fresh-output-buffer
