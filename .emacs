@@ -240,20 +240,26 @@ the backing files."
 ;; stolen from http://github.com/dysinger/home
 (add-hook 'write-file-functions 'delete-trailing-whitespace)
 ;; stolen from http://github.com/dysinger/home
+
+(defun krb-at-expandable-word ()
+  (let* ((line (krb-get-current-line-in-buffer))
+         (at-expandable-word (string-match "^\s*[a-zA-Z0-9_-]+\s*$" line)))
+    at-expandable-word))
+
+(defun krb-at-whitespace? ()
+  (and
+   (or (bobp) (= ?w (char-syntax (char-before))))
+   (or (eobp)
+       (not (= ?w (char-syntax (char-after)))))))
+
 (defun krb-indent-or-expand ()
   (interactive)
-  (let ((at-whitespace (and
-                        (or (bobp) (= ?w (char-syntax (char-before))))
-                        (or (eobp)
-                            (not (= ?w (char-syntax (char-after))))))))
-    (message "krb/yas-within-snippet=%s" krb/yas-within-snippet)
-    (cond ((or krb/yas-within-snippet at-whitespace)
-           (message "(or krb/yas-within-snippet at-whitespace), calling yas/expand...")
-           (yas/expand))
-
-          (t
-           (message "not at-whitespace, calling indent-according-to-mode...")
-           (indent-according-to-mode)))))
+  (cond ((and
+          (krb-at-expandable-word)
+          krb/yas-within-snippet)
+         (yas/expand))
+        (t
+         (indent-according-to-mode))))
 
 (defun krb/yas-before-expand-snippet ()
   "Sets krb/yas-within-snippet to t."
@@ -547,6 +553,9 @@ the backing files."
 ;;      (fname "/opt/local/bin/aspell")
 ;;      (setq ispell-program-name fname)))
 ;; (setq ispell-program-name "aspell")
+(setq-default ispell-program-name "/opt/local/bin/aspell")
+(setq ispell-dictionary "en")
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; The following two customiztion points are for other users of my
