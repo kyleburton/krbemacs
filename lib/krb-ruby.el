@@ -650,16 +650,58 @@ correctly.  The rakefile is located via
 ;;
 
 
-(defun krb-ruby-calculate-base-name-for-spec-buffer (&optional file-name)
+;; TODO: as an alternate, find it in the project-root/lib set up a
+;; list of candidate names, then take the first one that exists, if
+;; not, fall back to ./lib if ./lib exists, otherwise ./app if ./app
+;; exists, if none, error
+(defun krb-ruby-calculate-base-name-for-spec-buffer (&optional file-name project-root)
   "Computes the base module name for the given spec file name.
-For how this is computed, see `krb-ruby-calculate-spec-name'."
-  (let* ((file-name (or file-name buffer-file-name))
-         (proj-root (krb-ruby-find-proj-root-dir))
-         (file-path-within-project (replace-regexp-in-string
-                                    "^[^/]+" "app"
-                                    (substring file-name (length proj-root)))))
-    (concat proj-root
-     (replace-regexp-in-string "_spec.rb$" ".rb" file-path-within-project))))
+For how this is computed, see `krb-ruby-calculate-spec-name'.
+
+For the file $proj_root/spec/a/b/c_spec.rb
+   first candidate is $proj_root/lib/a/b/c.rb
+   second candidate is $proj_root/app/a/b/c.rb
+Note that this function actually tests for the two candidates
+in the file system, returning the first one that exists,
+falling back to the last candidate teted for.
+"
+  (flet ((strip-pfxs
+          (s &rest pfxs)
+          (loop for pfx in pfxs
+                do
+                (setq s (replace-regexp-in-string pfx "" s)))
+          s)
+         (make-cand
+          (subdir)
+          (let* ((file-name (or file-name buffer-file-name))
+                 (proj-root (or project-root (krb-ruby-find-proj-root-dir)))
+                 (file-path-within-project
+                  (strip-pfxs
+                   (substring file-name (length proj-root))
+                   "^/?"
+                   "^/?spec/?"
+                   "^/?app/?"
+                   "^/?lib/?"))
+                 (fully-pathed-cand
+                  (concat
+                   proj-root "/" subdir "/"
+                   (replace-regexp-in-string
+                    "_spec.rb$" ".rb"
+                    file-path-within-project))))
+            (message "file-name: %s" file-name)
+            (message "proj-root: %s" proj-root)
+            (message "file-path-within-project: %s" file-path-within-project)
+            (message "fully-pathed-cand: %s" fully-pathed-cand)
+            fully-pathed-cand)))
+    (let ((cand1 (make-cand "lib"))
+          (cand2 (make-cand "app")))
+      (cond ((file-exists-p cand1)
+             cand1)
+            ((file-exists-p cand2)
+             cand2)
+            (t
+             (message "Unable to find the base file, tried: %s" (list cand1 cand2))
+             cand2)))))
 
 (defun krb-ruby-find-spec-file ()
   "If in a spec file, attempts to open it's corresponding implementation file (.../spec/a/b/c.rb => .../app/a/b/c.rb).  See `krb-ruby-calculate-spec-name', and `krb-ruby-calculate-base-name-for-spec-buffer'."
