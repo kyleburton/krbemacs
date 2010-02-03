@@ -130,32 +130,11 @@ extensions (patterns). Eg:
 (require 'inf-ruby)
 (require 'slime)
 (require 'clojure-mode)
-;(require 'window-number)
 (require 'krb-clojure)
 (require 'krb-ruby)
+(require 'emacsd-tile)
 (require 'yasnippet)
 (yas/initialize)
-;(window-number-mode)
-
-(defun krb-select-window-1 () (interactive) (window-number-select 1))
-(defun krb-select-window-2 () (interactive) (window-number-select 2))
-(defun krb-select-window-3 () (interactive) (window-number-select 3))
-(defun krb-select-window-4 () (interactive) (window-number-select 4))
-(defun krb-select-window-5 () (interactive) (window-number-select 5))
-(defun krb-select-window-6 () (interactive) (window-number-select 6))
-(defun krb-select-window-7 () (interactive) (window-number-select 7))
-(defun krb-select-window-8 () (interactive) (window-number-select 8))
-(defun krb-select-window-9 () (interactive) (window-number-select 9))
-
-(global-set-key "\C-c1" 'krb-select-window-1)
-(global-set-key "\C-c2" 'krb-select-window-2)
-(global-set-key "\C-c3" 'krb-select-window-3)
-(global-set-key "\C-c4" 'krb-select-window-4)
-(global-set-key "\C-c5" 'krb-select-window-5)
-(global-set-key "\C-c6" 'krb-select-window-6)
-(global-set-key "\C-c7" 'krb-select-window-7)
-(global-set-key "\C-c8" 'krb-select-window-8)
-(global-set-key "\C-c9" 'krb-select-window-9)
 
 ;; I like this one, you may like something else
 (load "themes/color-theme-library.el")
@@ -508,6 +487,8 @@ the backing files."
 (krb-push-file-ext-and-mode-binding 'erlang-mode "\\.erl$" "\\.hrl$")
 (require 'distel)
 (distel-setup)
+
+(setq inferior-erlang-machine-options '("-name" "inf-erl@localhost" "-setcookie" "JOAYAGZNLDYFBLSZTDGS"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; End of Erlang / Distel
