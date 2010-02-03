@@ -385,20 +385,6 @@ the backing files."
   (interactive)
   (message "krb-swank-clojure-init"))
 
-;; these next 2 entries (clojure2 and clojure3) are to avoid
-;; collisions for the debug port and let me run multiple
-;; jvm+emacs+inferior-lisp instances on the same host w/o them
-;; interfering with each other.
-(add-to-list 'slime-lisp-implementations
-             '(clojure2 ("clojure2")
-                        :init swank-clojure-init
-                        :init-function krb-swank-clojure-init) t)
-
-(add-to-list 'slime-lisp-implementations
-             '(clojure3 ("clojure3")
-                        :init swank-clojure-init
-                        :init-function krb-swank-clojure-init) t)
-
 (add-to-list 'slime-lisp-implementations
              '(sbcl ("sbcl")) t)
 
