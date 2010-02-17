@@ -92,14 +92,14 @@
               (setf idx (+ idx -1 (length (first sub-expr))))))
            ((equalp chr end-delim)
             ;; we're done
-;;             (message "krbj-parse-delimited: Success '%s':%s" 
+;;             (message "krbj-parse-delimited: Success '%s':%s"
 ;;                      (substring signature 0 (+ 1 idx))
 ;;                      (length (substring signature 0 (+ 1 idx))))
             (return-from function
               (list
                (substring signature 0 (+ 1 idx))
                (substring signature (+ 1 idx)))))
-           ;; 
+           ;;
            (t
             ;; keep going
             ;;(message "at: %s: %s => %s" idx chr remainder)
@@ -153,7 +153,7 @@
 
 (defun krbj-parse-throws (signature)
   (cond ((string-match "^[ \t]*throws[ \t\n]+\\(.+?\\)[ \t\n]*{" signature)
-         (list 
+         (list
           (match-string 1 signature)
           (substring signature (match-end 1))))
         (t
@@ -171,7 +171,7 @@
 (defun krbj-pull-type (signature)
   (setf signature  (replace-regexp-in-string "^[ \t,]+" "" signature))
   (cond ((string-match "^[ \t]*\\([a-zA-Z_0-9\.]+\\)\\(\\.\\.\\.\\|[ 	]+\\)" signature)
-         (message "matched: '%s' '%s'" 
+         (message "matched: '%s' '%s'"
                   (match-string 1 signature)
                   (match-string 2 signature))
          (if (string= "..."
@@ -179,7 +179,7 @@
              (list (concat (match-string 1 signature)
                            (match-string 2 signature))
                    (substring signature (match-end 2)))
-           (list 
+           (list
             (match-string 1 signature)
             (substring signature (match-end 1)))))
         ((string-match "^[ \t]*\\([^< \t]+\\)[ \t]*<" signature)
@@ -311,10 +311,6 @@
 
 ;;(replace-regexp-in-string "[^/]+$" "" "/foo/bar/qux")
 
-(defun krb-tmp ()
-  (interactive)
-  (message "%s" (krb-java-find-pom-location)))
-
 (defun krb-find-xargs-grep (search-string &optional search-path)
   (interactive)
   (unless search-path
@@ -358,7 +354,7 @@
 ;;       ;; it's either a method or a variable declaration, assume method
 ;;       (krb-find-xargs-grep (format "%s[ \t]*(" symbol)))))
 ;; )
- 
+
 
 (defun krb-java-class-name-to-path (string)
   (replace-regexp-in-string "\\." "/" string))
@@ -372,6 +368,30 @@
     (if (file-exists-p fname)
         (find-file fname)
       (message "Doens't exist, sorry: %s => %s" string fname))))
+
+;; yas helper functions 20100217
+
+(defun krb-java-package-name-for-file-name (file-name)
+  "Compute a java package name for the given file name."
+  (interactive)
+  (gsub! file-name "^.*/java/" "")
+  (gsub! file-name "/" ".")
+  (gsub! file-name "\\.java$" "")
+  file-name)
+
+(defun krb-java-class-name-for-file-name (file-name)
+  "Compute a java class name for the given file name."
+  (interactive)
+  (gsub! file-name "^.*/java/.+/\\([^/]+\\)$" "\\1")
+  (gsub! file-name "\\.java$" "")
+  file-name)
+
+;; (krb-java-class-name-for-file-name "/home/foo/src/main/java/com/algo/Test.java")
+;; (replace-regexp-in-string "^.+/java/.+/\\([^/]+\\)" "\\1" "/home/foo/src/main/java/com/algo/Test.java")
+
+;; yas helper functions 20100217
+
+
 
 (provide 'krb-java)
 ;;; krb-java.el ends here

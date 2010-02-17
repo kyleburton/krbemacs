@@ -1,0 +1,4 @@
+* Wed Feb 17 07:41:55 EST 2010
+  Adding snippets for apache common's logging to java-mode: l[tdiwef], pkg
+  along with supporting elisp functions
+

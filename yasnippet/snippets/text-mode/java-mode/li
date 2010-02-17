@@ -1,0 +1,2 @@
+if ( LOG.isInfoEnabled() )
+  LOG.info(String.format("${fmt}",${arg1}));

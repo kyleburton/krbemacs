@@ -4,6 +4,34 @@
 (defmacro gsub! (sym reg rep)
   `(set ',sym (replace-regexp-in-string ,reg ,rep ,sym)))
 
+(defmacro if-let (predicate consequent &optional otherwise)
+  (destructuring-bind
+      (sym expr)
+      predicate
+    (message "sym=%s; expr=%s" sym expr)
+    (if otherwise
+        `(let ((,sym ,expr))
+           (if ,sym
+               ,consequent
+             ,otherwise))
+      `(let ((,sym ,expr))
+         (if ,sym
+             ,consequent)))))
+
+;; TODO: impement a cond-let, nicer than an if-let cascade...
+;; (defmacro cond-let (&rest blocks)
+;;  )
+
+;; (cond-let
+;;  ((x (some-expression))
+;;   (body-form-using x))
+;;  ((y (some-expression))
+;;   (body-form-using y))
+;;  (t
+;;   (default-clause)))
+
+;;
+
 (defun krb-buffer-line-at-point ()
  (or (cdr (nth 2 (posn-at-point))) 0))
 
