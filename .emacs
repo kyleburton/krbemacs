@@ -555,3 +555,5 @@ the backing files."
 ;; change from Philip: disable the menu bar (I hate that thing anyway)
 (when (fboundp 'menu-bar-mode)
   (menu-bar-mode -1))
+
+;; (xterm-mouse-mode) ==> enables / disables being able to change the cursor position with the mouse
