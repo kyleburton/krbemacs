@@ -254,8 +254,10 @@ the backing files."
 (add-hook 'yas/after-exit-snippet-hook 'krb/yas-after-expand-snippet)
 
 
+;; (defvar *krb-prev-tab-fn* (key-binding [tab]))
+;; ;; (local-key-binding [tab])
 (defun krb-tab-fix ()
-  (local-set-key [tab] 'krb-indent-or-expand))
+  '(local-set-key [tab] 'krb-indent-or-expand))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Perl Development customization
@@ -550,3 +552,6 @@ the backing files."
  (message "loading host specific (%s) customization file: %s" krb-local-host-name fname)
  (load-file fname))
 
+;; change from Philip: disable the menu bar (I hate that thing anyway)
+(when (fboundp 'menu-bar-mode)
+  (menu-bar-mode -1))
