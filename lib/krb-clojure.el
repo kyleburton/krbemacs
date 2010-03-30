@@ -243,7 +243,6 @@ For how this is computed, see `krb-clj-calculate-test-name'."
         (define-key map "\C-t" 'krb-clj-exec-mvn-one-test)  ;; just test the current buffer...
         (define-key map "p"    'krb-clj-open-pom-file)
         (define-key map "z"    'krb-clj-slime-repl-for-project)
-;;        (define-key map "r     'krb-clj-run-proj-repl")
         map))
 
 (defun krb-clj-mode-hook ()
@@ -252,7 +251,7 @@ For how this is computed, see `krb-clj-calculate-test-name'."
   (highlight-parentheses-mode t)
   (yas/minor-mode-on)
   ;(slime-mode +1)
-  (local-set-key "\C-cr" krb-clj-mode-prefix-map))
+  (local-set-key "\C-cr"  krb-clj-mode-prefix-map))
 
 
 (remove-hook 'clojure-mode-hook 'krb-clj-mode-hook)

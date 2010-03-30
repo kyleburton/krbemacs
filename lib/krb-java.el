@@ -392,6 +392,5 @@
 ;; yas helper functions 20100217
 
 
-
 (provide 'krb-java)
 ;;; krb-java.el ends here

@@ -1,0 +1,15 @@
+http://github.com/chneukirchen/gitsum
+http://zagadka.vm.bytemark.co.uk/magit/
+
+
+
+(add-to-list 'load-path "~/.emacs.d/magit")
+
+
+(autoload 'magit-status "magit" nil t)
+
+(add-to-list 'load-path "~/.emacs.d/gitsum")
+(autoload 'gitsum "gitsum" nil t)
+
+(global-set-key (kbd "C-c m") 'magit-status)
+(global-set-key (kbd "C-c g") 'gitsum)
