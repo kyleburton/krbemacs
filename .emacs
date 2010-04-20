@@ -31,6 +31,7 @@
     "clojure-mode"
     "distel-4.03/elisp"
     "swank-clojure"
+    "scala-mode"
     "yasnippet")
   "List of my customization module directories.")
 
@@ -94,31 +95,22 @@ extensions (patterns). Eg:
 ;; need this sooner (it has macros) than the other libraries, so it has to be included here...
 (require 'krb-misc)
 
+;; (string-match "krb-.*el" "/foo/bar/krb-misc.el")
+;; (string-match "krb-.*el" "/foo/bar/kb-misc.el")
 
+(defun krb-compile-el-files-in-library (library-path)
+  (dolist (file (directory-files (krb-file (format "%s/" library-path)) t "^[^#]+\\.el$"))
+    (let ((cfile (format "%sc" file)))
+      (when (or (not (file-exists-p cfile))
+                (krb-file-newer file cfile))
+        (byte-compile-file file)))))
 
-(string-match "krb-.*el" "/foo/bar/krb-misc.el")
-(string-match "krb-.*el" "/foo/bar/kb-misc.el")
-
-(defun krb-files-to-compile ()
-  (append
-   (remove-if
-    (lambda (elt)
-      (not (string-match "krb-.*el$" elt)))
-    (directory-files (krb-file "lib/") t "^[^#]+\\.el$"))
-   (mapcar
-    (lambda (elt)
-      (krb-file (format "lib/%s" elt)))
-    '("erlang-start.el" "highlight-parentheses.el" "js2.el" "paredit.el" "toggle-case.el" "yaml-mode.el"))))
-
-(krb-files-to-compile)
-(append '(a b c) '(d e f))
-
-(dolist (file (directory-files (krb-file "lib/") t "^[^#]+\\.el$"))
-  (let ((cfile (format "%sc" file)))
-    (when (or (not (file-exists-p cfile))
-              (krb-file-newer file cfile))
-      (byte-compile-file file))))
-
+(krb-compile-el-files-in-library "lib")
+(krb-compile-el-files-in-library "yasnippet")
+(krb-compile-el-files-in-library "scala-mode")
+(krb-compile-el-files-in-library "ruby-mode")
+(krb-compile-el-files-in-library "slime/slime")
+(krb-compile-el-files-in-library "clojure-mode")
 
 ;; now that many of the libs are byte-compiled, pull in all the ones we want to use
 (require 'highlight-parentheses)
@@ -134,6 +126,8 @@ extensions (patterns). Eg:
 (require 'krb-ruby)
 (require 'emacsd-tile)
 (require 'yasnippet)
+(require 'scala-mode-auto)
+(require 'krb-scala)
 (yas/initialize)
 
 ;; I like this one, you may like something else
@@ -557,3 +551,17 @@ the backing files."
   (menu-bar-mode -1))
 
 ;; (xterm-mouse-mode) ==> enables / disables being able to change the cursor position with the mouse
+
+
+;; (setq yas/my-directory "/path/to/some/directory/scala-mode/contrib/yasnippet/snippets")
+;; (yas/load-directory yas/my-directory)
+;;(scala-electric-mode 1)
+;; scala-mode-feature-electric-mode
+
+(krb-scala-init)
+
+;; ensime: http://github.com/aemoncannon/ensime
+;(add-to-list 'load-path (krb-file "ensime/src/elisp/"))
+;(require 'ensime)
+;(add-hook 'scala-mode-hook 'ensime-scala-mode-hook)
+
