@@ -560,8 +560,3 @@ the backing files."
 
 (krb-scala-init)
 
-;; ensime: http://github.com/aemoncannon/ensime
-;(add-to-list 'load-path (krb-file "ensime/src/elisp/"))
-;(require 'ensime)
-;(add-hook 'scala-mode-hook 'ensime-scala-mode-hook)
-

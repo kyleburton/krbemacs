@@ -26,10 +26,10 @@
 
 ;;; Code:
 
-
 (defun krb-scala-mode-hook ()
-  (local-set-key (kbd "<f4>") 'scala-eval-definition)
-  (local-set-key (kbd "<f5>") 'scala-eval-region)
+  (local-set-key (kbd "<f4>")    'scala-eval-definition)
+  (local-set-key (kbd "<f5>")    'scala-eval-region)
+  (local-set-key (kbd "C-c C-z") 'scala-run-scala)
   (scala-electric-mode t)
   (yas/minor-mode-on))
 
