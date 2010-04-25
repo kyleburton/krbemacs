@@ -550,6 +550,9 @@ the backing files."
 (when (fboundp 'menu-bar-mode)
   (menu-bar-mode -1))
 
+(when (fboundp 'tool-bar-mode)
+  (tool-bar-mode -1))
+
 ;; (xterm-mouse-mode) ==> enables / disables being able to change the cursor position with the mouse
 
 
@@ -559,4 +562,3 @@ the backing files."
 ;; scala-mode-feature-electric-mode
 
 (krb-scala-init)
-
