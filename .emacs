@@ -37,8 +37,8 @@
 
 ;; add those all to the lib path
 (mapcar #'(lambda (path)
-         (add-to-list 'load-path (krb-file path)))
-     *krb-lib-dirs*)
+            (add-to-list 'load-path (krb-file path)))
+        *krb-lib-dirs*)
 
 (defun krb-file-newer (f1 f2)
   (let ((f1-mtime (nth 5 (file-attributes f1)))
@@ -124,7 +124,7 @@ extensions (patterns). Eg:
 (require 'clojure-mode)
 (require 'krb-clojure)
 (require 'krb-ruby)
-(require 'emacsd-tile)
+;; (require 'emacsd-tile)
 (require 'yasnippet)
 (require 'scala-mode-auto)
 (require 'krb-scala)
@@ -347,15 +347,19 @@ the backing files."
 
 (add-hook 'emacs-lisp-mode-hook
           (lambda ()
-             (paredit-mode +1)
-             (highlight-parentheses-mode t)
-             (setq abbrev-mode t)))
+            (paredit-mode +1)
+            (highlight-parentheses-mode t)
+            (setq abbrev-mode t)))
 
 (krb-push-file-ext-and-mode-binding 'shell-script-mode "\\.env$")
 
 (eval-after-load "slime"
   '(progn
      (slime-setup '(slime-repl))))
+
+(add-hook 'paredit-mode-hook
+          (lambda ()
+            (local-set-key "\M-k" 'kill-sexp)))
 
 (setq swank-clojure-binary "clojure")
 (require 'swank-clojure-autoload)
@@ -386,9 +390,9 @@ the backing files."
 
 (add-hook 'lisp-mode-hook
           (lambda ()
-             (paredit-mode +1)
-             (highlight-parentheses-mode t)
-             (setq abbrev-mode t)))
+            (paredit-mode +1)
+            (highlight-parentheses-mode t)
+            (setq abbrev-mode t)))
 
 ;; (add-hook 'slime-connected-hook
 ;;           (lambda ()
@@ -434,6 +438,7 @@ the backing files."
 ;; Other
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (global-set-key "\M-g" 'goto-line)
+(global-set-key "\C-cr\\" 'krb-reindent-entire-buffer)
 
 (load "toggle-case")
 (global-set-key [(control \^)] 'joc-toggle-case)
@@ -494,7 +499,7 @@ the backing files."
   "Google the selected region"
   (interactive)
   (let ((query (buffer-substring (region-beginning)
-                                  (region-end))))
+                                 (region-end))))
     (browse-url (concat "http://www.google.com/search?ie=utf-8&oe=utf-8&q=" query))))
 
 ;; set our tab-override for all these modes...
@@ -566,9 +571,17 @@ the backing files."
 ;; markdown
 
 (autoload 'markdown-mode "markdown-mode.el"
-   "Major mode for editing Markdown files" t)
+  "Major mode for editing Markdown files" t)
 (setq auto-mode-alist
-   (cons '("\\.md" . markdown-mode) auto-mode-alist))
+      (cons '("\\.md" . markdown-mode) auto-mode-alist))
 
+
+
+
+;; helper created Tue Oct 12 09:11:18 EDT 2010 Kyle&Paul
+(fset 'rn-clj-convert-java-new-to-clj-form
+      "\C-i\C-[d\C-xrma\C-m\C-[<\C-s:import\C-m\C-n\C-e\C-j\C-y\C-xrb\C-m\C-i\C-s=\C-m\C-?\C-?\C-[d\C-f\C-[(\C-s)\C-m\C-b.\C-f\C-k\C-a\C-n")
+
+(server-start)
 
 

@@ -31,9 +31,14 @@
 ;;   (default-clause)))
 
 ;;
+(defun krb-reindent-entire-buffer ()
+  (interactive)
+  (save-excursion
+    (mark-whole-buffer)
+    (indent-region (point) (mark))))
 
 (defun krb-buffer-line-at-point ()
- (or (cdr (nth 2 (posn-at-point))) 0))
+  (or (cdr (nth 2 (posn-at-point))) 0))
 
 (defun krb-current-file-line-number ()
   (let ((start (point)))
@@ -191,7 +196,7 @@ buffer and places the cursor at that position."
 
 
 (defun krb-path-strip (path)
-"
+  "
     (krb-path-strip buffer-file-name)                  => \"/Users/\"
     (krb-path-strip (krb-path-strip buffer-file-name)) => \"/\"
     (krb-path-strip \"/Users/\")                       => \"/\"
@@ -217,8 +222,8 @@ buffer and places the cursor at that position."
 "
   (let* ((path (or starting-directory (file-name-directory (buffer-file-name))))
          (candidate (format "%s%s" path target-file-name)))
-;;     (message "krb-find-containing-parent-directory-of-current-buffer: target-file-name=%s path=%s candidate=%s"
-;;              target-file-name path candidate)
+    ;;     (message "krb-find-containing-parent-directory-of-current-buffer: target-file-name=%s path=%s candidate=%s"
+    ;;              target-file-name path candidate)
     (cond
      ((file-exists-p candidate)
       path)
@@ -241,7 +246,7 @@ buffer and places the cursor at that position."
 (defun krb-ensure-buffer-exists (buffer-name)
   (if (not (get-buffer buffer-name))
       (save-excursion
-       (switch-to-buffer buffer-name))))
+        (switch-to-buffer buffer-name))))
 
 (defun krb-ins-into-buffer (buffer-name text)
   (krb-ensure-buffer-exists buffer-name)
@@ -256,9 +261,9 @@ buffer and places the cursor at that position."
   `(let ((*krb-buffer-name* ,buffer-name)
          ;; prevents it from additionally being displayed in a minibuffer when the output is small
          (max-mini-window-height 0))
-    (when (get-buffer ,buffer-name)
-      (message "krb-with-fresh-output-buffer: killing buffer: %s" ,buffer-name)
-      (kill-buffer ,buffer-name))
+     (when (get-buffer ,buffer-name)
+       (message "krb-with-fresh-output-buffer: killing buffer: %s" ,buffer-name)
+       (kill-buffer ,buffer-name))
      (krb-clear-buffer ,buffer-name)
      ,@body
      (save-excursion
@@ -360,12 +365,12 @@ buffer and places the cursor at that position."
 ;; TODO: need much better hueristics for this...
 (defun krb-parse-file/line-from-string (s)
   "Given a string that contains a file path, extract the file path and line number."
-    (cond ((string-match "^\\([^:]+\\):\\([0-9]+\\).+$" s)
-           (list (match-string 1 s)
-                 (car (read-from-string (match-string 2 s)))))
-          ((string-match "^\\([^:]+\\)(\\([0-9]+\\)).+$" s)
-           (list (match-string 1 s)
-                 (car (read-from-string (match-string 2 s)))))))
+  (cond ((string-match "^\\([^:]+\\):\\([0-9]+\\).+$" s)
+         (list (match-string 1 s)
+               (car (read-from-string (match-string 2 s)))))
+        ((string-match "^\\([^:]+\\)(\\([0-9]+\\)).+$" s)
+         (list (match-string 1 s)
+               (car (read-from-string (match-string 2 s)))))))
 
 ;; (krb-parse-file/line-from-string "/Users/kburton/development/algo_collateral_web/spec/controllers/antic_demand_margin_calls_controller_spec.rb:70:")
 ;; (krb-parse-file/line-from-string "./spec/controllers/antic_demand_margin_calls_controller_spec.rb:70:")
