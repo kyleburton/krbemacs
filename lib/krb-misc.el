@@ -96,11 +96,13 @@ buffer and places the cursor at that position."
       (buffer-substring beg (point)))))
 
 (defun krb-string-join (delim lat)
-  (let ((string (car lat)))
-    (loop for item in (cdr lat)
-          do
-          (setq string (concat string delim item)))
-    string))
+  (if (not lat)
+      ""
+    (let ((string (car lat)))
+      (loop for item in (cdr lat)
+            do
+            (setq string (concat string delim item)))
+      string)))
 
 (defun krb-get-pwd-as-list ()
   (rest (split-string buffer-file-name "/")))
@@ -493,6 +495,7 @@ to the given line number."
         (t
          (error "Sorry, unrecognized type (not markdown or textile that I could tell): '%s'" filename))))
 
+;; TODO: should put these into a keymap..
 (global-set-key "\C-crg" 'krb-grep-thing-at-point-editable)
 (global-set-key "\C-cr\t" 'yas/expand)
 (global-set-key "\C-crr" 'krb-rerun-last-command)
@@ -504,90 +507,29 @@ to the given line number."
           '(lambda ()
              (local-set-key "\C-c\t" 'yas/expand)))
 
+(defun krb-string-left-trim (str)
+  (replace-regexp-in-string "^[ \t\n\r]+" "" str))
 
+(defun krb-string-right-trim (str)
+  (replace-regexp-in-string "[ \t\n\r]+$" "" str))
 
-;; TODO: Write a similar interactive mode for *git-output* and *rake-output* buffers...
-;; (defun krb-perl-follow-stack-trace ()
-;;   (interactive)
-;;   (let ((stack-lines
-;;          (remove-if (lambda (line)
-;;                       (string-match "(eval [^)]+)([0-9]+)" line))
-;;                     (split-string (hms-perl-get-stack-trace-from-buffer) "\n")))
-;;         (initial-buffer (current-buffer))
-;;         (go-back-to-initial-buffer t)
-;;         (stop nil)
-;;         (pos 0))
-;;     (while (and (not stop) (not (null stack-lines)))
-;;       (let ((line (nth pos stack-lines))
-;;             (class "")
-;;             (file "")
-;;             (line-no ""))
-;;         (message "line: %s" line)
-;;         (string-match " \\([a-zA-Z_0-9:]+\\)->\\(.+\\)(\\([0-9]+\\))" line)
-;;         (setf class (match-string 1 line))
-;;         (setf file (match-string 2 line))
-;;         (setf line-no (match-string 3 line))
-;;         (message "class:%s file:%s line-no:%s" class file line-no)
-;;         (hms-perl-jump-to-file-and-line file (read-from-string line-no))
-;;         (let ((response (read-char "(x) exit, (q) stop here, (n) next, (p) prev:")))
-;;           (cond ((or (char-equal ?q response)
-;;                      (char-equal ?Q response)
-;;                      (char-equal ?\r response)
-;;                      (char-equal ?\n response))
-;;                  (setf go-back-to-initial-buffer nil)
-;;                  (setf stop t))
-;;                 ((or (char-equal ?x response)
-;;                      (char-equal ?X response))
-;;                  (setf stop t))
-;;                 ((or (char-equal ?n response)
-;;                      (char-equal ?N response))
-;;                  (if (= pos (- (length stack-lines) 1))
-;;                      (progn (message "at bottom of stack") (sleep-for 0 500))
-;;                    (setf pos (+ 1 pos))))
-;;                 ((or (char-equal ?t response)
-;;                      (char-equal ?T response))
-;;                  (setf pos 0))
-;;                 ((or (char-equal ?p response)
-;;                      (char-equal ?P response))
-;;                  (if (not (= pos 0))
-;;                      (setf pos (- pos 1))
-;;                    (progn (message "at top of stack") (sleep-for 0 500))))
-;;                 ;; anything else quits
-;;                 (t
-;;                  t)))))
-;;   (if go-back-to-initial-buffer
-;;       (switch-to-buffer initial-buffer))))
+(defun krb-string-trim (str)
+  (krb-string-right-trim
+   (krb-string-left-trim str)))
 
+(defun krb-rename-file-visited-by-this-buffer (new-name)
+  (interactive (list (read-string (format "Rename [%s] to: " buffer-file-name))))
+  (let ((file-name buffer-file-name))
+    (if (not (string-match "/" new-name))
+        (setq new-name (format "%s%s" (file-name-directory file-name)
+                               new-name)))
+    (message "rename-file: %s to %s" file-name new-name)
+    (rename-file file-name new-name)
+    (kill-buffer (buffer-name))
+    (find-file new-name)))
 
-;; each output-buffer shall have a buffer-local *basedir*, to which
-;; all relatively pathed file paths will need to be appended to
-
-;; (defun krb-extract-actual-file-paths-from-line (line &rest basedirs)
-;;   "Given a string (line) of text, extract all of the portions of
-;;   the string that correspond to file names that exist in the file system."
-;;   ;; string-match
-;;   )
-
-
-;; (assert (equalp '(a b c)
-;;            (cons 'a '(b c))))
-
-;; (assert (equalp
-;;          '("/projects/some_app/spec/controllers/cont1_spec.rb")
-;;          (krb-extract-actual-file-paths-from-line "/projects/some_app/spec/controllers/cont1_spec.rb")))
-
-;; (assert (equalp
-;;          '("spec/controllers/cont1_spec.rb")
-;;          (krb-extract-actual-file-paths-from-line "spec/controllers/cont1_spec.rb"
-;;                                                   "/projects/some_app")))
-
-;; (krb-parse-file/line-from-string "/Users/kburton/development/algo_collateral_web/spec/controllers/antic_demand_margin_calls_controller_spec.rb:70:")
-;; (krb-parse-file/line-from-string "./spec/controllers/antic_demand_margin_calls_controller_spec.rb:70:")
-;; (krb-parse-file/line-from-string "spec/controllers/antic_demand_margin_calls_controller_spec.rb:70:")
-;; (krb-parse-file/line-from-string "src/main/clj/com/github/kyleburton/sandbox/web.clj(28) ...")
-;; (krb-parse-file/line-from-string "/Users/kburton/personal/projects/sandbox/clojure-utils/src/main/clj/com/github/kyleburton/sandbox/web.clj(28) ...")
-;; (krb-parse-file/line-from-string "app/controllers/antic_demand_margin_calls_controller.rb:    @margin_calls = current_user.antic_demand_margin_calls  ")
-
+;; (krb-string-trim "com.github.kyleburton.clj-bloom-test
+;;   ")
 
 (provide 'krb-misc)
 

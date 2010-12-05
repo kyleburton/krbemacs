@@ -521,7 +521,8 @@ the backing files."
 ;;      (fname "/opt/local/bin/aspell")
 ;;      (setq ispell-program-name fname)))
 ;; (setq ispell-program-name "aspell")
-(setq-default ispell-program-name "/opt/local/bin/aspell")
+;;(setq-default ispell-program-name "/opt/local/bin/aspell")
+(setq-default ispell-program-name "aspell")
 (setq ispell-dictionary "en")
 
 
@@ -583,5 +584,3 @@ the backing files."
       "\C-i\C-[d\C-xrma\C-m\C-[<\C-s:import\C-m\C-n\C-e\C-j\C-y\C-xrb\C-m\C-i\C-s=\C-m\C-?\C-?\C-[d\C-f\C-[(\C-s)\C-m\C-b.\C-f\C-k\C-a\C-n")
 
 (server-start)
-
-
