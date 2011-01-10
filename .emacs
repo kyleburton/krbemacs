@@ -577,6 +577,19 @@ the backing files."
       (cons '("\\.md" . markdown-mode) auto-mode-alist))
 
 
+;; keyboard customziation for window movement like VIM's, you know,
+;; b/c vim is da bmomb!
+;;    h : move left
+;;    j : move down
+;;    k : move up
+;;    l : move right
+(define-prefix-command 'krb-windowing-keyboard-map)
+(global-set-key (kbd "C-x w") 'krb-windowing-keyboard-map)
+(define-key krb-windowing-keyboard-map (kbd "h") 'windmove-left)
+(define-key krb-windowing-keyboard-map (kbd "j") 'windmove-down)
+(define-key krb-windowing-keyboard-map (kbd "k") 'windmove-up)
+(define-key krb-windowing-keyboard-map (kbd "l") 'windmove-right)
+
 
 
 ;; helper created Tue Oct 12 09:11:18 EDT 2010 Kyle&Paul
