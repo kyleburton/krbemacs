@@ -638,7 +638,7 @@ correctly.  The rakefile is located via
                  (error "Error: don't know how to convert: %s into a spec test name (proj-root:%s)."
                         file-name proj-root)))))
     (concat proj-root
-     (replace-regexp-in-string ".rb$" "_spec.rb" file-path-within-project))))
+            (replace-regexp-in-string ".rb$" "_spec.rb" file-path-within-project))))
 
 '(
 
@@ -856,26 +856,61 @@ executes that script.  The contents of the script will be similar to:
 (defun krb-ruby-compile-check-buffer (cmd)
   "Run 'ruby -wc' on the current buffer's file."
   (interactive (list (read-string "Syntax Check: " (krb-ruby-ruby-compile-command (buffer-file-name)))))
-      (krb-with-fresh-output-buffer
-       "*ruby-output*"
-     (krb-insf-into-buffer "*ruby-output*" "Executing: %s\n" cmd)
-     (save-excursion
-       (pop-to-buffer "*ruby-output*")
-       (krb-shell-command cmd "*ruby-output*")
-       (goto-char (point-min))
-       ;; TODO: don't show the buffer if the output is just "Syntax OK" or exitval=0
-       (let ((starting-dir (krb-ruby-find-proj-root-dir)))
-         (while (and (not (eobp)) (re-search-forward "^" nil t))
-           (when (looking-at ".")
-             (insert starting-dir)
-             (forward-char 1))))
-       (goto-char (point-min))
-       (set-buffer "*ruby-output*")
-       (compilation-mode))))
+  (krb-with-fresh-output-buffer
+   "*ruby-output*"
+   (krb-insf-into-buffer "*ruby-output*" "Executing: %s\n" cmd)
+   (save-excursion
+     (pop-to-buffer "*ruby-output*")
+     (krb-shell-command cmd "*ruby-output*")
+     (goto-char (point-min))
+     ;; TODO: don't show the buffer if the output is just "Syntax OK" or exitval=0
+     (let ((starting-dir (krb-ruby-find-proj-root-dir)))
+       (while (and (not (eobp)) (re-search-forward "^" nil t))
+         (when (looking-at ".")
+           (insert starting-dir)
+           (forward-char 1))))
+     (goto-char (point-min))
+     (set-buffer "*ruby-output*")
+     (compilation-mode))))
+
+
+(defun krb-ruby-buffer-name-to-class-name ()
+  (let ((file-name (file-name-nondirectory (file-name-sans-extension (buffer-file-name))))
+        (result ""))
+    (loop for part in (split-string file-name "-")
+          do
+          (setq result (format "%s%s" result (capitalize part))))
+    result))
+
+(defun krb-ruby-generate-program ()
+  (interactive)
+  (let ((ruby-class-name (krb-ruby-buffer-name-to-class-name)))
+    (insert "#!/usr/bin/env ruby\n")
+    (insert "\n")
+    (insert "require 'base_app'\n")
+    (insert "\n")
+    (insert "class " ruby-class-name " < BaseApp\n")
+    (insert "  #attr_accessor :some_var, :another_var\n")
+    (insert "\n")
+    (insert "  def command_line_arguments\n")
+    (insert "    #super.concat [['f','file=input_file','Specify an input file.']]\n")
+    (insert "    super\n")
+    (insert "  end\n")
+    (insert "\n")
+    (insert "  def run\n")
+    (insert "    raise \"implement your application here\"\n")
+    (insert "  end\n")
+    (insert "end\n")
+    (insert "\n")
+    (insert "if $0 == __FILE__\n")
+    (insert "  " ruby-class-name ".main\n")
+    (insert "end\n")))
+
 
 
 (defvar krb-ruby-mode-prefix-map
   (let ((map (make-sparse-keymap)))
+    (define-key map "p" 'krb-ruby-generate-program)
     (define-key map "\C-s" 'krb-ruby-exec-rake-spec)
     (define-key map "t" 'krb-ruby-exec-spec-for-buffer)
     (define-key map "T" 'krb-ruby-find-spec-file)
@@ -887,10 +922,10 @@ executes that script.  The contents of the script will be similar to:
     map))
 
 (setq krb-ruby-output-mode-prefix-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map "." 'krb-jump-to-file)
-    (define-key map "," 'krb-jump-stack-pop)
-    map))
+      (let ((map (make-sparse-keymap)))
+        (define-key map "." 'krb-jump-to-file)
+        (define-key map "," 'krb-jump-stack-pop)
+        map))
 
 ;; (local-set-key "\C-cr" krb-ruby-output-mode-prefix-map)
 
@@ -900,14 +935,15 @@ executes that script.  The contents of the script will be similar to:
 
 (add-hook 'ruby-mode-hook 'krb-ruby-mode-hook)
 
-
 (krb-push-file-ext-and-mode-binding 'ruby-mode "\\.rb$" "\\.erb$")
 
 ;; TODO: keybinding for running rake js:lint
 ;; TODO: keybinding for running script/jslint public/javascripts/algo/movements.js
 ;; TODO: keybinding for opening the project's Rakefile?
 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 
 
 (provide 'krb-ruby)
