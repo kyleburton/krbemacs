@@ -904,7 +904,9 @@ executes that script.  The contents of the script will be similar to:
     (insert "\n")
     (insert "if $0 == __FILE__\n")
     (insert "  " ruby-class-name ".main\n")
-    (insert "end\n")))
+    (insert "end\n")
+    (search-backward "raise")))
+
 
 
 
