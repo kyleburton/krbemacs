@@ -255,6 +255,8 @@ For how this is computed, see `krb-clj-calculate-test-name'."
           (insert "\n(:use)")
           (krb-reindent-entire-buffer)))))
 
+;; TODO: create one for manaing use statements, with :only clauses
+;; TODO: justify the :as aliases so things line up in columns...
 (defun krb-clj-insert-require (package alias)
   (interactive "spackage: \nsas: ")
   (save-excursion
