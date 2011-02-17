@@ -19,13 +19,13 @@ INSTALLATION
 ======================================================================
 
 You must set confluence-url in your .emacs file before using the
-functions in this moudule.
+functions in this module.  It's best to place confluence.el and
+xml-rpc.el on your load path; often ~/.emacs.d or ~/elisp.
 
 Some examples:
 
-  (load (expand-file-name "~/software/emacs/confluence-el/xml-rpc.el"))
-  (load (expand-file-name "~/software/emacs/confluence-el/confluence.el"))
-  (setf confluence-url "http://intranet/confluence/rpc/xmlrpc")
+  (require 'confluence)
+  (setq confluence-url "http://intranet/confluence/rpc/xmlrpc")
 
 USING CONFLUENCE MODE
 ======================================================================
@@ -38,7 +38,7 @@ It is often convienient to bind this to a global key \C-xwf in your .emacs file:
    (global-set-key "\C-xwf")
 
 Once you have opened a page, made changes, simply saving the page
-("\C-x\C-f") will push the changes back to the wiki.
+("\C-x\C-s") will push the changes back to the wiki.
 
 To view the chagnes in your page versus what is in the wiki, type \C-xwd
 

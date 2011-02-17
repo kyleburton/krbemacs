@@ -887,6 +887,7 @@ executes that script.  The contents of the script will be similar to:
   (let ((ruby-class-name (krb-ruby-buffer-name-to-class-name)))
     (insert "#!/usr/bin/env ruby\n")
     (insert "\n")
+    (insert "require 'rubygems'\n")
     (insert "require 'base_app'\n")
     (insert "\n")
     (insert "class " ruby-class-name " < BaseApp\n")
@@ -904,7 +905,9 @@ executes that script.  The contents of the script will be similar to:
     (insert "\n")
     (insert "if $0 == __FILE__\n")
     (insert "  " ruby-class-name ".main\n")
-    (insert "end\n")))
+    (insert "end\n")
+    (search-backward "raise")))
+
 
 
 

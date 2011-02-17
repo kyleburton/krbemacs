@@ -146,21 +146,20 @@ extensions (patterns). Eg:
  c-default-style "user"
  js2-basic-offset 4)
 
-(custom-set-variables
- ;; custom-set-variables was added by Custom -- don't edit or cut/paste it!
- ;; Your init file should contain only one such instance.
- '(compile-command "TERM=dumb make")
- '(pc-select-meta-moves-sexps t)
- '(pc-select-selection-keys-only t)
- '(pc-selection-mode t t)
- '(semanticdb-default-save-directory (expand-file-name "~/.emacs-semantic") t)
- '(semanticdb-default-system-save-directory (expand-file-name "~/.emacs-semantic") t)
- '(user-full-name "Kyle R. Burton")
- '(user-mail-address "kburton@gmail.com")
- ;; confluence customization
- '(confluence-url "http://intranet.hmsonline.com/confluence/rpc/xmlrpc")
- '(confluence-default-space-alist (list (cons confluence-url "SWDEV")))
- '(confluence-prompt-page-function 'cf-prompt-page-by-path))
+;; (custom-set-variables
+;;  ;; custom-set-variables was added by Custom -- don't edit or cut/paste it!
+;;  ;; Your init file should contain only one such instance.
+;;  '(compile-command "TERM=dumb make")
+;;  '(pc-select-meta-moves-sexps t)
+;;  '(pc-select-selection-keys-only t)
+;;  '(pc-selection-mode t t)
+;;  '(semanticdb-default-save-directory (expand-file-name "~/.emacs-semantic") t)
+;;  '(semanticdb-default-system-save-directory (expand-file-name "~/.emacs-semantic") t)
+;;  '(user-full-name "Kyle R. Burton")
+;;  '(user-mail-address "kburton@gmail.com")
+;;  ;; confluence customization
+;;  '(confluence-default-space-alist (list (cons confluence-url "SWDEV")))
+;;  '(confluence-prompt-page-function 'cf-prompt-page-by-path))
 
 (defun krb-revert-all-buffers ()
   "Revert all file based buffers.  Useful when you have pulled
