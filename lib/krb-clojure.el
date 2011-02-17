@@ -94,7 +94,7 @@ correctly.  The pom.xml file is located via
                                     "/main/" "/test/"
                                     (substring file-name (length proj-root)))))
     (concat proj-root
-     (replace-regexp-in-string ".clj$" "_test.clj" file-path-within-project))))
+            (replace-regexp-in-string ".clj$" "_test.clj" file-path-within-project))))
 
 (defun krb-clj-calculate-base-name-for-test-buffer (&optional file-name proj-root)
   "Computes the base file name for the given test file name.
@@ -105,7 +105,7 @@ For how this is computed, see `krb-clj-calculate-test-name'."
                                     "/test/" "/main/"
                                     (substring file-name (length proj-root)))))
     (concat proj-root
-     (replace-regexp-in-string "_test.clj$" ".clj" file-path-within-project))))
+            (replace-regexp-in-string "_test.clj$" ".clj" file-path-within-project))))
 
 
 (defun krb-clj-find-test-file ()
@@ -200,7 +200,6 @@ For how this is computed, see `krb-clj-calculate-test-name'."
        (error (format "Looks like there is no slime-incl.el, did you build your (maven) project? => '%s'" slime-incl-file)))))
   t)
 
-
 (defun krb-clj-slime-repl-for-project ()
   "Determine the 'slime' name for the project's repl.  For this to function, it requires that the project conform to my conventions for clojure projects.  First that it be built with maven (so the pom.xml file can e used to locate the project root directory).  The second is that the project includes a src/main/sh/repl script which is copied and filtered by maven into the bin/ directory for the projec.t  Lastly it requires that there be a slime-incl.el file which is also filtered and copied into the bin/ directory.  If you're using my emacs configuration, these featuers should be available vai the `krb-clj-new-project' function."
   (interactive)
@@ -217,23 +216,59 @@ For how this is computed, see `krb-clj-calculate-test-name'."
         (message "krb-clj-slime-repl-for-project: already running, opening buffer=%s" slime-buffer-name)
         (pop-to-buffer slime-buffer-name)))))
 
-(defun krb-clj-new-project ()
-  "TODO: NOT IMPLEMENTED YET:
-1. ask the user for a location
-2. use the last path segment as the project-name
-3. create a pom.xml for the project (use the pom.xml snippet)
-4. create the following dirs:
-    bin/
-    src/main/sh
-    src/main/emacs
-    src/main/clj
-    src/main/resources
-    src/test/clj
-    src/test/resources"
-  (interactive)
-  )
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun krb-clj-start-of-ns-decl ()
+  (beginning-of-buffer)
+  (search-forward "(ns")
+  (backward-char 3))
+
+(defun krb-clj-end-of-ns-decl ()
+  (krb-clj-start-of-ns-decl)
+  (forward-sexp 1))
+
+(defun krb-clj-ensure-require ()
+  (save-excursion
+    (krb-clj-end-of-ns-decl)
+    (if (not (search-backward "(:require" nil t))
+        (save-excursion
+          (krb-clj-end-of-ns-decl)
+          (backward-char 1)
+          (insert "\n(:require)")
+          (krb-reindent-entire-buffer)))))
+
+(defun krb-clj-find-and-goto-last-point-in-form (pat)
+  (search-forward pat)
+  (backward-char (length pat))
+  (forward-sexp 1)
+  (backward-char 1))
+
+(defun krb-clj-ensure-use ()
+  (save-excursion
+    (krb-clj-end-of-ns-decl)
+    (if (not (search-backward "(:use" nil t))
+        (save-excursion
+          (krb-clj-end-of-ns-decl)
+          (backward-char 1)
+          (insert "\n(:use)")
+          (krb-reindent-entire-buffer)))))
+
+(defun krb-clj-insert-require (package alias)
+  (interactive "spackage: \nsas: ")
+  (save-excursion
+    (beginning-of-buffer)
+    (if (not (search-forward-regexp (format "\\[%s\s+:as\s+%s\\]" package alias) nil t))
+        (progn
+          (krb-clj-ensure-require)
+          (krb-clj-start-of-ns-decl)
+          (krb-clj-find-and-goto-last-point-in-form "(:require")
+          (insert (format "\n[%s :as %s]" package alias))
+          (krb-reindent-entire-buffer)))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defvar krb-clj-mode-prefix-map nil)
 (setq krb-clj-mode-prefix-map
@@ -250,7 +285,7 @@ For how this is computed, see `krb-clj-calculate-test-name'."
   (paredit-mode +1)
   (highlight-parentheses-mode t)
   (yas/minor-mode-on)
-  ;(slime-mode +1)
+                                        ;(slime-mode +1)
   (local-set-key "\C-cr"  krb-clj-mode-prefix-map))
 
 
@@ -259,8 +294,8 @@ For how this is computed, see `krb-clj-calculate-test-name'."
 
 '(
 
-(defun krb-import-thing-at-point (sym &optional shortname)
-  "For the symbol at the point (that the cursor is on), ensure it
+  (defun krb-import-thing-at-point (sym &optional shortname)
+    "For the symbol at the point (that the cursor is on), ensure it
 is imported.
 
 If the symbol looks like a java class name, ensure it is imported
@@ -303,15 +338,15 @@ the pre-existing package statements.
 *** ':as' clauses to figure out how to simplify forms in the
 *** current buffer.
 "
-  (interactive (list (read-string "Import: " (format "%s" (or (symbol-at-point) "")))))
-  (cond ((string-match "/" sym)
-         (message "has slash, split at that point: %s" sym))
-        ((not (string-match "\\." sym))
-         (message "no dots even? %s" sym))
-        (t
-         (message "no slash, split off the last word after the dot: %s" sym))))
+    (interactive (list (read-string "Import: " (format "%s" (or (symbol-at-point) "")))))
+    (cond ((string-match "/" sym)
+           (message "has slash, split at that point: %s" sym))
+          ((not (string-match "\\." sym))
+           (message "no dots even? %s" sym))
+          (t
+           (message "no slash, split off the last word after the dot: %s" sym))))
 
-)
+  )
 
 
 (provide 'krb-clojure)
