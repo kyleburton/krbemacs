@@ -269,6 +269,47 @@ For how this is computed, see `krb-clj-calculate-test-name'."
           (insert (format "\n[%s :as %s]" package alias))
           (krb-reindent-entire-buffer)))))
 
+(defun krb-clj-convert-mvn-dep-to-lein ()
+  "Converts a maven dependency block:
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>2.0</version>
+    </dependency>
+
+Into a leiningen dependency string:
+
+  [commons-io/commons-io \"2.0\"]
+
+"
+  (interactive)
+  (save-excursion
+   (search-forward "<dependency>")
+   (beginning-of-line)
+   (kill-line 1)    ;; <dependency>
+   (kill-word 1)    ;; <groupId
+   (delete-char 1)  ;; >
+   (end-of-line)
+   (backward-kill-word 1) ;; groupId>
+   (backward-delete-char 2)
+   (insert "/")
+   (kill-word 1)
+   (delete-char 1)
+   (search-forward "<")
+   (backward-char 1)
+   (kill-line 1)
+   (kill-word 1)
+   (delete-char 1)
+   (insert " \"")
+   (search-forward "<")
+   (backward-char 1)
+   (kill-line 1)
+   (insert "\"")
+   (kill-line 1)
+   (end-of-line)
+   (insert "]")
+   (beginning-of-line)
+   (insert "[")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
