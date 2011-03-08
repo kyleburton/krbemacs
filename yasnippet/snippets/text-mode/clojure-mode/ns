@@ -2,7 +2,7 @@
 # --
 (ns ${1:$(krb-clj-ns-for-file-name (buffer-file-name))}
   (:use
-   [[clj-etl-utils.lang-utils :only [raise]]]))
+   [clj-etl-utils.lang-utils :only [raise]]))
 
 
 $0
