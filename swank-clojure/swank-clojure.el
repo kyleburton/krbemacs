@@ -79,12 +79,41 @@ swank-clojure-java-path) if non-nil."
    (format "(swank.swank/start-server %S :encoding %S)\n\n"
            file (format "%s" encoding))))
 
-(defun swank-clojure-find-package ()
+(defun old-swank-clojure-find-package ()
   (let ((regexp "^(\\(clojure.core/\\)?\\(in-\\)?ns\\s-+[:']?\\([^()\" \t\n]+\\>\\)"))
     (save-excursion
       (when (or (re-search-backward regexp nil t)
                 (re-search-forward regexp nil t))
         (match-string-no-properties 3)))))
+
+(defun swank-clojure-find-package ()
+  (let ((regexp "^(\\(clojure.core/\\)?\\(in-\\)?ns[ \r\n\t]+[:']?"))
+    (save-excursion
+      (re-search-backward regexp nil t)
+      (re-search-forward regexp nil t)
+      (let ((answer
+             (cond
+              ((looking-at "\\^{")
+               (message "I see a meta-form, skip it")
+               (forward-sexp 1)
+               (re-search-forward "\\s-+" nil t)
+               (let ((start (point)))
+                 (forward-sexp 1)
+                 (buffer-substring-no-properties start (point))))
+              ((looking-at "[a-zA-Z]")
+               (message "I see (what I think is) a clojure symbol.")
+               (let ((start (point)))
+                 (forward-sexp 1)
+                 (buffer-substring-no-properties start (point))))
+              (t
+               (message "not sure what I see")
+               (match-string-no-properties 3)))))
+        answer))))
+
+(defun krbtmp ()
+  (interactive)
+  (let ((pkg (swank-clojure-find-package)))
+    (message "Found: '%s'" pkg)))
 
 (defun swank-clojure-slime-mode-hook ()
   (slime-mode 1)
@@ -122,7 +151,7 @@ will be used over paths too.)"
                   swank-clojure-extra-classpaths))
          "clojure.main")
         (let ((init-opts '()))
-          (dolist (init-file swank-clojure-init-files init-opts) 
+          (dolist (init-file swank-clojure-init-files init-opts)
             (setq init-opts (append init-opts (list "-i" init-file))))
           init-opts)
         (list "--repl"))))))
