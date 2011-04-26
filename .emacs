@@ -29,7 +29,7 @@
     "ruby-mode"
     "slime/slime"
     "clojure-mode"
-    "distel-4.03/elisp"
+    ;; "distel/elisp"
     "swank-clojure"
     "scala-mode"
     "yasnippet")
