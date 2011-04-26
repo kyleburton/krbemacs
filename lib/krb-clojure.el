@@ -314,6 +314,16 @@ the pre-existing package statements.
 )
 
 
+;; see: https://github.com/technomancy/slamhound
+(defun slamhound ()
+  (interactive)
+  (goto-char (point-min))
+  (kill-sexp)
+  (insert (first (slime-eval `(swank:eval-and-grab-output
+                               (format "(do (require 'slam.hound)
+                                          (slam.hound/reconstruct \"%s\"))"
+                                       ,buffer-file-name))))))
+
 (provide 'krb-clojure)
 ;; end of krb-clojure.el
 
