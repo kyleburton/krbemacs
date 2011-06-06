@@ -59,6 +59,13 @@
       (error "krb-java-find-mvn-proj-root-dir: unable to find pom.xml file looking backward from (%s)"
              (or start-dir (buffer-file-name))))))
 
+(defun krb-clj-find-lein-proj-root-dir (&optional start-dir)
+  "Locate the first directory, going up in the directory hierarchy, where we find a project.clj file - this will be a suitable place from which to execute Leiningen (lein) commands."
+  (let ((root-dir (krb-find-containing-parent-directory-of-current-buffer "project.clj" start-dir)))
+    (if root-dir
+        root-dir
+      (error "krb-java-find-lein-proj-root-dir: unable to find project.clj file looking backward from (%s)"
+             (or start-dir (buffer-file-name))))))
 
 (defun krb-clj-calculate-test-class-name (&optional file-name proj-root)
   (let* ((file-name       (or file-name buffer-file-name))
@@ -161,12 +168,22 @@ For how this is computed, see `krb-clj-calculate-test-name'."
 (defun krb-clj-pom-file-path ()
   (format "%s/pom.xml" (krb-java-find-mvn-proj-root-dir)))
 
+
 (defun krb-clj-open-pom-file ()
   "Locate and open the project's pom.xml file."
   (interactive)
   (let ((pom-file (krb-clj-pom-file-path)))
     (message "krb-clj-open-pom-file: pom-file=%s" pom-file)
     (find-file pom-file)))
+
+(defun krb-clj-open-project-config-file ()
+  "Find the project configuration file: either a project.clj (prefered) or a pom.xml ifle."
+  (interactive)
+  (let ((proj-dir (krb-clj-find-lein-proj-root-dir)))
+    (if proj-dir
+        (find-file (format "%s/project.clj" proj-dir))
+      (krb-clj-open-pom-file))))
+
 
 (defun krb-clj-get-pom-property (prop-name)
   "Overly simplistic search within the pom.xml file."
@@ -241,7 +258,7 @@ For how this is computed, see `krb-clj-calculate-test-name'."
         (define-key map "t"    'krb-java-exec-mvn-test)     ;; all the tests
         (define-key map "T"    'krb-clj-find-test-file)
         (define-key map "\C-t" 'krb-clj-exec-mvn-one-test)  ;; just test the current buffer...
-        (define-key map "p"    'krb-clj-open-pom-file)
+        (define-key map "p"    'krb-clj-open-project-config-file)
         (define-key map "z"    'krb-clj-slime-repl-for-project)
         map))
 

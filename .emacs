@@ -471,8 +471,8 @@ the backing files."
 ;; Erlang / Distel
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (krb-push-file-ext-and-mode-binding 'erlang-mode "\\.erl$" "\\.hrl$")
-(require 'distel)
-(distel-setup)
+;; (require 'distel)
+;; (distel-setup)
 
 (setq inferior-erlang-machine-options '("-name" "inf-erl@localhost" "-setcookie" "JOAYAGZNLDYFBLSZTDGS"))
 
