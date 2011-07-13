@@ -29,7 +29,7 @@
     "ruby-mode"
     "slime/slime"
     "clojure-mode"
-    "distel-4.03/elisp"
+    ;; "distel/elisp"
     "swank-clojure"
     "scala-mode"
     "yasnippet")
@@ -471,8 +471,8 @@ the backing files."
 ;; Erlang / Distel
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (krb-push-file-ext-and-mode-binding 'erlang-mode "\\.erl$" "\\.hrl$")
-(require 'distel)
-(distel-setup)
+;; (require 'distel)
+;; (distel-setup)
 
 (setq inferior-erlang-machine-options '("-name" "inf-erl@localhost" "-setcookie" "JOAYAGZNLDYFBLSZTDGS"))
 
