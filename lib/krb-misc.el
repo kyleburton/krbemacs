@@ -540,7 +540,7 @@ to the given line number."
 (defun krb-recursive-find-file-start-at-proj-root (file-name)
   (interactive "sJump To Project File: ")
   (let* ((starting-dir (krb-find-containing-parent-directory-of-current-buffer ".git"))
-         (cmd (format "find %s -name '*%s*'" starting-dir file-name))
+         (cmd (format "find %s -name '*%s*' | grep -v /.rsync_cache" starting-dir file-name))
          (raw-output (shell-command-to-string cmd))
          (output
           (first (split-string raw-output "\n"))))
