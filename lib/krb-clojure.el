@@ -301,32 +301,32 @@ Into a leiningen dependency string:
 "
   (interactive)
   (save-excursion
-   (search-forward "<dependency>")
-   (beginning-of-line)
-   (kill-line 1)    ;; <dependency>
-   (kill-word 1)    ;; <groupId
-   (delete-char 1)  ;; >
-   (end-of-line)
-   (backward-kill-word 1) ;; groupId>
-   (backward-delete-char 2)
-   (insert "/")
-   (kill-word 1)
-   (delete-char 1)
-   (search-forward "<")
-   (backward-char 1)
-   (kill-line 1)
-   (kill-word 1)
-   (delete-char 1)
-   (insert " \"")
-   (search-forward "<")
-   (backward-char 1)
-   (kill-line 1)
-   (insert "\"")
-   (kill-line 1)
-   (end-of-line)
-   (insert "]")
-   (beginning-of-line)
-   (insert "[")))
+    (search-forward "<dependency>")
+    (beginning-of-line)
+    (kill-line 1)    ;; <dependency>
+    (kill-word 1)    ;; <groupId
+    (delete-char 1)  ;; >
+    (end-of-line)
+    (backward-kill-word 1) ;; groupId>
+    (backward-delete-char 2)
+    (insert "/")
+    (kill-word 1)
+    (delete-char 1)
+    (search-forward "<")
+    (backward-char 1)
+    (kill-line 1)
+    (kill-word 1)
+    (delete-char 1)
+    (insert " \"")
+    (search-forward "<")
+    (backward-char 1)
+    (kill-line 1)
+    (insert "\"")
+    (kill-line 1)
+    (end-of-line)
+    (insert "]")
+    (beginning-of-line)
+    (insert "[")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -418,6 +418,19 @@ the pre-existing package statements.
                                (format "(do (require 'slam.hound)
                                           (slam.hound/reconstruct \"%s\"))"
                                        ,buffer-file-name))))))
+
+;; krb-recursive-find-file-start-at-proj-root
+
+(defun krb-clj-open-stacktrace-line (line)
+  (interactive "sLine: ")
+  ;;         at rn_db.model.consumer_consent$record_consumer_consent.invoke(consumer_consent.clj:53)
+  (if (string-match "(\\(.+\\):\\(.+\\))" line)
+      (let* ((fname (match-string 1 line))
+             (lnum  (string-to-number (match-string 2 line))))
+        (krb-recursive-find-file-start-at-proj-root fname t)
+        (goto-line lnum))))
+
+(global-set-key "\C-c\C-s\C-t" 'krb-clj-open-stacktrace-line)
 
 (provide 'krb-clojure)
 ;; end of krb-clojure.el

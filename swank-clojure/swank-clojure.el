@@ -94,14 +94,12 @@ swank-clojure-java-path) if non-nil."
       (let ((answer
              (cond
               ((looking-at "\\^{")
-               (message "I see a meta-form, skip it")
                (forward-sexp 1)
                (re-search-forward "\\s-+" nil t)
                (let ((start (point)))
                  (forward-sexp 1)
                  (buffer-substring-no-properties start (point))))
               ((looking-at "[a-zA-Z]")
-               (message "I see (what I think is) a clojure symbol.")
                (let ((start (point)))
                  (forward-sexp 1)
                  (buffer-substring-no-properties start (point))))

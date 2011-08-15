@@ -528,19 +528,15 @@ to the given line number."
     (kill-buffer (buffer-name))
     (find-file new-name)))
 
-;; (krb-string-trim "com.github.kyleburton.clj-bloom-test
-;;   ")
-
-(defun ktest (thing taht)
-  (interactive "sStuff: \nsThat:")
-  (message "[%s] symbol-at-point:%s" thing (symbol-at-point)))
-
 ;; Hook this into some kind of ido-* function that would allow us to
 ;; do simple completion while asking the user for the file name
-(defun krb-recursive-find-file-start-at-proj-root (file-name)
+(defun krb-recursive-find-file-start-at-proj-root (file-name &optional find-exact-name)
   (interactive "sJump To Project File: ")
   (let* ((starting-dir (krb-find-containing-parent-directory-of-current-buffer ".git"))
-         (cmd (format "find %s -name '*%s*'" starting-dir file-name))
+         (cmd
+          (if find-exact-name
+              (format "find %s -name '%s' | grep -v '/.rsync_cache/'" starting-dir file-name)
+            (format "find %s -name '*%s*' | grep -v '/.rsync_cache/'" starting-dir file-name)))
          (raw-output (shell-command-to-string cmd))
          (output
           (first (split-string raw-output "\n"))))
