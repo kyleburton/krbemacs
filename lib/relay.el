@@ -74,10 +74,16 @@
   (global-set-key "\C-crmd"  'rn-migrations-down-one)
   (global-set-key "\C-crmR"  'rn-migrations-down-up))
 
+(defun rn-join-line ()
+  (interactive)
+  (next-line)
+  (join-line)
+  (end-of-line))
 
 (rn-migrations-apply-keybindings)
 
 (global-set-key [f9] 'join-line)
+(global-set-key [f8] 'rn-join-line)
 
 (provide 'relay)
 
