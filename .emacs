@@ -128,6 +128,7 @@ extensions (patterns). Eg:
 (require 'yasnippet)
 (require 'scala-mode-auto)
 (require 'krb-scala)
+(require 'relay)
 (yas/initialize)
 
 ;; I like this one, you may like something else
