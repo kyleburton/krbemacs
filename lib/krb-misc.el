@@ -535,8 +535,8 @@ to the given line number."
   (let* ((starting-dir (krb-find-containing-parent-directory-of-current-buffer ".git"))
          (cmd
           (if find-exact-name
-              (format "find %s -name '%s' | grep -v '/.rsync_cache/'" starting-dir file-name)
-            (format "find %s -name '*%s*' | grep -v '/.rsync_cache/'" starting-dir file-name)))
+              (format "find %s -name '%s' | grep -v '/.rsync_cache/' | grep -v '~$'" starting-dir file-name)
+            (format "find %s -name '*%s*' | grep -v '/.rsync_cache/' | grep -v '~$'" starting-dir file-name)))
          (raw-output (shell-command-to-string cmd))
          (output
           (first (split-string raw-output "\n"))))
