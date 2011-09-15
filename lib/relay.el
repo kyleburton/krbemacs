@@ -1,3 +1,9 @@
+(defun rn-migrations-move-to-insertion-point ()
+  (interactive)
+  (search-forward "END_SQL")
+  (end-of-line)
+  (insert "\n"))
+
 (defun rn-migrations-new (migration-name)
   (interactive "sMigration Name: ")
   (let* ((migration-name (replace-regexp-in-string "[^a-zA-Z0-9]" "_" migration-name))
@@ -8,9 +14,7 @@
                                   (first (last (split-string raw-output "\n") 2))
                                   " "))))
     (find-file (format "%s/%s" starting-dir migration-file))
-    (search-forward "END_SQL")
-    (end-of-line)
-    (insert "\n")))
+    (rn-migrations-move-to-insertion-point)))
 
 (defun rn-migrations-create-schema (schema-name)
   (interactive "sSchema Name: ")
@@ -22,9 +26,22 @@
                                   (first (last (split-string raw-output "\n") 2))
                                   " "))))
     (find-file (format "%s/%s" starting-dir migration-file))
-    (search-forward "END_SQL")
+    (rn-migrations-move-to-insertion-point)))
+
+(defun rn-migrations-create-table (schema-name table-name)
+  (interactive "sSchema Name: \nsTable Name: ")
+  (let* ((schema-name (replace-regexp-in-string "[^a-zA-Z0-9]" "_" schema-name))
+         (table-name (replace-regexp-in-string "[^a-zA-Z0-9]" "_" table-name))
+         (starting-dir (krb-find-containing-parent-directory-of-current-buffer ".git"))
+         (cmd (format "cd %s; rake rn:db:migrations:generate:create_table[%s,%s]" starting-dir schema-name table-name))
+         (raw-output (shell-command-to-string cmd))
+         (migration-file (second (split-string
+                                  (first (last (split-string raw-output "\n") 2))
+                                  " "))))
+    (find-file (format "%s/%s" starting-dir migration-file))
+    (search-forward "updated_at")
     (end-of-line)
-    (insert "\n")))
+    (insert ",\n          ")))
 
 (defun rn-migrations-show-pending ()
   (interactive)
@@ -66,13 +83,15 @@
 
 (defun rn-migrations-apply-keybindings ()
   (interactive)
-  (global-set-key "\C-crmD"  'rn-migrations-remove)
-  (global-set-key "\C-crmn"  'rn-migrations-new)
-  (global-set-key "\C-crmcs" 'rn-migrations-create-schema)
-  (global-set-key "\C-crms"  'rn-migrations-show-pending)
-  (global-set-key "\C-crmr"  'rn-migrations-run)
-  (global-set-key "\C-crmd"  'rn-migrations-down-one)
-  (global-set-key "\C-crmR"  'rn-migrations-down-up))
+  ;; mnumonic: 'C'ustomization, 'R'elay, 'M'igration
+  (global-set-key "\C-crmD"  'rn-migrations-remove)        ;; 'D'elete
+  (global-set-key "\C-crmn"  'rn-migrations-new)           ;; 'n'ew
+  (global-set-key "\C-crmcs" 'rn-migrations-create-schema) ;; 'c'reate 's'chema
+  (global-set-key "\C-crmct" 'rn-migrations-create-table)  ;; 'c'reate 't'able
+  (global-set-key "\C-crms"  'rn-migrations-show-pending)  ;; 's'how Pending
+  (global-set-key "\C-crmr"  'rn-migrations-run)           ;; 'r'un pending migrations
+  (global-set-key "\C-crmd"  'rn-migrations-down-one)      ;; 'd'own migration 1 migration
+  (global-set-key "\C-crmR"  'rn-migrations-down-up))      ;; 'R'e-run last migration (down then up)
 
 (defun rn-join-line ()
   (interactive)
