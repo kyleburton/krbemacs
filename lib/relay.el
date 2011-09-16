@@ -17,7 +17,7 @@
     (rn-migrations-move-to-insertion-point)))
 
 (defun rn-migrations-new-function (migration-name)
-  (interactive "sMigration Name: ")
+  (interactive "sFunction (migration) Name: ")
   (let* ((migration-name (replace-regexp-in-string "[^a-zA-Z0-9]" "_" migration-name))
          (starting-dir (krb-find-containing-parent-directory-of-current-buffer ".git"))
          (cmd (format "cd %s; rake rn:db:migrations:generate:function[%s]" starting-dir migration-name))
