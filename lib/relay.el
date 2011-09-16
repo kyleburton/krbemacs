@@ -16,6 +16,18 @@
     (find-file (format "%s/%s" starting-dir migration-file))
     (rn-migrations-move-to-insertion-point)))
 
+(defun rn-migrations-new-function (migration-name)
+  (interactive "sMigration Name: ")
+  (let* ((migration-name (replace-regexp-in-string "[^a-zA-Z0-9]" "_" migration-name))
+         (starting-dir (krb-find-containing-parent-directory-of-current-buffer ".git"))
+         (cmd (format "cd %s; rake rn:db:migrations:generate:function[%s]" starting-dir migration-name))
+         (raw-output (shell-command-to-string cmd))
+         (migration-file (second (split-string
+                                  (first (last (split-string raw-output "\n") 2))
+                                  " "))))
+    (find-file (format "%s/%s" starting-dir migration-file))
+    (rn-migrations-move-to-insertion-point)))
+
 (defun rn-migrations-create-schema (schema-name)
   (interactive "sSchema Name: ")
   (let* ((schema-name (replace-regexp-in-string "[^a-zA-Z0-9]" "_" schema-name))
@@ -86,12 +98,14 @@
   ;; mnumonic: 'C'ustomization, 'R'elay, 'M'igration
   (global-set-key "\C-crmD"  'rn-migrations-remove)        ;; 'D'elete
   (global-set-key "\C-crmn"  'rn-migrations-new)           ;; 'n'ew
+  (global-set-key "\C-crmcf"  'rn-migrations-new-function) ;; 'c'reate 'f'unction
   (global-set-key "\C-crmcs" 'rn-migrations-create-schema) ;; 'c'reate 's'chema
   (global-set-key "\C-crmct" 'rn-migrations-create-table)  ;; 'c'reate 't'able
   (global-set-key "\C-crms"  'rn-migrations-show-pending)  ;; 's'how Pending
   (global-set-key "\C-crmr"  'rn-migrations-run)           ;; 'r'un pending migrations
   (global-set-key "\C-crmd"  'rn-migrations-down-one)      ;; 'd'own migration 1 migration
   (global-set-key "\C-crmR"  'rn-migrations-down-up))      ;; 'R'e-run last migration (down then up)
+
 
 (defun rn-join-line ()
   (interactive)
