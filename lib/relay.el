@@ -76,6 +76,13 @@
          (raw-output (shell-command-to-string cmd)))
     (message raw-output)))
 
+(defun rn-migrations-up-one ()
+  (interactive)
+  (let* ((starting-dir (krb-find-containing-parent-directory-of-current-buffer ".git"))
+         (cmd (format "cd %s; rake rn:db:up_one" starting-dir))
+         (raw-output (shell-command-to-string cmd)))
+    (message raw-output)))
+
 (defun rn-migrations-down-up ()
   (interactive)
   (let* ((starting-dir (krb-find-containing-parent-directory-of-current-buffer ".git"))
@@ -104,6 +111,7 @@
   (global-set-key "\C-crms"  'rn-migrations-show-pending)  ;; 's'how Pending
   (global-set-key "\C-crmr"  'rn-migrations-run)           ;; 'r'un pending migrations
   (global-set-key "\C-crmd"  'rn-migrations-down-one)      ;; 'd'own migration 1 migration
+  (global-set-key "\C-crmu"  'rn-migrations-up-one)        ;; 'u'p 1 migration
   (global-set-key "\C-crmR"  'rn-migrations-down-up))      ;; 'R'e-run last migration (down then up)
 
 
