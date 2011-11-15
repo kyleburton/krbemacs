@@ -90,6 +90,13 @@
          (raw-output (shell-command-to-string cmd)))
     (message raw-output)))
 
+(defun rn-migrations-force ()
+  (interactive)
+  (let* ((starting-dir (krb-find-containing-parent-directory-of-current-buffer ".git"))
+         (cmd (format "cd %s; rake rn:db:force_migration[%s]" starting-dir (buffer-file-name)))
+         (raw-output (shell-command-to-string cmd)))
+    (message raw-output)))
+
 (defun rn-migrations-remove (migration-name)
   (interactive (list
                 (read-string "Migration Name: "
@@ -112,7 +119,8 @@
   (global-set-key "\C-crmr"  'rn-migrations-run)           ;; 'r'un pending migrations
   (global-set-key "\C-crmd"  'rn-migrations-down-one)      ;; 'd'own migration 1 migration
   (global-set-key "\C-crmu"  'rn-migrations-up-one)        ;; 'u'p 1 migration
-  (global-set-key "\C-crmR"  'rn-migrations-down-up))      ;; 'R'e-run last migration (down then up)
+  (global-set-key "\C-crmR"  'rn-migrations-down-up)       ;; 'R'e-run last migration (down then up)
+  (global-set-key "\C-crmf"  'rn-migrations-force))        ;; 'f'orce migration
 
 
 (defun rn-join-line ()
