@@ -1,0 +1,6 @@
+(defn ${name}* [body-fn]
+  $0)
+
+(defmacro ${name} [& body]
+  `(${name} (fn []
+     ~@body)))
