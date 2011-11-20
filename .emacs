@@ -1,6 +1,8 @@
 ;; -*- mode: emacs-lisp -*-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Author: Kyle R. Burton <kyle.burton@gmail.com>
+
+
 ;;
 ;; This is my personal emacs configuration.  Check it out into
 ;; $HOME/personal/projects/krbemacs, then symlink it to $HOME/.emacs.
@@ -32,7 +34,9 @@
     ;; "distel/elisp"
     "swank-clojure"
     "scala-mode"
-    "yasnippet")
+    "yasnippet"
+    "lib/autocomplete/"
+    "lib/ac-slime/")
   "List of my customization module directories.")
 
 ;; add those all to the lib path
@@ -348,7 +352,6 @@ the backing files."
 (add-hook 'emacs-lisp-mode-hook
           (lambda ()
             (paredit-mode +1)
-            (highlight-parentheses-mode t)
             (setq abbrev-mode t)))
 
 (krb-push-file-ext-and-mode-binding 'shell-script-mode "\\.env$")
@@ -378,7 +381,8 @@ the backing files."
     (local-set-key "\M-Ob" 'paredit-splice-sexp-killing-forward)
     (local-set-key "\M-Oc" 'paredit-forward-slurp-sexp)
     (local-set-key "\M-Od" 'paredit-forward-barf-sexp)
-    (highlight-parentheses-mode t)
+    (rainbow-delimiters-mode t)
+    (rainbow-paren-mode)
     (setq abbrev-mode t)))
 
 (defun krb-swank-clojure-init ()
@@ -391,8 +395,48 @@ the backing files."
 (add-hook 'lisp-mode-hook
           (lambda ()
             (paredit-mode +1)
-            (highlight-parentheses-mode t)
             (setq abbrev-mode t)))
+
+
+(require 'rainbow-delimiters)
+(require 'rainbow-parens)
+
+;;autocomplete
+(krb-compile-el-files-in-library "lib/autocomplete")
+
+(require 'auto-complete)
+(require 'auto-complete-config)
+
+(add-to-list 'ac-dictionary-directories
+	     (concat *krbemacs-home* "/lib/autocomplete/dict"))
+(ac-config-default)
+
+(set-default 'ac-sources
+             '(ac-source-dictionary
+               ac-source-words-in-buffer
+               ac-source-words-in-same-mode-buffers
+               ac-source-words-in-all-buffer
+	       ac-source-functions))
+
+(setq ac-use-quick-help t)
+(setq ac-quick-help-delay 1)
+
+
+(global-auto-complete-mode t)
+(setq ac-quick-help-delay 1)
+(setq ac-quick-help-height 60)
+(setq ac-use-menu-map t)
+
+;; (define-key ac-menu-map (kbd "C-c h") 'ac-help)
+(ac-help 'interactive)
+
+;;hook slime into autocomplete
+(krb-compile-el-files-in-library "lib/ac-slime")
+(require 'ac-slime)
+(add-hook 'slime-mode-hook 'set-up-slime-ac)
+(setq ac-sources (cons 'ac-source-slime-simple ac-sources))
+
+
 
 ;; (add-hook 'slime-connected-hook
 ;;           (lambda ()
@@ -404,6 +448,7 @@ the backing files."
 ;; (autoload 'clojure-test-mode "clojure-test-mode" "Clojure test mode" t)
 ;; (autoload 'clojure-test-maybe-enable "clojure-test-mode" "" t)
 ;; (add-hook 'clojure-mode-hook 'clojure-test-maybe-enable)
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; end Lisp and Clojure
