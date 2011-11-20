@@ -487,7 +487,11 @@ the backing files."
 
 (load "toggle-case")
 (global-set-key [(control \^)] 'joc-toggle-case)
+
 (global-set-key [(control meta \^)] 'joc-toggle-case-by-region)
+
+;;bind joc-toggle-case to same keys as vim
+(global-set-key "\C-c~" 'joc-toggle-case)
 
 ;; follow compilation output when M-x compile
 (setq compilation-scroll-output t)
