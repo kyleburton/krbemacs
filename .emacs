@@ -137,7 +137,23 @@ extensions (patterns). Eg:
 
 ;; I like this one, you may like something else
 (load "themes/color-theme-library.el")
+(load "themes/blackbored.el")
 (color-theme-arjen)
+
+;;(color-theme-blackbored)
+;;
+;;;;highlight current line
+;;(global-hl-line-mode 1)
+;;
+;;(set-face-background 'hl-line "#333333")
+;;
+;;;;set cursor colour(doesn't work with iterm :(
+;;(set-cursor-color "yellow")
+;;
+;;;;make sure ansi colour character escapes are honoured
+;;(ansi-color-for-comint-mode-on)
+
+
 
 ;; completion : M-/ ('alt' 'slash')
 (load "dabbrev")
