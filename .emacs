@@ -140,18 +140,18 @@ extensions (patterns). Eg:
 (load "themes/blackbored.el")
 (color-theme-arjen)
 
-;;(color-theme-blackbored)
+;; (color-theme-blackbored)
 ;;
 ;;;;highlight current line
-;;(global-hl-line-mode 1)
-;;
-;;(set-face-background 'hl-line "#333333")
-;;
-;;;;set cursor colour(doesn't work with iterm :(
-;;(set-cursor-color "yellow")
-;;
-;;;;make sure ansi colour character escapes are honoured
-;;(ansi-color-for-comint-mode-on)
+(global-hl-line-mode 1)
+
+(set-face-background 'hl-line "#333333")
+
+;; set cursor colour(doesn't work with iterm :(
+(set-cursor-color "yellow")
+
+;; make sure ansi colour character escapes are honoured
+(ansi-color-for-comint-mode-on)
 
 
 
