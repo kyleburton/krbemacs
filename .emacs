@@ -138,9 +138,9 @@ extensions (patterns). Eg:
 ;; I like this one, you may like something else
 (load "themes/color-theme-library.el")
 (load "themes/blackbored.el")
-(color-theme-arjen)
+;; (color-theme-arjen)
 
-;; (color-theme-blackbored)
+(color-theme-blackbored)
 ;;
 ;;;;highlight current line
 (global-hl-line-mode 1)
