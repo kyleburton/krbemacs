@@ -550,4 +550,3 @@ to the given line number."
 (global-set-key "\C-c\C-f" 'krb-recursive-find-file-start-at-proj-root)
 
 (provide 'krb-misc)
-
