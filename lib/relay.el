@@ -107,6 +107,38 @@
     (message cmd)
     (message (shell-command-to-string cmd))))
 
+
+(defun rn-psql-auto-connect (isql-user isql-server isql-database)
+  (interactive)
+  (let ((product 'postgres))
+    (setq sql-product product)
+    (if (comint-check-proc "*SQL*")
+        (pop-to-buffer "*SQL*")
+      (progn
+        (message "setting credentials, et al")
+        (setq sql-user isql-user)
+        (setq sql-server isql-server)
+        (setq sql-database isql-database)
+        (funcall (sql-product-feature :sqli-connect product))
+        (setq sql-interactive-product product)
+        (setq sql-buffer (current-buffer))
+        (sql-interactive-mode)
+        (message "Login...done")
+        (pop-to-buffer sql-buffer)))))
+
+(defun rn-psql-relayzone ()
+  (interactive)
+  (rn-psql-auto-connect "postgres" "localhost" "relayzone_development"))
+
+(defun rn-psql-logging ()
+  (interactive)
+  (rn-psql-auto-connect "postgres" "localhost" "logging_development"))
+
+(defun rn-psql-wall ()
+  (interactive)
+  (rn-psql-auto-connect "postgres" "localhost" "wall_development"))
+
+
 (defun rn-migrations-apply-keybindings ()
   (interactive)
   ;; mnumonic: 'C'ustomization, 'R'elay, 'M'igration
@@ -120,7 +152,11 @@
   (global-set-key "\C-crmd"  'rn-migrations-down-one)      ;; 'd'own migration 1 migration
   (global-set-key "\C-crmu"  'rn-migrations-up-one)        ;; 'u'p 1 migration
   (global-set-key "\C-crmR"  'rn-migrations-down-up)       ;; 'R'e-run last migration (down then up)
-  (global-set-key "\C-crmf"  'rn-migrations-force))        ;; 'f'orce migration
+  (global-set-key "\C-crmf"  'rn-migrations-force)        ;; 'f'orce migration
+  (global-set-key "\C-crdb"  'rn-psql-relayzone)
+  (global-set-key "\C-crdw"  'rn-psql-wall)
+  (global-set-key "\C-crds"  'rn-psql-logging)
+  )
 
 
 (defun rn-join-line ()
