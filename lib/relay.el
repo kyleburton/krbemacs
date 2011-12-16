@@ -7,7 +7,7 @@
 (defun rn-migrations-new (migration-name)
   (interactive "sMigration Name: ")
   (let* ((migration-name (replace-regexp-in-string "[^a-zA-Z0-9]" "_" migration-name))
-         (starting-dir (krb-find-containing-parent-directory-of-current-buffer ".git"))
+         (starting-dir (krb-find-containing-parent-directory-of-current-buffer "Rakefile"))
          (cmd (format "cd %s; rake rn:db:migrations:generate:new_migration[%s]" starting-dir migration-name))
          (raw-output (shell-command-to-string cmd))
          (migration-file (second (split-string
@@ -19,7 +19,7 @@
 (defun rn-migrations-new-function (migration-name)
   (interactive "sFunction (migration) Name: ")
   (let* ((migration-name (replace-regexp-in-string "[^a-zA-Z0-9]" "_" migration-name))
-         (starting-dir (krb-find-containing-parent-directory-of-current-buffer ".git"))
+         (starting-dir (krb-find-containing-parent-directory-of-current-buffer "Rakefile"))
          (cmd (format "cd %s; rake rn:db:migrations:generate:function[%s]" starting-dir migration-name))
          (raw-output (shell-command-to-string cmd))
          (migration-file (second (split-string
@@ -31,7 +31,7 @@
 (defun rn-migrations-create-schema (schema-name)
   (interactive "sSchema Name: ")
   (let* ((schema-name (replace-regexp-in-string "[^a-zA-Z0-9]" "_" schema-name))
-         (starting-dir (krb-find-containing-parent-directory-of-current-buffer ".git"))
+         (starting-dir (krb-find-containing-parent-directory-of-current-buffer "Rakefile"))
          (cmd (format "cd %s; rake rn:db:migrations:generate:schema[%s]" starting-dir schema-name))
          (raw-output (shell-command-to-string cmd))
          (migration-file (second (split-string
@@ -44,7 +44,7 @@
   (interactive "sSchema Name: \nsTable Name: ")
   (let* ((schema-name (replace-regexp-in-string "[^a-zA-Z0-9]" "_" schema-name))
          (table-name (replace-regexp-in-string "[^a-zA-Z0-9]" "_" table-name))
-         (starting-dir (krb-find-containing-parent-directory-of-current-buffer ".git"))
+         (starting-dir (krb-find-containing-parent-directory-of-current-buffer "Rakefile"))
          (cmd (format "cd %s; rake rn:db:migrations:generate:create_table[%s,%s]" starting-dir schema-name table-name))
          (raw-output (shell-command-to-string cmd))
          (migration-file (second (split-string
@@ -57,42 +57,42 @@
 
 (defun rn-migrations-show-pending ()
   (interactive)
-  (let* ((starting-dir (krb-find-containing-parent-directory-of-current-buffer ".git"))
+  (let* ((starting-dir (krb-find-containing-parent-directory-of-current-buffer "Rakefile"))
          (cmd (format "cd %s; rake rn:db:migrations:show_pending" starting-dir))
          (raw-output (shell-command-to-string cmd)))
     (message raw-output)))
 
 (defun rn-migrations-run ()
   (interactive)
-  (let* ((starting-dir (krb-find-containing-parent-directory-of-current-buffer ".git"))
+  (let* ((starting-dir (krb-find-containing-parent-directory-of-current-buffer "Rakefile"))
          (cmd (format "cd %s; rake rn:db:run_migrations" starting-dir))
          (raw-output (shell-command-to-string cmd)))
     (message raw-output)))
 
 (defun rn-migrations-down-one ()
   (interactive)
-  (let* ((starting-dir (krb-find-containing-parent-directory-of-current-buffer ".git"))
+  (let* ((starting-dir (krb-find-containing-parent-directory-of-current-buffer "Rakefile"))
          (cmd (format "cd %s; rake rn:db:down_one" starting-dir))
          (raw-output (shell-command-to-string cmd)))
     (message raw-output)))
 
 (defun rn-migrations-up-one ()
   (interactive)
-  (let* ((starting-dir (krb-find-containing-parent-directory-of-current-buffer ".git"))
+  (let* ((starting-dir (krb-find-containing-parent-directory-of-current-buffer "Rakefile"))
          (cmd (format "cd %s; rake rn:db:up_one" starting-dir))
          (raw-output (shell-command-to-string cmd)))
     (message raw-output)))
 
 (defun rn-migrations-down-up ()
   (interactive)
-  (let* ((starting-dir (krb-find-containing-parent-directory-of-current-buffer ".git"))
+  (let* ((starting-dir (krb-find-containing-parent-directory-of-current-buffer "Rakefile"))
          (cmd (format "cd %s; rake rn:db:down_up" starting-dir))
          (raw-output (shell-command-to-string cmd)))
     (message raw-output)))
 
 (defun rn-migrations-force ()
   (interactive)
-  (let* ((starting-dir (krb-find-containing-parent-directory-of-current-buffer ".git"))
+  (let* ((starting-dir (krb-find-containing-parent-directory-of-current-buffer "Rakefile"))
          (cmd (format "cd %s; rake rn:db:force_migration[%s]" starting-dir (buffer-file-name)))
          (raw-output (shell-command-to-string cmd)))
     (message raw-output)))
@@ -101,7 +101,7 @@
   (interactive (list
                 (read-string "Migration Name: "
                              (file-name-nondirectory (buffer-file-name)))))
-  (let* ((starting-dir (krb-find-containing-parent-directory-of-current-buffer ".git"))
+  (let* ((starting-dir (krb-find-containing-parent-directory-of-current-buffer "Rakefile"))
          (file-name (format "db/migrations/%s" migration-name))
          (cmd (format "cd %s; git rm %s || rm %s" starting-dir file-name file-name)))
     (message cmd)
