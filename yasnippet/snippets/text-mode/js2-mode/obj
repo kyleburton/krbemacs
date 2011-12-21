@@ -1,0 +1,13 @@
+#name: var foo = function () { ... } $(document).ready(...initialize);
+# --
+var ${name} = function () {
+    var self = {};
+
+    self.initialize = function () {
+        $0
+    };
+
+    return self;
+}();
+
+$(document).ready(${name}.initialize);
