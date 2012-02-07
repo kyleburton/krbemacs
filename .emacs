@@ -490,8 +490,8 @@ the backing files."
 ;; end Java
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(autoload 'js2-mode "js2" nil t)
-(krb-push-file-ext-and-mode-binding 'js2-mode "\\.js$")
+(autoload 'js2-mode "js2-mode" nil t)
+(add-to-list 'auto-mode-alist '("\\.js$" . js2-mode))
 (setq c-syntactic-indentation t)
 (setq c-electric-flag t)
 
