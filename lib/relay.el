@@ -167,8 +167,13 @@
 
 (rn-migrations-apply-keybindings)
 
-(global-set-key [f9] 'join-line)
+(defun rn-revert-buffer ()
+  (interactive)
+  (revert-buffer t t))
+
+(global-set-key [f5] 'rn-revert-buffer)
 (global-set-key [f8] 'rn-join-line)
+(global-set-key [f9] 'join-line)
 
 (provide 'relay)
 
