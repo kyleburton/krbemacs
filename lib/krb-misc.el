@@ -426,7 +426,7 @@ to the given line number."
      (goto-char (point-min))
      (set (make-local-variable '*krb-output-base-directory*) starting-dir)
      (set (make-local-variable '*krb-output-base-file*) (buffer-file-name))
-     (compilation-mode))))
+     (grep-mode))))
 
 (defun krb-grep-thing-at-point-editable (git-cmd)
   (interactive (list (read-string "Search For: " (format "git grep --full-name -i -n '%s'" (or (symbol-at-point) "")))))
