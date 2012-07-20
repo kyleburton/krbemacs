@@ -655,10 +655,41 @@ the backing files."
 (define-key krb-windowing-keyboard-map (kbd "k") 'windmove-up)
 (define-key krb-windowing-keyboard-map (kbd "l") 'windmove-right)
 
-
+;;; Tim 2012/7/18
+(global-set-key (kbd "M-h") 'backward-kill-word)
+(global-set-key (kbd "C-c y") 'bury-buffer)
+(eval-after-load 'paredit
+  '(define-key paredit-mode-map (kbd "M-h") 'paredit-backward-kill-word))
+(set-face-foreground 'vertical-border "yellow")
+(set-face-background 'vertical-border "gray10")
+(add-to-list 'auto-mode-alist '("Rakefile" . ruby-mode))
+(defalias 'yes-or-no-p 'y-or-n-p)
+(defun timvisher/turn-on-eldoc () (eldoc-mode t))
+(add-hook 'lisp-mode-hook 'timvisher/turn-on-eldoc)
+(global-set-key (kbd "C-c b") 'ibuffer-other-window)
 
 ;; helper created Tue Oct 12 09:11:18 EDT 2010 Kyle&Paul
 (fset 'rn-clj-convert-java-new-to-clj-form
       "\C-i\C-[d\C-xrma\C-m\C-[<\C-s:import\C-m\C-n\C-e\C-j\C-y\C-xrb\C-m\C-i\C-s=\C-m\C-?\C-?\C-[d\C-f\C-[(\C-s)\C-m\C-b.\C-f\C-k\C-a\C-n")
 
 (server-start)
+(custom-set-variables
+  ;; custom-set-variables was added by Custom.
+  ;; If you edit it by hand, you could mess it up, so be careful.
+  ;; Your init file should contain only one such instance.
+  ;; If there is more than one, they won't work right.
+ '(dired-dwim-target t)
+ '(dired-recursive-copies (quote always))
+ '(dired-recursive-deletes (quote always)))
+(custom-set-faces
+  ;; custom-set-faces was added by Custom.
+  ;; If you edit it by hand, you could mess it up, so be careful.
+  ;; Your init file should contain only one such instance.
+  ;; If there is more than one, they won't work right.
+ '(ediff-even-diff-A ((((class color) (background dark)) (:background "dark green"))))
+ '(ediff-even-diff-B ((((class color) (background dark)) (:background "dark red"))))
+ '(ediff-odd-diff-A ((((class color) (background dark)) (:background "dark green"))))
+ '(ediff-odd-diff-B ((((class color) (background dark)) (:background "dark red"))))
+ '(font-lock-type-face ((t (:foreground "orange"))))
+ '(mumamo-background-chunk-major ((((class color) (background dark)) (:background "black"))))
+ '(mumamo-background-chunk-submode1 ((((class color) (background dark)) (:background "black")))))
