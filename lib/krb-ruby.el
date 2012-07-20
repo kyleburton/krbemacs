@@ -848,7 +848,8 @@ executes that script.  The contents of the script will be similar to:
        (set (make-local-variable '*krb-output-base-directory*) starting-dir)
        (set (make-local-variable '*krb-output-base-file*) (buffer-file-name))
        (local-set-key "\C-cr." 'krb-jump-to-file)
-       (local-set-key "\C-cr." 'krb-jump-stack-pop)))))
+       (local-set-key "\C-cr." 'krb-jump-stack-pop)
+       (grep-mode)))))
 
 (defun krb-ruby-ruby-compile-command (&optional file)
   (format "ruby -wc %s" (or file (buffer-file-name))))e
