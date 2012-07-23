@@ -672,7 +672,9 @@ the backing files."
 (fset 'rn-clj-convert-java-new-to-clj-form
       "\C-i\C-[d\C-xrma\C-m\C-[<\C-s:import\C-m\C-n\C-e\C-j\C-y\C-xrb\C-m\C-i\C-s=\C-m\C-?\C-?\C-[d\C-f\C-[(\C-s)\C-m\C-b.\C-f\C-k\C-a\C-n")
 
-(server-start)
+(autoload 'server-running-p "server")
+(unless (server-running-p) (server-start))
+
 (custom-set-variables
   ;; custom-set-variables was added by Custom.
   ;; If you edit it by hand, you could mess it up, so be careful.
