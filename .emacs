@@ -683,7 +683,8 @@ the backing files."
  '(dired-dwim-target t)
  '(dired-recursive-copies (quote always))
  '(dired-recursive-deletes (quote always))
- '(ido-enable-flex-matching t))
+ '(ido-enable-flex-matching t)
+ '(ido-enable-tramp-completion nil))
 (custom-set-faces
   ;; custom-set-faces was added by Custom.
   ;; If you edit it by hand, you could mess it up, so be careful.
