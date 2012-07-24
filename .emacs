@@ -687,6 +687,7 @@ the backing files."
  '(dired-recursive-deletes (quote always))
  '(ido-enable-flex-matching t)
  '(ido-enable-tramp-completion nil)
+ '(ido-everywhere t)
  '(uniquify-buffer-name-style (quote forward) nil (uniquify)))
 (custom-set-faces
   ;; custom-set-faces was added by Custom.
