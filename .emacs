@@ -701,3 +701,4 @@ the backing files."
  '(font-lock-type-face ((t (:foreground "orange"))))
  '(mumamo-background-chunk-major ((((class color) (background dark)) (:background "black"))))
  '(mumamo-background-chunk-submode1 ((((class color) (background dark)) (:background "black")))))
+(put 'set-goal-column 'disabled nil)
