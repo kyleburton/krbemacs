@@ -664,7 +664,8 @@ the backing files."
 (defalias 'yes-or-no-p 'y-or-n-p)
 (defun timvisher/turn-on-eldoc () (eldoc-mode t))
 (add-hook 'lisp-mode-hook 'timvisher/turn-on-eldoc)
-(global-set-key (kbd "C-c b") 'ibuffer-other-window)
+(global-set-key (kbd "C-c b b") 'ibuffer-other-window)
+(global-set-key (kbd "C-c b r") 'revert-buffer)
 (require 'uniquify)
 
 ;; helper created Tue Oct 12 09:11:18 EDT 2010 Kyle&Paul
