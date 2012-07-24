@@ -667,6 +667,7 @@ the backing files."
 (defun timvisher/turn-on-eldoc () (eldoc-mode t))
 (add-hook 'lisp-mode-hook 'timvisher/turn-on-eldoc)
 (global-set-key (kbd "C-c b") 'ibuffer-other-window)
+(require 'uniquify)
 
 ;; helper created Tue Oct 12 09:11:18 EDT 2010 Kyle&Paul
 (fset 'rn-clj-convert-java-new-to-clj-form
@@ -684,7 +685,8 @@ the backing files."
  '(dired-recursive-copies (quote always))
  '(dired-recursive-deletes (quote always))
  '(ido-enable-flex-matching t)
- '(ido-enable-tramp-completion nil))
+ '(ido-enable-tramp-completion nil)
+ '(uniquify-buffer-name-style (quote forward) nil (uniquify)))
 (custom-set-faces
   ;; custom-set-faces was added by Custom.
   ;; If you edit it by hand, you could mess it up, so be careful.
