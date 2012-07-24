@@ -27,7 +27,6 @@
 (defvar *krb-lib-dirs*
   '("lib"
     "lib/http-emacs"
-    "git"
     "ruby-mode"
     "slime/slime"
     "clojure-mode"
@@ -121,7 +120,6 @@ extensions (patterns). Eg:
 (require 'yaml-mode)
 (require 'color-theme)
 (require 'saveplace)
-(require 'git)
 (require 'ruby-mode)
 (require 'inf-ruby)
 (require 'slime)
