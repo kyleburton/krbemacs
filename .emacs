@@ -689,6 +689,7 @@ the backing files."
  '(ido-enable-flex-matching t)
  '(ido-enable-tramp-completion nil)
  '(ido-everywhere t)
+ '(ido-use-filename-at-point (quote guess))
  '(uniquify-buffer-name-style (quote forward) nil (uniquify)))
 (custom-set-faces
   ;; custom-set-faces was added by Custom.
