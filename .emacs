@@ -690,6 +690,7 @@ the backing files."
  '(ido-enable-flex-matching t)
  '(ido-enable-tramp-completion nil)
  '(ido-everywhere t)
+ '(ido-read-file-name-non-ido (quote (dired-goto-file)))
  '(ido-use-filename-at-point (quote guess))
  '(uniquify-buffer-name-style (quote forward) nil (uniquify)))
 (custom-set-faces
