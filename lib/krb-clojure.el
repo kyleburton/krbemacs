@@ -430,7 +430,30 @@ the pre-existing package statements.
         (krb-recursive-find-file-start-at-proj-root fname t)
         (goto-line lnum))))
 
+(defun krb-file-string (file)
+    "Read the contents of a file and return as a string."
+    (with-temp-buffer
+      (insert-file-contents file)
+      (buffer-string)))
+
+(defun krb-autoswank ()
+  (interactive)
+  (let ((swank-port-file (concat (krb-clj-find-lein-proj-root-dir)
+                                 ".swank.port")))
+    (message "swank port file: %s" swank-port-file)
+    (if (not (file-exists-p swank-port-file))
+        (error (concat "Sorry, unable to find .swank.port file in "
+                       (krb-clj-find-lein-proj-root-dir))))
+    (let ((port (krb-file-string swank-port-file)))
+      (setq slime-protocol-version "20100404")
+      (slime-connect "localhost" port))))
+
+
+
+
+
 (global-set-key "\C-c\C-s\C-t" 'krb-clj-open-stacktrace-line)
+(global-set-key "\C-css" 'krb-autoswank)
 
 (provide 'krb-clojure)
 ;; end of krb-clojure.el
