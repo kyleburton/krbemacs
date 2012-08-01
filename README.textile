@@ -7,7 +7,7 @@ Kyle Burton <kyle.burton@gmail.com>
 
 h1. Installation
 
-I've tried to make installation as simple as possible.  Once you've cloned the git repository, symlink (or copy if you can't symlink) the <code>.emacs</code> file from the git repository to your <code>$HOME</code> directory.  This is typicall accomplished on a unix platform with commands like the following:
+I've tried to make installation as simple as possible.  Once you've cloned the git repository, symlink (or copy if you can't symlink) the <code>.emacs</code> file from the git repository to your <code>$HOME</code> directory.  This is typical accomplished on a unix platform with commands like the following:
 
 <pre>
 kyle@indigo64 ~$ mkdir -p personal/configuration
@@ -17,7 +17,7 @@ kyle@indigo64 ~/personal/configuration$ cd krbemacs
 kyle@indigo64 ~/personal/configuration/krbemacs$ ln -s `pwd`/.emacs ~
 </pre>
 
-h2. Pre-requisits
+h2. Pre-requisites
 
 The only software that you need installed should be Emacs.  I have only been using recent versions of emacs (22.3) and do not know if it works with older versions of Emacs at this time.
 
@@ -41,13 +41,13 @@ h1. Abbreviated Guide
 
 <code>M-X</code> means press the 'Meta' (typically the Alt) key, the Shift and the 'x' at the same time - 'alt and capital X'.
 
-Emacs supports the 'Esc' key as an alternate to the Meta key - though you don't hold it down, you press 'Esc' and release it and then the second character.  So <code>M-x</code> and <code>Esc x</code> will achieve the same thing in Eamcs.  The reason I'm telling you this is that one day you may find yourself on a system that for some reason has re-mapped the Alt/Meta key to something else or that you've ssh'd into and for some reason Meta/Alt isn't working.  Knowing about Esc can at least get you by in these situations.
+Emacs supports the 'Esc' key as an alternate to the Meta key - though you don't hold it down, you press 'Esc' and release it and then the second character.  So <code>M-x</code> and <code>Esc x</code> will achieve the same thing in Emacs.  The reason I'm telling you this is that one day you may find yourself on a system that for some reason has re-mapped the Alt/Meta key to something else or that you've ssh'd into and for some reason Meta/Alt isn't working.  Knowing about Esc can at least get you by in these situations.
 
 <code>C-x</code> means press the 'Control' key and the 'x' at the same time.
 
 In these keystroke examples, the hyphen '-' means to press the keys at the same time, a space indicates that you should let go of the previous key before pressing the next one.  <code>C-c r C-t</code> means "press 'control-c' (at the same time), release them, press and release 'r', and press 'control-t' and release it".
 
-Emacs supports so many features that there are not enough single key keybindings (hotkeys, keyboard accelerators) to access all of its features.  This is why there are so many multi-key and multi-sequence keybindings.  Once you learn a bit about how to cutomize Emacs, you can rebind the features and keybindings to you liking - later on in this guide I'll show you how to do that with your own configuration.
+Emacs supports so many features that there are not enough single key keybindings (hotkeys, keyboard accelerators) to access all of its features.  This is why there are so many multi-key and multi-sequence keybindings.  Once you learn a bit about how to customize Emacs, you can rebind the features and keybindings to you liking - later on in this guide I'll show you how to do that with your own configuration.
 
 h2. Running a Function without a Keybinding
 
@@ -59,7 +59,7 @@ h2. 'Forcing' a Mode in a File
 
 Emacs supports you setting the mode of a file from a comment at the top of the file.  This is useful in cases where the regular expression pattern matching used based on the file name extension doesn't recognized the type of the file and put it into the mode you want.  In some cases you may also wish to force Emacs into an alternate mode for a file that would otherwise be set to a specific mode.
 
-You can change the mode of a file with a comment (in the syntax of the langugae of the file) at the top with the form:
+You can change the mode of a file with a comment (in the syntax of the language of the file) at the top with the form:
 
 <pre>
   #!/bin/bash
