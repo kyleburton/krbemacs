@@ -547,6 +547,13 @@ to the given line number."
         (progn
           (message "Not found: %s" file-name)))))
 
+(defun krb-insert-register-or-string-insert-rectangle ()
+  (interactive)
+  (if mark-active
+      (string-insert-rectangle (mark) (point) (read-string "Prefix Char: "))
+    (insert-register (read-char "Insert register: "))))
+
+(global-set-key "\C-xri" 'krb-insert-register-or-string-insert-rectangle)
 (global-set-key "\C-c\C-f" 'krb-recursive-find-file-start-at-proj-root)
 
 (provide 'krb-misc)
