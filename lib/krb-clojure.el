@@ -345,7 +345,7 @@ Into a leiningen dependency string:
   (paredit-mode +1)
   (highlight-parentheses-mode t)
   (yas/minor-mode-on)
-                                        ;(slime-mode +1)
+  ;;(slime-mode +1)
   (local-set-key "\C-cr"  krb-clj-mode-prefix-map))
 
 
