@@ -330,23 +330,6 @@ Into a leiningen dependency string:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defvar krb-clj-mode-prefix-map nil)
-(setq krb-clj-mode-prefix-map
-      (let ((map (make-sparse-keymap)))
-        (define-key map "t"    'krb-java-exec-mvn-test)     ;; all the tests
-        (define-key map "T"    'krb-clj-find-test-file)
-        (define-key map "\C-t" 'krb-clj-exec-mvn-one-test)  ;; just test the current buffer...
-        (define-key map "p"    'krb-clj-open-project-config-file)
-        (define-key map "z"    'krb-clj-slime-repl-for-project)
-        map))
-
-(defun krb-clj-mode-hook ()
-  (interactive)
-  (paredit-mode +1)
-  (highlight-parentheses-mode t)
-  (yas/minor-mode-on)
-  ;;(slime-mode +1)
-  (local-set-key "\C-cr"  krb-clj-mode-prefix-map))
 
 
 (remove-hook 'clojure-mode-hook 'krb-clj-mode-hook)
@@ -449,11 +432,38 @@ the pre-existing package statements.
       (slime-connect "localhost" port))))
 
 
-
+(defun krb-clj-fixup-ns ()
+  "Ok, eventually this should fixup the entire ns (remove unused imports, resolve new ones, etc).  For now, it aligns the :as and :only forms."
+  (interactive)
+  (save-excursion
+    (beginning-of-buffer)
+    (let ((start (point)))
+      (forward-sexp 1)
+      (align-regexp start (point) (concat "\\(\\s-*\\)" ":as"))
+      (align-regexp start (point) (concat "\\(\\s-*\\)" ":only")))))
 
 
 (global-set-key "\C-c\C-s\C-t" 'krb-clj-open-stacktrace-line)
+(global-set-key "\C-crfn" 'krb-clj-fixup-ns)
 (global-set-key "\C-css" 'krb-autoswank)
+
+(defvar krb-clj-mode-prefix-map nil)
+(setq krb-clj-mode-prefix-map
+      (let ((map (make-sparse-keymap)))
+        (define-key map "t"    'krb-java-exec-mvn-test)     ;; all the tests
+        (define-key map "T"    'krb-clj-find-test-file)
+        (define-key map "\C-t" 'krb-clj-exec-mvn-one-test)  ;; just test the current buffer...
+        (define-key map "p"    'krb-clj-open-project-config-file)
+        (define-key map "z"    'krb-clj-slime-repl-for-project)
+        map))
+
+(defun krb-clj-mode-hook ()
+  (interactive)
+  (paredit-mode +1)
+  (highlight-parentheses-mode t)
+  (yas/minor-mode-on)
+  ;;(slime-mode +1)
+  (local-set-key "\C-cr"  krb-clj-mode-prefix-map))
 
 (provide 'krb-clojure)
 ;; end of krb-clojure.el
