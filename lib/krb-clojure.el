@@ -434,7 +434,7 @@ the pre-existing package statements.
     (let ((port (krb-file-string swank-port-file)))
       (setq slime-protocol-version "20100404")
       (slime-connect "localhost" port))
-    (when (fboudnp 'rn-reinit-service)
+    (when (fboundp 'rn-reinit-service)
       (message "RN: starting the service...")
       (rn-reinit-service)
       (message "RN: service should be starting..."))))
