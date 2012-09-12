@@ -414,22 +414,30 @@ the pre-existing package statements.
         (goto-line lnum))))
 
 (defun krb-file-string (file)
-    "Read the contents of a file and return as a string."
-    (with-temp-buffer
-      (insert-file-contents file)
-      (buffer-string)))
+  "Read the contents of a file and return as a string."
+  (with-temp-buffer
+    (insert-file-contents file)
+    (buffer-string)))
 
 (defun krb-autoswank ()
   (interactive)
-  (let ((swank-port-file (concat (krb-clj-find-lein-proj-root-dir)
+  (let ((local-emacs-file (concat (krb-clj-find-lein-proj-root-dir) ".local.emacs.el"))
+        (swank-port-file (concat (krb-clj-find-lein-proj-root-dir)
                                  ".swank.port")))
+    (when (file-exists-p local-emacs-file)
+      (message "loading %s..." local-emacs-file)
+      (load-file local-emacs-file))
     (message "swank port file: %s" swank-port-file)
     (if (not (file-exists-p swank-port-file))
         (error (concat "Sorry, unable to find .swank.port file in "
                        (krb-clj-find-lein-proj-root-dir))))
     (let ((port (krb-file-string swank-port-file)))
       (setq slime-protocol-version "20100404")
-      (slime-connect "localhost" port))))
+      (slime-connect "localhost" port))
+    (when (fboudnp 'rn-reinit-service)
+      (message "RN: starting the service...")
+      (rn-reinit-service)
+      (message "RN: service should be starting..."))))
 
 
 (defun krb-clj-fixup-ns ()
@@ -441,7 +449,6 @@ the pre-existing package statements.
       (forward-sexp 1)
       (align-regexp start (point) (concat "\\(\\s-*\\)" ":as"))
       (align-regexp start (point) (concat "\\(\\s-*\\)" ":only")))))
-
 
 (global-set-key "\C-c\C-s\C-t" 'krb-clj-open-stacktrace-line)
 (global-set-key "\C-crfn" 'krb-clj-fixup-ns)
