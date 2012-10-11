@@ -655,7 +655,23 @@ the backing files."
 (define-key krb-windowing-keyboard-map (kbd "k") 'windmove-up)
 (define-key krb-windowing-keyboard-map (kbd "l") 'windmove-right)
 
-;;; Tim 2012/7/18
+(defun move-to-window-line-top ()
+  (interactive)
+  (move-to-window-line 0))
+
+(defun move-to-window-line-middle ()
+  (interactive)
+  (move-to-window-line nil))
+
+(defun move-to-window-line-bottom ()
+  (interactive)
+  (move-to-window-line -1))
+
+(global-set-key (kbd "M-=") 'move-to-window-line-top-bottom)
+(global-set-key (kbd "M-H") 'move-to-window-line-top)
+(global-set-key (kbd "M-M") 'move-to-window-line-middle)
+(global-set-key (kbd "M-L") 'move-to-window-line-bottom)
+
 (global-set-key (kbd "M-h") 'backward-kill-word)
 (global-set-key (kbd "C-c y") 'bury-buffer)
 (eval-after-load 'paredit
