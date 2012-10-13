@@ -425,19 +425,19 @@ the pre-existing package statements.
         (swank-port-file (concat (krb-clj-find-lein-proj-root-dir)
                                  ".swank.port")))
     (when (file-exists-p local-emacs-file)
-      (message "loading %s..." local-emacs-file)
+      (message "krb-autoswank: loading %s..." local-emacs-file)
       (load-file local-emacs-file))
-    (message "swank port file: %s" swank-port-file)
+    (message "krb-autoswank: swank port file: %s" swank-port-file)
     (if (not (file-exists-p swank-port-file))
-        (error (concat "Sorry, unable to find .swank.port file in "
+        (error (concat "krb-autoswank: Sorry, unable to find .swank.port file in "
                        (krb-clj-find-lein-proj-root-dir))))
-    (let ((port (krb-file-string swank-port-file)))
+    (let ((port (string-to-int (krb-file-string swank-port-file))))
       (setq slime-protocol-version "20100404")
       (slime-connect "localhost" port))
     (when (fboundp 'rn-reinit-service)
-      (message "RN: starting the service...")
+      (message "krb-autoswank: : starting the service...")
       (rn-reinit-service)
-      (message "RN: service should be starting..."))))
+      (message "krb-autoswank: : service should be starting..."))))
 
 
 (defun krb-clj-fixup-ns ()
