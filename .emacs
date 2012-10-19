@@ -700,6 +700,10 @@ the backing files."
   ;; Your init file should contain only one such instance.
   ;; If there is more than one, they won't work right.
  '(apropos-do-all t)
+ '(cua-delete-selection nil)
+ '(cua-enable-cua-keys nil)
+ '(cua-enable-register-prefix nil)
+ '(cua-mode t nil (cua-base))
  '(dired-dwim-target t)
  '(dired-recursive-copies (quote always))
  '(dired-recursive-deletes (quote always))
@@ -714,6 +718,7 @@ the backing files."
   ;; If you edit it by hand, you could mess it up, so be careful.
   ;; Your init file should contain only one such instance.
   ;; If there is more than one, they won't work right.
+ '(cua-rectangle ((default (:inherit region)) (((class color)) nil)))
  '(ediff-even-diff-A ((((class color) (background dark)) (:background "dark green"))))
  '(ediff-even-diff-B ((((class color) (background dark)) (:background "dark red"))))
  '(ediff-odd-diff-A ((((class color) (background dark)) (:background "dark green"))))
