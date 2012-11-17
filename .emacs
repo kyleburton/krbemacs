@@ -374,7 +374,9 @@ the backing files."
 
 (eval-after-load "slime"
   '(progn
-     (slime-setup '(slime-repl))))
+     (slime-setup '(slime-repl))
+     ;; see: https://github.com/technomancy/swank-clojure/issues/57
+     (setq slime-net-coding-system 'utf-8-unix)))
 
 (add-hook 'paredit-mode-hook
           (lambda ()
@@ -751,3 +753,4 @@ the backing files."
  '(mumamo-background-chunk-submode1 ((((class color) (background dark)) (:background "black")))))
 ;;(put 'set-goal-column 'disabled nil)
 (put 'narrow-to-region 'disabled nil)
+
