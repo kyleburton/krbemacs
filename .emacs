@@ -714,6 +714,7 @@ the backing files."
  '(ido-everywhere t)
  '(ido-read-file-name-non-ido (quote (dired-goto-file)))
  '(ido-use-filename-at-point (quote guess))
+ '(slime-net-coding-system (quote utf-8-unix))
  '(uniquify-buffer-name-style (quote forward) nil (uniquify)))
 (custom-set-faces
   ;; custom-set-faces was added by Custom.
