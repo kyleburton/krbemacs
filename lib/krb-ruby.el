@@ -852,7 +852,7 @@ executes that script.  The contents of the script will be similar to:
        (grep-mode)))))
 
 (defun krb-ruby-ruby-compile-command (&optional file)
-  (format "ruby -wc %s" (or file (buffer-file-name))))e
+  (format "ruby -wc %s" (or file (buffer-file-name))))
 
 (defun krb-ruby-compile-check-buffer (cmd)
   "Run 'ruby -wc' on the current buffer's file."
