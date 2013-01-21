@@ -695,6 +695,7 @@ the backing files."
 (unless (server-running-p) (server-start))
 
 (defalias 'csr 'cua-set-rectangle-mark)
+(global-set-key (kbd "C-c r SPC") 'cua-set-rectangle-mark)
 
 (custom-set-variables
   ;; custom-set-variables was added by Custom.
