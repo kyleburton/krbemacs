@@ -693,8 +693,30 @@ the backing files."
 (fset 'rn-clj-convert-java-new-to-clj-form
       "\C-i\C-[d\C-xrma\C-m\C-[<\C-s:import\C-m\C-n\C-e\C-j\C-y\C-xrb\C-m\C-i\C-s=\C-m\C-?\C-?\C-[d\C-f\C-[(\C-s)\C-m\C-b.\C-f\C-k\C-a\C-n")
 
-(autoload 'server-running-p "server")
-(unless (server-running-p) (server-start))
+(defun krb-get-emacs-pwd ()
+  (let ((root-dirname nil))
+    (with-current-buffer "*scratch*"
+      (setq root-dirname default-directory))
+    root-dirname))
+
+(defvar *krb-emacs-server-file* (format "%s.emacs-server"
+                                        (krb-get-emacs-pwd)))
+
+(defun krb-boostrap-local-eamcs-server ()
+  (if (not (file-exists-p *krb-emacs-server-file*))
+      (make-directory *krb-emacs-server-file*))
+  (set-file-modes *krb-emacs-server-file* #o700)
+  (setq server-socket-dir *krb-emacs-server-file*)
+  (autoload 'server-running-p "server")
+  (unless
+      (server-running-p)
+    (server-start)))
+
+(krb-boostrap-local-eamcs-server)
+
+
+;;(defalias 'csr 'cua-set-rectangle-mark)
+;;(global-set-key (kbd "C-c r SPC") 'cua-set-rectangle-mark)
 
 (custom-set-variables
   ;; custom-set-variables was added by Custom.
@@ -710,6 +732,7 @@ the backing files."
  '(ido-everywhere t)
  '(ido-read-file-name-non-ido (quote (dired-goto-file)))
  '(ido-use-filename-at-point (quote guess))
+ '(slime-net-coding-system (quote utf-8-unix))
  '(uniquify-buffer-name-style (quote forward) nil (uniquify)))
 (custom-set-faces
   ;; custom-set-faces was added by Custom.
