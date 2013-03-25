@@ -374,7 +374,9 @@ the backing files."
 
 (eval-after-load "slime"
   '(progn
-     (slime-setup '(slime-repl))))
+     (slime-setup '(slime-repl))
+     ;; see: https://github.com/technomancy/swank-clojure/issues/57
+     (setq slime-net-coding-system 'utf-8-unix)))
 
 (add-hook 'paredit-mode-hook
           (lambda ()
@@ -490,8 +492,8 @@ the backing files."
 ;; end Java
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(autoload 'js2-mode "js2" nil t)
-(krb-push-file-ext-and-mode-binding 'js2-mode "\\.js$")
+(autoload 'js2-mode "js2-mode" nil t)
+(add-to-list 'auto-mode-alist '("\\.js$" . js2-mode))
 (setq c-syntactic-indentation t)
 (setq c-electric-flag t)
 
@@ -713,8 +715,8 @@ the backing files."
 (krb-boostrap-local-eamcs-server)
 
 
-(defalias 'csr 'cua-set-rectangle-mark)
-(global-set-key (kbd "C-c r SPC") 'cua-set-rectangle-mark)
+;;(defalias 'csr 'cua-set-rectangle-mark)
+;;(global-set-key (kbd "C-c r SPC") 'cua-set-rectangle-mark)
 
 (custom-set-variables
   ;; custom-set-variables was added by Custom.
@@ -722,10 +724,6 @@ the backing files."
   ;; Your init file should contain only one such instance.
   ;; If there is more than one, they won't work right.
  '(apropos-do-all t)
- '(cua-delete-selection nil)
- '(cua-enable-cua-keys nil)
- '(cua-enable-register-prefix nil)
- '(cua-mode t nil (cua-base))
  '(dired-dwim-target t)
  '(dired-recursive-copies (quote always))
  '(dired-recursive-deletes (quote always))
@@ -741,7 +739,6 @@ the backing files."
   ;; If you edit it by hand, you could mess it up, so be careful.
   ;; Your init file should contain only one such instance.
   ;; If there is more than one, they won't work right.
- '(cua-rectangle ((default (:inherit region)) (((class color)) nil)))
  '(ediff-even-diff-A ((((class color) (background dark)) (:background "dark green"))))
  '(ediff-even-diff-B ((((class color) (background dark)) (:background "dark red"))))
  '(ediff-odd-diff-A ((((class color) (background dark)) (:background "dark green"))))
@@ -751,3 +748,4 @@ the backing files."
  '(mumamo-background-chunk-submode1 ((((class color) (background dark)) (:background "black")))))
 ;;(put 'set-goal-column 'disabled nil)
 (put 'narrow-to-region 'disabled nil)
+
