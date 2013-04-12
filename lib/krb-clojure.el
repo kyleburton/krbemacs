@@ -492,7 +492,7 @@ the pre-existing package statements.
 (global-set-key "\C-c\C-s\C-t" 'krb-clj-open-stacktrace-line)
 (global-set-key "\C-crfn" 'krb-clj-fixup-ns)
 (global-set-key "\C-css" 'krb-autoswank)
-(global-set-key "\C-csr" 'krb-autoswank)
+(global-set-key "\C-csr" 'krb-remote-autoswank)
 
 (defvar krb-clj-mode-prefix-map nil)
 (setq krb-clj-mode-prefix-map
