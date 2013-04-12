@@ -439,26 +439,45 @@ the pre-existing package statements.
       (rn-reinit-service)
       (message "krb-autoswank: : service should be starting..."))))
 
+
+(defun krb-remote-autoswank (port)
+  (interactive
+   (list
+    (read-number
+     "Remote Port: "
+     (let* ((swank-port-file (concat (krb-clj-find-lein-proj-root-dir)
+                                     ".swank.remote.port"))
+            (swank-port (if (not (file-exists-p swank-port-file))
+                            5005
+                          (string-to-int (krb-file-string swank-port-file)))))
+       (message "%s ? %s => %s"
+                swank-port-file
+                (file-exists-p swank-port-file)
+                swank-port)
+       swank-port))))
+  (setq slime-protocol-version "20100404")
+  (slime-connect "localhost" port))
+
 (defun krb-clj-cljrep (sym)
   (interactive (list (read-string (format "Cljrep term: %s" (or (symbol-at-point) "")))))
   (let ((starting-dir (krb-find-containing-parent-directory-of-current-buffer ".git"))
         (cmd (format "cljrep '%s'" sym)))
-   (krb-with-fresh-output-buffer
-    "*cljrep-output*"
-    (krb-insf-into-buffer "*cljrep-output*" "Executing: %s\n" cmd)
-    (save-excursion
-      (pop-to-buffer "*cljrep-output*")
-      (shell-command cmd "*cljrep-output*")
-      (goto-char (point-min))
-      ;; need to stop when we've hit the end of the buffer...
-      '(while (and (not (eobp)) (re-search-forward "^" nil t))
-        (when (looking-at ".")
-          (insert starting-dir)
-          (forward-char 1)))
-      (goto-char (point-min))
-      (set (make-local-variable '*krb-output-base-directory*) starting-dir)
-      (set (make-local-variable '*krb-output-base-file*) (buffer-file-name))
-      (grep-mode)))))
+    (krb-with-fresh-output-buffer
+     "*cljrep-output*"
+     (krb-insf-into-buffer "*cljrep-output*" "Executing: %s\n" cmd)
+     (save-excursion
+       (pop-to-buffer "*cljrep-output*")
+       (shell-command cmd "*cljrep-output*")
+       (goto-char (point-min))
+       ;; need to stop when we've hit the end of the buffer...
+       '(while (and (not (eobp)) (re-search-forward "^" nil t))
+          (when (looking-at ".")
+            (insert starting-dir)
+            (forward-char 1)))
+       (goto-char (point-min))
+       (set (make-local-variable '*krb-output-base-directory*) starting-dir)
+       (set (make-local-variable '*krb-output-base-file*) (buffer-file-name))
+       (grep-mode)))))
 
 (defun krb-clj-fixup-ns ()
   "Ok, eventually this should fixup the entire ns (remove unused imports, resolve new ones, etc).  For now, it aligns the :as and :only forms."
@@ -473,6 +492,7 @@ the pre-existing package statements.
 (global-set-key "\C-c\C-s\C-t" 'krb-clj-open-stacktrace-line)
 (global-set-key "\C-crfn" 'krb-clj-fixup-ns)
 (global-set-key "\C-css" 'krb-autoswank)
+(global-set-key "\C-csr" 'krb-autoswank)
 
 (defvar krb-clj-mode-prefix-map nil)
 (setq krb-clj-mode-prefix-map
@@ -494,4 +514,3 @@ the pre-existing package statements.
 
 (provide 'krb-clojure)
 ;; end of krb-clojure.el
-
