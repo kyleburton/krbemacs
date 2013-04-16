@@ -486,8 +486,7 @@ the pre-existing package statements.
     (beginning-of-buffer)
     (let ((start (point)))
       (forward-sexp 1)
-      (align-regexp start (point) (concat "\\(\\s-*\\)" ":as"))
-      (align-regexp start (point) (concat "\\(\\s-*\\)" ":only")))))
+      (align-regexp start (point) (concat "\\(\\s-*\\)" "\\(:as\\|:refer\\|:only\\)")))))
 
 (global-set-key "\C-c\C-s\C-t" 'krb-clj-open-stacktrace-line)
 (global-set-key "\C-crfn" 'krb-clj-fixup-ns)
