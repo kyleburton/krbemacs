@@ -718,6 +718,14 @@ the backing files."
 ;;(defalias 'csr 'cua-set-rectangle-mark)
 ;;(global-set-key (kbd "C-c r SPC") 'cua-set-rectangle-mark)
 
+(defun timvisher/make-read-only () (toggle-read-only 1))
+
+(timvisher/make-read-only)
+
+(autoload 'archive-extract-hooks "arc-mode")
+
+(add-hook 'archive-extract-hooks 'timvisher/make-read-only)
+
 (custom-set-variables
   ;; custom-set-variables was added by Custom.
   ;; If you edit it by hand, you could mess it up, so be careful.
