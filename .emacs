@@ -722,9 +722,9 @@ the backing files."
 
 (timvisher/make-read-only)
 
-(autoload 'archive-extract-hooks "arc-mode")
+(autoload 'archive-extract-hook "arc-mode")
 
-(add-hook 'archive-extract-hooks 'timvisher/make-read-only)
+(add-hook 'archive-extract-hook 'timvisher/make-read-only)
 
 (custom-set-variables
   ;; custom-set-variables was added by Custom.
