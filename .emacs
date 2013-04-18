@@ -718,13 +718,12 @@ the backing files."
 ;;(defalias 'csr 'cua-set-rectangle-mark)
 ;;(global-set-key (kbd "C-c r SPC") 'cua-set-rectangle-mark)
 
-(defun timvisher/make-read-only () (toggle-read-only 1))
+(defun timvisher/make-read-only ()
+  (toggle-read-only 1))
 
-(timvisher/make-read-only)
+(autoload 'archive-extract-hooks "arc-mode")
 
-(autoload 'archive-extract-hook "arc-mode")
-
-(add-hook 'archive-extract-hook 'timvisher/make-read-only)
+(add-hook 'archive-extract-hooks 'timvisher/make-read-only)
 
 (custom-set-variables
   ;; custom-set-variables was added by Custom.
@@ -756,4 +755,3 @@ the backing files."
  '(mumamo-background-chunk-submode1 ((((class color) (background dark)) (:background "black")))))
 ;;(put 'set-goal-column 'disabled nil)
 (put 'narrow-to-region 'disabled nil)
-
