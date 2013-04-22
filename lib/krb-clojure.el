@@ -12,6 +12,7 @@
 (require 'paredit)
 (require 'highlight-parentheses)
 (require 'yasnippet)
+(autoload 'align-cljlet "align-cljlet")
 
 (defun krb-clj-ns-for-file-name (file-name)
   "Compute a viable clojure namespace for the given file name."
@@ -501,6 +502,7 @@ the pre-existing package statements.
         (define-key map "\C-t" 'krb-clj-exec-mvn-one-test)  ;; just test the current buffer...
         (define-key map "p"    'krb-clj-open-project-config-file)
         (define-key map "z"    'krb-clj-slime-repl-for-project)
+        (define-key map "a"    'align-cljlet)
         map))
 
 (defun krb-clj-mode-hook ()
