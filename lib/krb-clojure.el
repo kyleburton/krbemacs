@@ -498,6 +498,58 @@ the pre-existing package statements.
 (global-set-key "\C-css" 'krb-autoswank)
 (global-set-key "\C-csr" 'krb-remote-autoswank)
 
+(defun krb-clj-get-logging-config ()
+  (let* ((logging-config (concat (krb-clj-find-lein-proj-root-dir)
+                                 ".log-config-file-path")))
+    (if (file-exists-p logging-config)
+        (read (krb-file-string logging-config)))))
+
+(defun krb-clj-log-open-config-file ()
+  (interactive)
+  (let ((fpath (second (assoc "path" (krb-clj-get-logging-config)))))
+    (find-file fpath)))
+
+
+(defun krb-clj-log-unset-for-buffer ()
+  (interactive)
+  (let* ((ns (krb-clj-ns-for-file-name (buffer-file-name)))
+         (logger-pfx (concat "log4j.logger." ns)))
+    (save-excursion
+      (krb-clj-log-open-config-file)
+      (beginning-of-buffer)
+      (if (search-forward logger-pfx nil t nil)
+          (progn
+            (beginning-of-line)
+            (kill-line)
+            (kill-line)))
+      (save-buffer)
+      (kill-buffer)
+      (funcall (eval (second (assoc "reload" (krb-clj-get-logging-config))))))))
+
+(defun krb-clj-log-set-level (level)
+  (interactive "sLevel: ")
+  (let* ((ns (krb-clj-ns-for-file-name (buffer-file-name)))
+         (logger-pfx (concat "log4j.logger." ns)))
+    (save-excursion
+      (krb-clj-log-open-config-file)
+      (beginning-of-buffer)
+      (if (search-forward logger-pfx nil t nil)
+          (progn
+            (beginning-of-line)
+            (kill-line)
+            (kill-line)))
+      (end-of-buffer)
+      (insert (concat logger-pfx "=" level "\n"))
+      (save-buffer)
+      (kill-buffer)
+      (funcall (eval (second (assoc "reload" (krb-clj-get-logging-config))))))))
+
+(defun krb-clj-log-set-debug-for-buffer () (interactive) (krb-clj-log-set-level "DEBUG"))
+(defun krb-clj-log-set-info-for-buffer  () (interactive) (krb-clj-log-set-level "INFO"))
+(defun krb-clj-log-set-warn-for-buffer  () (interactive) (krb-clj-log-set-level "WARN"))
+(defun krb-clj-log-set-error-for-buffer () (interactive) (krb-clj-log-set-level "ERROR"))
+(defun krb-clj-log-set-fatal-for-buffer () (interactive) (krb-clj-log-set-level "FATAL"))
+
 (defvar krb-clj-mode-prefix-map nil)
 (setq krb-clj-mode-prefix-map
       (let ((map (make-sparse-keymap)))
@@ -507,6 +559,13 @@ the pre-existing package statements.
         (define-key map "p"    'krb-clj-open-project-config-file)
         (define-key map "z"    'krb-clj-slime-repl-for-project)
         (define-key map "a"    'align-cljlet)
+        (define-key map "lo"   'krb-clj-log-open-config-file)
+        (define-key map "ld"   'krb-clj-log-set-debug-for-buffer)
+        (define-key map "li"   'krb-clj-log-set-info-for-buffer)
+        (define-key map "lw"   'krb-clj-log-set-warn-for-buffer)
+        (define-key map "le"   'krb-clj-log-set-error-for-buffer)
+        (define-key map "lf"   'krb-clj-log-set-fatal-for-buffer)
+        (define-key map "lk"   'krb-clj-log-unset-for-buffer)
         map))
 
 (defun krb-clj-mode-hook ()
