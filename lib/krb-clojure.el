@@ -643,6 +643,39 @@ the pre-existing package statements.
     (when (not was-in-test?)
       (krb-clj-test-switch-between-test-and-buffer))))
 
+(defun krb-clj-project-models-dir ()
+  (interactive)
+  (let* ((project-root (krb-clj-find-lein-proj-root-dir))
+         (cmd (format "find %s/src/ -type d -name models" project-root))
+         (find-output
+          (first
+           (split-string
+            (shell-command-to-string cmd)
+            "\n"))))
+    find-output))
+
+(defun krb-clj-find-model (thing)
+  (interactive (list (read-string "Model: " (format "%s" (or (symbol-at-point) "")))))
+  (let* ((cmd (format "find %s -name \"%s\" -type f" (krb-clj-project-models-dir) thing))
+         (find-output (shell-command-to-string cmd))
+         (found-files (split-string find-output "\n"))
+         (tmp-buff-name "*krb-clj-find-model*"))
+    (message "found files: %s" found-files)
+    (if (= 1 (length found-files))
+        (find-file (first found-files))
+      (krb-with-fresh-output-buffer
+       tmp-buff-name
+       (save-excursion
+         (pop-to-buffer tmp-buff-name)
+         (insert find-output)
+         (goto-char (point-min))
+         (while (not (eobp))
+           (end-of-line)
+           (insert ":1:select")
+           (next-line 1))
+         (goto-char (point-min))
+         (grep-mode))))))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (global-set-key "\C-c\C-s\C-t" 'krb-clj-open-stacktrace-line)
@@ -670,6 +703,8 @@ the pre-existing package statements.
         (define-key map "tt"   'krb-clj-test-switch-between-test-and-buffer)
         (define-key map "ts"   'krb-clj-test-run-all-tests)
         (define-key map "tR"   'krb-clj-test-run-all-tests-for-buffer)
+
+        (define-key map "fm"   'krb-clj-find-model)
         ;; (define-key map "tr"   'krb-clj-test-run-test-for-fn)
         ;; jump between test-fn and current-fn
 
