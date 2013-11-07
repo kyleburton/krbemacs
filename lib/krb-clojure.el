@@ -455,6 +455,24 @@ the pre-existing package statements.
       (message "krb-autoswank: : service should be starting..."))))
 
 
+(defun krb-swank-connect ()
+  (interactive)
+  (let ((local-emacs-file (concat (krb-clj-find-lein-proj-root-dir) ".local.emacs.el"))
+        (swank-port-file  (concat (krb-clj-find-lein-proj-root-dir)
+                                  ".swank.port"))
+        ;; 4005 is the default
+        (swank-port       4005))
+    (when (file-exists-p local-emacs-file)
+      (message "krb-autoswank: loading %s..." local-emacs-file)
+      (load-file local-emacs-file))
+    (message "krb-autoswank: swank port file: %s" swank-port-file)
+    (when (file-exists-p swank-port-file)
+      (setq swank-port (string-to-int (krb-file-string swank-port-file))))
+
+    (setq slime-protocol-version "20100404")
+    (slime-connect "localhost" swank-port)))
+
+
 (defun krb-remote-autoswank (port)
   (interactive
    (list
@@ -682,6 +700,8 @@ the pre-existing package statements.
 (global-set-key "\C-crfn" 'krb-clj-fixup-ns)
 (global-set-key "\C-css" 'krb-autoswank)
 (global-set-key "\C-csr" 'krb-remote-autoswank)
+(global-set-key "\C-csS" 'krb-swank-connect)
+
 
 (defvar krb-clj-mode-prefix-map nil)
 (setq krb-clj-mode-prefix-map
