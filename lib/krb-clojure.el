@@ -430,9 +430,9 @@ the pre-existing package statements.
     (when (file-exists-p local-emacs-file)
       (message "krb-autoswank: loading %s..." local-emacs-file)
       (load-file local-emacs-file))
-    (message "krb-autoswank: swank port file: %s" swank-port-file)
+    (message "krb-autoswank: swank port file: %s => '%s'" swank-port-file (krb-file-string swank-port-file))
     (when (file-exists-p swank-port-file)
-      (setq (string-to-int (krb-file-string swank-port-file))))
+      (setq swank-port (string-to-int (krb-file-string swank-port-file))))
     ;; (when (not (file-exists-p swank-port-file))
     ;;   (message (concat "krb-autoswank: Sorry, unable to find .swank.port file in "
     ;;                    (krb-clj-find-lein-proj-root-dir)
