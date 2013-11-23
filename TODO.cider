@@ -1,0 +1,6 @@
+* Install Cider: https://github.com/clojure-emacs/cider
+ * How does completion work?  .slime.emacs allows for namespace and symbol
+   (member var and function) completion, which doesn't seem to work with the
+   .cider.emacs
+ * re-install paredit
+ * re-install ido modes
