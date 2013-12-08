@@ -18,9 +18,11 @@
   "Compute a viable clojure namespace for the given file name."
   (interactive)
   (cond ((or (string-match "/src/" file-name)
-             (string-match "/clj/" file-name))
+             (string-match "/clj/" file-name)
+             (string-match "/test/" file-name))
          (gsub! file-name "^.*/clj/" "")
          (gsub! file-name "^.*/src/" "")
+         (gsub! file-name "^.*/test/" "")
          (gsub! file-name "/" "."))
         (t
          (gsub! file-name "^.+/\\([^/]+\\)$" "\\1")))
@@ -287,6 +289,17 @@ For how this is computed, see `krb-clj-calculate-test-name'."
           (insert (format "\n[%s :as %s]" package alias))
           (krb-reindent-entire-buffer)))))
 
+(defun krb-clj-insert-use (use-line)
+  (interactive "sUse: ")
+  (save-excursion
+    (beginning-of-buffer)
+    (progn
+      (krb-clj-ensure-use)
+      (krb-clj-start-of-ns-decl)
+      (krb-clj-find-and-goto-last-point-in-form "(:use")
+      (insert (format "\n%s" use-line))
+      (krb-reindent-entire-buffer))))
+
 (defun krb-clj-convert-mvn-dep-to-lein ()
   "Converts a maven dependency block:
     <dependency>
@@ -433,16 +446,30 @@ the pre-existing package statements.
     (message "krb-autoswank: swank port file: %s => '%s'" swank-port-file (krb-file-string swank-port-file))
     (when (file-exists-p swank-port-file)
       (setq swank-port (string-to-int (krb-file-string swank-port-file))))
-    ;; (when (not (file-exists-p swank-port-file))
-    ;;   (message (concat "krb-autoswank: Sorry, unable to find .swank.port file in "
-    ;;                    (krb-clj-find-lein-proj-root-dir)
-    ;;                    " Will use 4005 as the port...")))
     (setq slime-protocol-version "20100404")
     (slime-connect "localhost" swank-port)
     (when (fboundp 'rn-reinit-service)
       (message "krb-autoswank: : starting the service...")
       (rn-reinit-service)
       (message "krb-autoswank: : service should be starting..."))))
+
+
+(defun krb-swank-connect ()
+  (interactive)
+  (let ((local-emacs-file (concat (krb-clj-find-lein-proj-root-dir) ".local.emacs.el"))
+        (swank-port-file  (concat (krb-clj-find-lein-proj-root-dir)
+                                  ".swank.port"))
+        ;; 4005 is the default
+        (swank-port       4005))
+    (when (file-exists-p local-emacs-file)
+      (message "krb-autoswank: loading %s..." local-emacs-file)
+      (load-file local-emacs-file))
+    (message "krb-autoswank: swank port file: %s" swank-port-file)
+    (when (file-exists-p swank-port-file)
+      (setq swank-port (string-to-int (krb-file-string swank-port-file))))
+
+    (setq slime-protocol-version "20100404")
+    (slime-connect "localhost" swank-port)))
 
 
 (defun krb-remote-autoswank (port)
@@ -493,20 +520,213 @@ the pre-existing package statements.
       (forward-sexp 1)
       (align-regexp start (point) (concat "\\(\\s-*\\)" "\\(:as\\|:refer\\|:only\\)")))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun krb-clj-get-logging-config ()
+  (let* ((logging-config (concat (krb-clj-find-lein-proj-root-dir)
+                                 ".log-config-file-path")))
+    (if (file-exists-p logging-config)
+        (read (krb-file-string logging-config)))))
+
+(defun krb-clj-log-open-config-file ()
+  (interactive)
+  (let ((fpath (second (assoc "path" (krb-clj-get-logging-config)))))
+    (find-file fpath)))
+
+
+(defun krb-clj-log-unset-for-buffer ()
+  (interactive)
+  (let* ((ns (krb-clj-ns-for-file-name (buffer-file-name)))
+         (logger-pfx (concat "log4j.logger." ns)))
+    (save-excursion
+      (krb-clj-log-open-config-file)
+      (beginning-of-buffer)
+      (if (search-forward logger-pfx nil t nil)
+          (progn
+            (beginning-of-line)
+            (kill-line)
+            (kill-line)))
+      (save-buffer)
+      (kill-buffer)
+      (funcall (eval (second (assoc "reload" (krb-clj-get-logging-config))))))))
+
+(defun krb-clj-log-set-level (level)
+  (interactive "sLevel: ")
+  (let* ((ns (krb-clj-ns-for-file-name (buffer-file-name)))
+         (logger-pfx (concat "log4j.logger." ns)))
+    (save-excursion
+      (krb-clj-log-open-config-file)
+      (beginning-of-buffer)
+      (if (search-forward logger-pfx nil t nil)
+          (progn
+            (beginning-of-line)
+            (kill-line)
+            (kill-line)))
+      (end-of-buffer)
+      (insert (concat logger-pfx "=" level "\n"))
+      (save-buffer)
+      (kill-buffer)
+      (funcall (eval (second (assoc "reload" (krb-clj-get-logging-config))))))))
+
+
+(defun krb-clj-log-set-debug-for-buffer () (interactive) (krb-clj-log-set-level "DEBUG"))
+(defun krb-clj-log-set-info-for-buffer  () (interactive) (krb-clj-log-set-level "INFO"))
+(defun krb-clj-log-set-warn-for-buffer  () (interactive) (krb-clj-log-set-level "WARN"))
+(defun krb-clj-log-set-error-for-buffer () (interactive) (krb-clj-log-set-level "ERROR"))
+(defun krb-clj-log-set-fatal-for-buffer () (interactive) (krb-clj-log-set-level "FATAL"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun krb-clj-test-is-in-test-file? ()
+  (interactive)
+  (let* ((test-path-prefix (concat (krb-clj-find-lein-proj-root-dir) "test/"))
+         (res (string-prefix-p test-path-prefix (buffer-file-name))))
+    (message "krb-clj-test-is-in-test-file?: %s vs %s => %s" test-path-prefix (buffer-file-name) res)
+    res)
+  ;; (krb-clj-find-lein-proj-root-dir)
+  ;; if teh current file name starts with (krb-clj-find-lein-proj-root-dir) "/test/" then yes, otherwise no
+  )
+
+(defun krb-clj-test-test-path-for-buffer (proj-root fname)
+  (interactive (list (read-string "Project Root: " (krb-clj-find-lein-proj-root-dir))
+                     (read-string "File Name: " (buffer-file-name))))
+  (let* ((tpath (concat
+                 proj-root
+                 "test"
+                 (substring fname (length (concat proj-root "src")))))
+         (tdir    (file-name-directory   tpath))
+         (tfname  (concat "test_" (file-name-nondirectory tpath))))
+    (setq tpath (concat tdir tfname))
+    (message "the path is: %s" tpath)
+    tpath))
+
+(defun krb-clj-test-source-path-for-buffer (proj-root fname)
+  (interactive (list (read-string "Project Root: " (krb-clj-find-lein-proj-root-dir))
+                     (read-string "File Name: " (buffer-file-name))))
+  (let ((tpath (concat
+                proj-root
+                "src"
+                (replace-regexp-in-string
+                 "/test_" "/"
+                 (substring fname (length (concat proj-root "test")))))))
+    (message "the path is: %s" tpath)
+    tpath))
+
+
+(defun krb-clj-ensure-path-for-file (fname)
+  (interactive "sFile Name: ")
+  (let ((dname (file-name-directory fname)))
+    (if (not (file-directory-p dname))
+        (make-directory dname t))))
+
+(defun krb-clj-ns-alias-for-ns (ns)
+  (interactive "sNamespace: ")
+  (first (reverse (split-string ns "\\."))))
+
+(defun krb-clj-test-generate-skeleton-test-in-buffer ()
+  (interactive)
+  (insert "(ns " (krb-clj-ns-for-file-name (buffer-file-name)) ")\n")
+  (insert "\n")
+  (insert "\n")
+  (krb-clj-insert-use "clojure.test")
+  (let ((ns (krb-clj-ns-for-file-name (krb-clj-test-source-path-for-buffer (krb-clj-find-lein-proj-root-dir) (buffer-file-name)))))
+    (krb-clj-insert-require
+     ns
+     (krb-clj-ns-alias-for-ns ns))))
+
+(defun krb-clj-test-switch-between-test-and-buffer ()
+  (interactive)
+  (if (krb-clj-test-is-in-test-file?)
+      (progn
+        (find-file (krb-clj-test-source-path-for-buffer (krb-clj-find-lein-proj-root-dir) (buffer-file-name))))
+    (progn
+      (let* ((test-path (krb-clj-test-test-path-for-buffer (krb-clj-find-lein-proj-root-dir) (buffer-file-name)))
+             (existed? (file-exists-p test-path)))
+        (krb-clj-ensure-path-for-file test-path)
+        (find-file test-path)
+        (when (not existed?)
+          (krb-clj-test-generate-skeleton-test-in-buffer))
+        (message "existed[%s]? %s" test-path existed?)))))
+
+(defun krb-clj-test-run-all-tests ()
+  (interactive)
+  (slime-interactive-eval "(clojure.test/run-all-tests)"))
+
+(defun krb-clj-test-run-all-tests-for-buffer ()
+  (interactive)
+  (let ((was-in-test? (krb-clj-test-is-in-test-file?)))
+    (when (not was-in-test?)
+      (krb-clj-test-switch-between-test-and-buffer))
+    (slime-interactive-eval "(run-tests)")
+    (when (not was-in-test?)
+      (krb-clj-test-switch-between-test-and-buffer))))
+
+(defun krb-clj-project-models-dir ()
+  (interactive)
+  (let* ((project-root (krb-clj-find-lein-proj-root-dir))
+         (cmd (format "find %s/src/ -type d -name models" project-root))
+         (find-output
+          (first
+           (split-string
+            (shell-command-to-string cmd)
+            "\n"))))
+    find-output))
+
+(defun krb-clj-find-model (thing)
+  (interactive (list (read-string "Model: " (format "%s" (or (symbol-at-point) "")))))
+  (let* ((cmd (format "find %s -name \"%s\" -type f" (krb-clj-project-models-dir) thing))
+         (find-output (shell-command-to-string cmd))
+         (found-files (split-string find-output "\n"))
+         (tmp-buff-name "*krb-clj-find-model*"))
+    (message "found files: %s" found-files)
+    (if (= 1 (length found-files))
+        (find-file (first found-files))
+      (krb-with-fresh-output-buffer
+       tmp-buff-name
+       (save-excursion
+         (pop-to-buffer tmp-buff-name)
+         (insert find-output)
+         (goto-char (point-min))
+         (while (not (eobp))
+           (end-of-line)
+           (insert ":1:select")
+           (next-line 1))
+         (goto-char (point-min))
+         (grep-mode))))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (global-set-key "\C-c\C-s\C-t" 'krb-clj-open-stacktrace-line)
 (global-set-key "\C-crfn" 'krb-clj-fixup-ns)
 (global-set-key "\C-css" 'krb-autoswank)
 (global-set-key "\C-csr" 'krb-remote-autoswank)
+(global-set-key "\C-csS" 'krb-swank-connect)
+
 
 (defvar krb-clj-mode-prefix-map nil)
 (setq krb-clj-mode-prefix-map
       (let ((map (make-sparse-keymap)))
-        (define-key map "t"    'krb-java-exec-mvn-test)     ;; all the tests
-        (define-key map "T"    'krb-clj-find-test-file)
-        (define-key map "\C-t" 'krb-clj-exec-mvn-one-test)  ;; just test the current buffer...
+        ;; (define-key map "t"    'krb-java-exec-mvn-test)     ;; all the tests
+        ;; (define-key map "T"    'krb-clj-find-test-file)
+        ;; (define-key map "\C-t" 'krb-clj-exec-mvn-one-test)  ;; just test the current buffer...
         (define-key map "p"    'krb-clj-open-project-config-file)
         (define-key map "z"    'krb-clj-slime-repl-for-project)
         (define-key map "a"    'align-cljlet)
+        (define-key map "lo"   'krb-clj-log-open-config-file)
+        (define-key map "ld"   'krb-clj-log-set-debug-for-buffer)
+        (define-key map "li"   'krb-clj-log-set-info-for-buffer)
+        (define-key map "lw"   'krb-clj-log-set-warn-for-buffer)
+        (define-key map "le"   'krb-clj-log-set-error-for-buffer)
+        (define-key map "lf"   'krb-clj-log-set-fatal-for-buffer)
+        (define-key map "lk"   'krb-clj-log-unset-for-buffer)
+
+        (define-key map "tt"   'krb-clj-test-switch-between-test-and-buffer)
+        (define-key map "ts"   'krb-clj-test-run-all-tests)
+        (define-key map "tR"   'krb-clj-test-run-all-tests-for-buffer)
+
+        (define-key map "fm"   'krb-clj-find-model)
+        ;; (define-key map "tr"   'krb-clj-test-run-test-for-fn)
+        ;; jump between test-fn and current-fn
+
         map))
 
 (defun krb-clj-mode-hook ()
@@ -515,7 +735,10 @@ the pre-existing package statements.
   (highlight-parentheses-mode t)
   (yas/minor-mode-on)
   ;;(slime-mode +1)
-  (local-set-key "\C-cr"  krb-clj-mode-prefix-map))
+  (local-set-key "\C-cr"  krb-clj-mode-prefix-map)
+  (local-set-key [f2]     'krb-clj-test-run-all-tests)
+  ;; (local-set-key [f3]     'krb-clj-test-run-test-for-fn)
+  (local-set-key [f4]     'krb-clj-test-run-all-tests-for-buffer))
 
 (provide 'krb-clojure)
 ;; end of krb-clojure.el
