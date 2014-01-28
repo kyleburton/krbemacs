@@ -3808,7 +3808,7 @@ terminates a current completion."
   (remove-hook 'pre-command-hook
                'slime-complete-maybe-restore-window-configuration)
   (condition-case err
-      (cond ((find last-command-char "()\"'`,# \r\n:")
+      (cond ((find last-command-event "()\"'`,# \r\n:")
              (slime-complete-restore-window-configuration))
             ((not (slime-completion-window-active-p))
              (slime-complete-forget-window-configuration))
