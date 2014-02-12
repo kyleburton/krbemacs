@@ -326,18 +326,18 @@
 ;; certin types of invalid syntax."
 ;;   (interactive "P")
 ;;   (cond
-;;    ((and (char-equal (aref "\"" 0) last-command-char)
+;;    ((and (char-equal (aref "\"" 0) last-command-event)
 ;;          (krb-ruby-in-string-p)
 ;;          (looking-at "\""))
 ;;     (forward-char 1))
-;;    ((and (char-equal (aref "\"" 0) last-command-char)
+;;    ((and (char-equal (aref "\"" 0) last-command-event)
 ;;          (krb-ruby-in-string-p))
 ;;     (insert "\\\""))
 ;;    ;; other delmited char type
 ;;    (t
-;;     (insert-char last-command-char 1)
+;;     (insert-char last-command-event 1)
 ;;     (insert (cdr (assoc
-;;                   (format "%c" last-command-char)
+;;                   (format "%c" last-command-event)
 ;;                   '(("("  . ")")
 ;;                     ("["  . "]")
 ;;                     ("{"  . "}")
@@ -354,7 +354,7 @@
 ;;   (cond ((looking-at "[\])}'\"]")
 ;;          (forward-char 1))
 ;;         (t
-;;          (message "er, no, that'd make things unbalanced, C-q %c if you really want to" last-command-char))))
+;;          (message "er, no, that'd make things unbalanced, C-q %c if you really want to" last-command-event))))
 
 ;; ;; override C-d, if at an open delim, move fwd
 ;; (defun krb-ruby-del-left ()

@@ -881,7 +881,7 @@ The variable ruby-indent-level controls the amount of indentation.
 
 (defun ruby-electric-brace (arg)
   (interactive "P")
-  (insert-char last-command-char 1)
+  (insert-char last-command-event 1)
   (ruby-indent-line t)
   (delete-char -1)
   (self-insert-command (prefix-numeric-value arg)))
