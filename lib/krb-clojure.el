@@ -551,10 +551,11 @@ the pre-existing package statements.
       (kill-buffer)
       (funcall (eval (second (assoc "reload" (krb-clj-get-logging-config))))))))
 
+;; detect log4j (properties file) vs logback (xml)
 (defun krb-clj-log-set-level (level)
   (interactive "sLevel: ")
   (let* ((ns (krb-clj-ns-for-file-name (buffer-file-name)))
-         (logger-pfx (concat "log4j.logger." ns)))
+         (logger-pfx (concat "logger name=\"" ns "\"")))
     (save-excursion
       (krb-clj-log-open-config-file)
       (beginning-of-buffer)
@@ -564,10 +565,16 @@ the pre-existing package statements.
             (kill-line)
             (kill-line)))
       (end-of-buffer)
-      (insert (concat logger-pfx "=" level "\n"))
+      (search-backward "</configuration>")
+      ;;(previous-line 1)
+      ;; (insert (concat logger-pfx "=" level "\n"))
+      (insert (format "  <logger name=\"%s\" level=\"%s\"/>\n"
+                      ns
+                      level))
       (save-buffer)
       (kill-buffer)
       (funcall (eval (second (assoc "reload" (krb-clj-get-logging-config))))))))
+
 
 
 (defun krb-clj-log-set-debug-for-buffer () (interactive) (krb-clj-log-set-level "DEBUG"))
