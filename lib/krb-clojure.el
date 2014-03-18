@@ -551,6 +551,28 @@ the pre-existing package statements.
       (kill-buffer)
       (funcall (eval (second (assoc "reload" (krb-clj-get-logging-config))))))))
 
+(defun krb-clj-log-show-level-for-buffer ()
+  (interactive)
+  (let* ((ns (krb-clj-ns-for-file-name (buffer-file-name)))
+         (logger-pfx (concat "logger name=\"" ns "\"")))
+    (save-excursion
+      (krb-clj-log-open-config-file)
+      (beginning-of-buffer)
+      (message "searching for: %s" logger-pfx)
+      (if (search-forward logger-pfx nil t nil)
+          (progn
+            (beginning-of-line)
+            (search-forward "level=")
+            (search-forward "\"")
+            (let ((start (point)))
+              (search-forward "\"")
+              (backward-char 1)
+              (let ((level (buffer-substring start (point))))
+                (message "Level: %s" level))))
+        (message "Level: *default*"))
+      (kill-buffer))))
+
+
 ;; detect log4j (properties file) vs logback (xml)
 (defun krb-clj-log-set-level (level)
   (interactive "sLevel: ")
@@ -726,6 +748,7 @@ the pre-existing package statements.
         (define-key map "le"   'krb-clj-log-set-error-for-buffer)
         (define-key map "lf"   'krb-clj-log-set-fatal-for-buffer)
         (define-key map "lk"   'krb-clj-log-unset-for-buffer)
+        (define-key map "ls"   'krb-clj-log-show-level-for-buffer)
 
         (define-key map "tt"   'krb-clj-test-switch-between-test-and-buffer)
         (define-key map "ts"   'krb-clj-test-run-all-tests)
