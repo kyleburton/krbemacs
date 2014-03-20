@@ -723,6 +723,50 @@ the pre-existing package statements.
          (goto-char (point-min))
          (grep-mode))))))
 
+(defun krb-clojure-get-current-fn-args ()
+  (interactive)
+  (save-excursion
+    ;; NB: paredit-backward-up isnt' enough, we need to keep popping
+    ;; up till we see "(defn "
+    (search-backward "(defn ")
+    (search-forward "[")
+    (let ((start (point)))
+      (backward-char 1)
+      (forward-sexp 1)
+      (backward-char 1)
+      ;; strip meta-data from the list
+      (remove-if
+       (lambda (elt)
+         (string/starts-with (format "%s" elt) "^"))
+       (split-string
+        (buffer-substring start (point))
+        " ")))))
+
+(defun string/starts-with (s begins)
+  "returns non-nil if string S starts with BEGINS.  Else nil."
+  (cond ((>= (length s) (length begins))
+         (string-equal (substring s 0 (length begins)) begins))
+        (t nil)))
+
+(defun krb-clojure-fn-args-to-defs ()
+  (interactive)
+  (save-excursion
+    (let ((args-list (krb-clojure-get-current-fn-args)))
+      ;; NB: ignore type hints
+      (search-backward "(defn ")
+      (search-forward "[")
+      (backward-char 1)
+      (forward-sexp 1)
+      (next-line 1)
+      (beginning-of-line)
+      (loop for arg in args-list
+            do
+            (beginning-of-line)
+            (insert (format "  (def %s %s)\n" arg arg)))
+      (save-buffer)
+      (slime-eval-defun))))
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (global-set-key "\C-c\C-s\C-t" 'krb-clj-open-stacktrace-line)
@@ -755,6 +799,9 @@ the pre-existing package statements.
         (define-key map "tR"   'krb-clj-test-run-all-tests-for-buffer)
 
         (define-key map "fm"   'krb-clj-find-model)
+
+        (define-key map "da"   'krb-clojure-fn-args-to-defs)
+
         ;; (define-key map "tr"   'krb-clj-test-run-test-for-fn)
         ;; jump between test-fn and current-fn
 
