@@ -550,10 +550,33 @@ the pre-existing package statements.
       (kill-buffer)
       (funcall (eval (second (assoc "reload" (krb-clj-get-logging-config))))))))
 
+(defun krb-clj-log-show-level-for-buffer ()
+  (interactive)
+  (let* ((ns (krb-clj-ns-for-file-name (buffer-file-name)))
+         (logger-pfx (concat "logger name=\"" ns "\"")))
+    (save-excursion
+      (krb-clj-log-open-config-file)
+      (beginning-of-buffer)
+      (message "searching for: %s" logger-pfx)
+      (if (search-forward logger-pfx nil t nil)
+          (progn
+            (beginning-of-line)
+            (search-forward "level=")
+            (search-forward "\"")
+            (let ((start (point)))
+              (search-forward "\"")
+              (backward-char 1)
+              (let ((level (buffer-substring start (point))))
+                (message "Level: %s" level))))
+        (message "Level: *default*"))
+      (kill-buffer))))
+
+
+;; detect log4j (properties file) vs logback (xml)
 (defun krb-clj-log-set-level (level)
   (interactive "sLevel: ")
   (let* ((ns (krb-clj-ns-for-file-name (buffer-file-name)))
-         (logger-pfx (concat "log4j.logger." ns)))
+         (logger-pfx (concat "logger name=\"" ns "\"")))
     (save-excursion
       (krb-clj-log-open-config-file)
       (beginning-of-buffer)
@@ -563,10 +586,16 @@ the pre-existing package statements.
             (kill-line)
             (kill-line)))
       (end-of-buffer)
-      (insert (concat logger-pfx "=" level "\n"))
+      (search-backward "</configuration>")
+      ;;(previous-line 1)
+      ;; (insert (concat logger-pfx "=" level "\n"))
+      (insert (format "  <logger name=\"%s\" level=\"%s\"/>\n"
+                      ns
+                      level))
       (save-buffer)
       (kill-buffer)
       (funcall (eval (second (assoc "reload" (krb-clj-get-logging-config))))))))
+
 
 
 (defun krb-clj-log-set-debug-for-buffer () (interactive) (krb-clj-log-set-level "DEBUG"))
@@ -693,6 +722,50 @@ the pre-existing package statements.
          (goto-char (point-min))
          (grep-mode))))))
 
+(defun krb-clojure-get-current-fn-args ()
+  (interactive)
+  (save-excursion
+    ;; NB: paredit-backward-up isnt' enough, we need to keep popping
+    ;; up till we see "(defn "
+    (search-backward "(defn ")
+    (search-forward "[")
+    (let ((start (point)))
+      (backward-char 1)
+      (forward-sexp 1)
+      (backward-char 1)
+      ;; strip meta-data from the list
+      (remove-if
+       (lambda (elt)
+         (string/starts-with (format "%s" elt) "^"))
+       (split-string
+        (buffer-substring start (point))
+        " ")))))
+
+(defun string/starts-with (s begins)
+  "returns non-nil if string S starts with BEGINS.  Else nil."
+  (cond ((>= (length s) (length begins))
+         (string-equal (substring s 0 (length begins)) begins))
+        (t nil)))
+
+(defun krb-clojure-fn-args-to-defs ()
+  (interactive)
+  (save-excursion
+    (let ((args-list (krb-clojure-get-current-fn-args)))
+      ;; NB: ignore type hints
+      (search-backward "(defn ")
+      (search-forward "[")
+      (backward-char 1)
+      (forward-sexp 1)
+      (next-line 1)
+      (beginning-of-line)
+      (loop for arg in args-list
+            do
+            (beginning-of-line)
+            (insert (format "  (def %s %s)\n" arg arg)))
+      (save-buffer)
+      (slime-eval-defun))))
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (global-set-key "\C-c\C-s\C-t" 'krb-clj-open-stacktrace-line)
@@ -718,12 +791,16 @@ the pre-existing package statements.
         (define-key map "le"   'krb-clj-log-set-error-for-buffer)
         (define-key map "lf"   'krb-clj-log-set-fatal-for-buffer)
         (define-key map "lk"   'krb-clj-log-unset-for-buffer)
+        (define-key map "ls"   'krb-clj-log-show-level-for-buffer)
 
         (define-key map "tt"   'krb-clj-test-switch-between-test-and-buffer)
         (define-key map "ts"   'krb-clj-test-run-all-tests)
         (define-key map "tR"   'krb-clj-test-run-all-tests-for-buffer)
 
         (define-key map "fm"   'krb-clj-find-model)
+
+        (define-key map "da"   'krb-clojure-fn-args-to-defs)
+
         ;; (define-key map "tr"   'krb-clj-test-run-test-for-fn)
         ;; jump between test-fn and current-fn
 
