@@ -544,8 +544,8 @@ to the given line number."
     (if (and (not (= 0 (length output)))
              (file-exists-p output))
         (find-file output)
-        (progn
-          (message "Not found: %s" file-name)))))
+      (progn
+        (message "Not found: %s" file-name)))))
 
 (defun krb-insert-register-or-string-insert-rectangle ()
   (interactive)
@@ -584,5 +584,26 @@ See: URL `http://en.wikipedia.org/wiki/ISO_8601'
    (format-time-string "%Y-%m-%dT%T")
    ((lambda (x) (concat (substring x 0 3) ":" (substring x 3 5)))
     (format-time-string "%z"))))
+
+(defun oink-oink ()
+  "You know, for kids."
+  (interactive)
+  (insert "\n")
+  (insert "            _                           _\n")
+  (insert "            ;`.                       ,'/\n")
+  (insert "            |`.`-.      _____      ,-;,'|\n")
+  (insert "            |  `-.\__,-'     `-.__//'   |\n")
+  (insert "            |     `|               \ ,  |\n")
+  (insert "            `.  ```                 ,  .'\n")
+  (insert "              \_`      .     ,   ,  `_/\n")
+  (insert "                \    ^  `   ,   ^ ` /\n")
+  (insert "                 | '  |  ____  | , |\n")
+  (insert "                 |     ,'    `.    |\n")
+  (insert "                 |    (  O' O  )   |\n")
+  (insert "                 `.    \__,.__/   ,'\n")
+  (insert "                   `-._  `--'  _,'\n")
+  (insert "                       `------'\n")
+  (insert "\n"))
+
 
 (provide 'krb-misc)
