@@ -742,6 +742,7 @@ the pre-existing package statements.
         (buffer-substring start (point))
         " ")))))
 
+
 (defun string/starts-with (s begins)
   "returns non-nil if string S starts with BEGINS.  Else nil."
   (cond ((>= (length s) (length begins))
@@ -749,6 +750,14 @@ the pre-existing package statements.
         (t nil)))
 
 (defun krb-clojure-fn-args-to-defs ()
+  "Handle the following conditions:
+
+   (defn name [] ...)
+   (defn name [& args] ...)
+   (defn name [& [args] ...)
+   (defn name [^Type arg1] ...)
+   (defn name [{:keys [a b c] :as foo}] ...)
+"
   (interactive)
   (save-excursion
     (let ((args-list (krb-clojure-get-current-fn-args)))
