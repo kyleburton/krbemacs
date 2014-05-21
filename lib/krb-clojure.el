@@ -749,6 +749,20 @@ the pre-existing package statements.
          (string-equal (substring s 0 (length begins)) begins))
         (t nil)))
 
+;; How should this work in order to handle clojure?
+;; . rewind to the defn
+;; . if (looking-at? "^") we're at meta-data, (forward-sexp 1)
+;; . if looking-at? [a-z], then good, we're at the fn name, (forward-sexp 1)
+;; .   otherwise error
+;; . if looking-at? "\"", we're looking at a doc-string
+;;     (forward-sexp 1)
+;; . if not looking-at? "[" then we may have multi-arity, not sure what to do
+;; . we're at the arg list, parse it
+;;   need to handle: rest args
+;;   need to handle: destructuring into arrays
+;;   need to handle: destructuring into maps
+;;   arbitrary nesting for destructuring :/
+;;   need to handle type-hints on the args
 (defun krb-clojure-fn-args-to-defs ()
   "Handle the following conditions:
 
