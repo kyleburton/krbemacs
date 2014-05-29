@@ -726,9 +726,7 @@ the pre-existing package statements.
 (defun krb-clojure-get-current-fn-args ()
   (interactive)
   (save-excursion
-    ;; NB: paredit-backward-up isnt' enough, we need to keep popping
-    ;; up till we see "(defn "
-    (search-backward "(defn ")
+    (beginning-of-defun)
     (search-forward "[")
     (let ((start (point)))
       (backward-char 1)
