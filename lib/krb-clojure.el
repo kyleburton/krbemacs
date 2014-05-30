@@ -1,3 +1,4 @@
+
 ;; Clojure-mode extensions
 
 ;; TODO: need a keybinding / function for fixing the :import, :require
@@ -774,7 +775,7 @@ the pre-existing package statements.
   (save-excursion
     (let ((args-list (krb-clojure-get-current-fn-args)))
       ;; NB: ignore type hints
-      (search-backward "(defn ")
+      (beginning-of-defun)
       (search-forward "[")
       (backward-char 1)
       (forward-sexp 1)
