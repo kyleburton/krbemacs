@@ -789,6 +789,20 @@ the pre-existing package statements.
       (slime-eval-defun))))
 
 
+(defun krb-clojure-def-var ()
+  (interactive)
+  (save-excursion
+    (end-of-line)
+    (backward-sexp 1)
+    (kill-line)
+    (insert "(def ")
+    (yank)
+    (insert " ")
+    (yank)
+    (insert ")"))
+  (next-line))
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (global-set-key "\C-c\C-s\C-t" 'krb-clj-open-stacktrace-line)
@@ -823,6 +837,8 @@ the pre-existing package statements.
         (define-key map "fm"   'krb-clj-find-model)
 
         (define-key map "da"   'krb-clojure-fn-args-to-defs)
+        (define-key map "dv"   'krb-clojure-def-var)
+
 
         ;; (define-key map "tr"   'krb-clj-test-run-test-for-fn)
         ;; jump between test-fn and current-fn
