@@ -852,6 +852,7 @@ the pre-existing package statements.
   (yas/minor-mode-on)
   ;;(slime-mode +1)
   (local-set-key "\C-cr"  krb-clj-mode-prefix-map)
+  (local-set-key "\C-c\M-i" 'slime-inspect)
   (local-set-key [f2]     'krb-clj-test-run-all-tests)
   ;; (local-set-key [f3]     'krb-clj-test-run-test-for-fn)
   (local-set-key [f4]     'krb-clj-test-run-all-tests-for-buffer))
