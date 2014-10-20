@@ -813,9 +813,9 @@ the pre-existing package statements.
      ;; prompt
      (concat "Autoeval Expression: " (slime-last-expression) ": ")
      ;; initial-input
-     nil
+     krb-clojure-replay-expression-expr
      ;; history
-     t
+     'krb-clojure-set-replay-expression-hist
      ;; default-value
      (slime-last-expression)
      ;; inherit-input-method
@@ -839,9 +839,9 @@ the pre-existing package statements.
      ;; prompt
      (concat "Autoinspect Expression: " (slime-last-expression) ": ")
      ;; initial-input
-     nil
+     krb-clojure-replay-inspect-expression-expr
      ;; history
-     t
+     'krb-clojure-set-replay-inspect-expression-hist
      ;; default-value
      (slime-last-expression)
      ;; inherit-input-method
@@ -908,10 +908,10 @@ the pre-existing package statements.
   (local-set-key "\C-c\M-i" 'slime-inspect)
   (local-set-key [f2]     'krb-clj-test-run-all-tests)
   ;; (local-set-key [f3]     'krb-clj-test-run-test-for-fn)
-  (local-set-key [f4]     'krb-clj-test-run-all-tests-for-buffer)
-  (local-set-key [f6]     'krb-clojure-replay-expression)
-  (local-set-key [f7]     'krb-clojure-set-replay-expression)
-  (local-set-key (kbd "C-<f6>") 'krb-clojure-replay-inspect-expression)
+  (local-set-key [f4]           'krb-clj-test-run-all-tests-for-buffer)
+  (local-set-key [f6]           'krb-clojure-replay-expression)
+  (local-set-key (kbd "C-<f6>") 'krb-clojure-set-replay-expression)
+  (local-set-key [f7]           'krb-clojure-replay-inspect-expression)
   (local-set-key (kbd "C-<f7>") 'krb-clojure-set-replay-inspect-expression))
 
 (provide 'krb-clojure)
