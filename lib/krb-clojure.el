@@ -804,6 +804,7 @@ the pre-existing package statements.
 
 
 (defvar krb-clojure-replay-expression-expr nil)
+(make-variable-buffer-local 'krb-clojure-replay-expression-expr)
 
 (defun krb-clojure-set-replay-expression (expression)
   (interactive
