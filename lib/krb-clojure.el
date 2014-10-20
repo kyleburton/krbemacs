@@ -803,6 +803,34 @@ the pre-existing package statements.
   (next-line))
 
 
+(defvar krb-clojure-replay-expression-expr nil)
+
+(defun krb-clojure-set-replay-expression (expression)
+  (interactive
+   (list
+    (read-string
+     ;; prompt
+     (concat "Expression: " (slime-last-expression) ": ")
+     ;; initial-input
+     nil
+     ;; history
+     t
+     ;; default-value
+     (slime-last-expression)
+     ;; inherit-input-method
+     t)))
+  (if (not (= (length expression) 0))
+      (progn
+        (message "updating last expression to: %s" expression)
+        (setq krb-clojure-replay-expression-expr expression))))
+
+(defun krb-clojure-replay-expression ()
+  (interactive)
+  (slime-interactive-eval krb-clojure-replay-expression-expr))
+
+
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (global-set-key "\C-c\C-s\C-t" 'krb-clj-open-stacktrace-line)
@@ -855,7 +883,9 @@ the pre-existing package statements.
   (local-set-key "\C-c\M-i" 'slime-inspect)
   (local-set-key [f2]     'krb-clj-test-run-all-tests)
   ;; (local-set-key [f3]     'krb-clj-test-run-test-for-fn)
-  (local-set-key [f4]     'krb-clj-test-run-all-tests-for-buffer))
+  (local-set-key [f4]     'krb-clj-test-run-all-tests-for-buffer)
+  (local-set-key [f6]     'krb-clojure-replay-expression)
+  (local-set-key [f7]     'krb-clojure-set-replay-expression))
 
 (provide 'krb-clojure)
 ;; end of krb-clojure.el
