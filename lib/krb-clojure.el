@@ -813,7 +813,7 @@ the pre-existing package statements.
      ;; prompt
      (concat "Autoeval Expression: " (slime-last-expression) ": ")
      ;; initial-input
-     krb-clojure-replay-expression-expr
+     (slime-last-expression)
      ;; history
      'krb-clojure-set-replay-expression-hist
      ;; default-value
@@ -839,7 +839,7 @@ the pre-existing package statements.
      ;; prompt
      (concat "Autoinspect Expression: " (slime-last-expression) ": ")
      ;; initial-input
-     krb-clojure-replay-inspect-expression-expr
+     (slime-last-expression)
      ;; history
      'krb-clojure-set-replay-inspect-expression-hist
      ;; default-value
