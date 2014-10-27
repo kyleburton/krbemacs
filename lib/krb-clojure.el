@@ -736,11 +736,11 @@ the pre-existing package statements.
       ;; strip meta-data from the list
       (remove-if
        (lambda (elt)
-         (string/starts-with (format "%s" elt) "^"))
+         (string/starts-with (format "%s" elt) "^")
+         (equal ":-" elt))
        (split-string
         (buffer-substring start (point))
         " ")))))
-
 
 (defun string/starts-with (s begins)
   "returns non-nil if string S starts with BEGINS.  Else nil."
