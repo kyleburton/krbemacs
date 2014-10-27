@@ -736,8 +736,9 @@ the pre-existing package statements.
       ;; strip meta-data from the list
       (remove-if
        (lambda (elt)
-         (string/starts-with (format "%s" elt) "^")
-         (equal ":-" elt))
+         (or
+          (string/starts-with (format "%s" elt) "^")
+          (equal ":-" elt)))
        (split-string
         (buffer-substring start (point))
         " ")))))
