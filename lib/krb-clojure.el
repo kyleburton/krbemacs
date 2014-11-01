@@ -1,3 +1,4 @@
+
 ;; Clojure-mode extensions
 
 ;; TODO: need a keybinding / function for fixing the :import, :require
@@ -725,9 +726,7 @@ the pre-existing package statements.
 (defun krb-clojure-get-current-fn-args ()
   (interactive)
   (save-excursion
-    ;; NB: paredit-backward-up isnt' enough, we need to keep popping
-    ;; up till we see "(defn "
-    (search-backward "(defn ")
+    (beginning-of-defun)
     (search-forward "[")
     (let ((start (point)))
       (backward-char 1)
@@ -736,7 +735,9 @@ the pre-existing package statements.
       ;; strip meta-data from the list
       (remove-if
        (lambda (elt)
-         (string/starts-with (format "%s" elt) "^"))
+         (or
+          (string/starts-with (format "%s" elt) "^")
+          (equal ":-" elt)))
        (split-string
         (buffer-substring start (point))
         " ")))))
@@ -747,12 +748,34 @@ the pre-existing package statements.
          (string-equal (substring s 0 (length begins)) begins))
         (t nil)))
 
+;; How should this work in order to handle clojure?
+;; . rewind to the defn
+;; . if (looking-at? "^") we're at meta-data, (forward-sexp 1)
+;; . if looking-at? [a-z], then good, we're at the fn name, (forward-sexp 1)
+;; .   otherwise error
+;; . if looking-at? "\"", we're looking at a doc-string
+;;     (forward-sexp 1)
+;; . if not looking-at? "[" then we may have multi-arity, not sure what to do
+;; . we're at the arg list, parse it
+;;   need to handle: rest args
+;;   need to handle: destructuring into arrays
+;;   need to handle: destructuring into maps
+;;   arbitrary nesting for destructuring :/
+;;   need to handle type-hints on the args
 (defun krb-clojure-fn-args-to-defs ()
+  "Handle the following conditions:
+
+   (defn name [] ...)
+   (defn name [& args] ...)
+   (defn name [& [args] ...)
+   (defn name [^Type arg1] ...)
+   (defn name [{:keys [a b c] :as foo}] ...)
+"
   (interactive)
   (save-excursion
     (let ((args-list (krb-clojure-get-current-fn-args)))
       ;; NB: ignore type hints
-      (search-backward "(defn ")
+      (beginning-of-defun)
       (search-forward "[")
       (backward-char 1)
       (forward-sexp 1)
@@ -764,6 +787,73 @@ the pre-existing package statements.
             (insert (format "  (def %s %s)\n" arg arg)))
       (save-buffer)
       (slime-eval-defun))))
+
+
+(defun krb-clojure-def-var ()
+  (interactive)
+  (save-excursion
+    (end-of-line)
+    (backward-sexp 1)
+    (kill-line)
+    (insert "(def ")
+    (yank)
+    (insert " ")
+    (yank)
+    (insert ")"))
+  (next-line))
+
+
+(defvar krb-clojure-replay-expression-expr nil)
+(make-variable-buffer-local 'krb-clojure-replay-expression-expr)
+
+(defun krb-clojure-set-replay-expression (expression)
+  (interactive
+   (list
+    (read-string
+     ;; prompt
+     (concat "Autoeval Expression: " (slime-last-expression) ": ")
+     ;; initial-input
+     (slime-last-expression)
+     ;; history
+     'krb-clojure-set-replay-expression-hist
+     ;; default-value
+     (slime-last-expression)
+     ;; inherit-input-method
+     t)))
+  (if (not (= (length expression) 0))
+      (progn
+        (message "updating last expression to: %s" expression)
+        (setq krb-clojure-replay-expression-expr expression))))
+
+(defun krb-clojure-replay-expression ()
+  (interactive)
+  (slime-interactive-eval krb-clojure-replay-expression-expr))
+
+(defvar krb-clojure-replay-inspect-expression-expr nil)
+(make-variable-buffer-local 'krb-clojure-replay-inspect-expression-expr)
+
+(defun krb-clojure-set-replay-inspect-expression (expression)
+  (interactive
+   (list
+    (read-string
+     ;; prompt
+     (concat "Autoinspect Expression: " (slime-last-expression) ": ")
+     ;; initial-input
+     (slime-last-expression)
+     ;; history
+     'krb-clojure-set-replay-inspect-expression-hist
+     ;; default-value
+     (slime-last-expression)
+     ;; inherit-input-method
+     t)))
+  (if (not (= (length expression) 0))
+      (progn
+        (message "updating last expression to: %s" expression)
+        (setq krb-clojure-replay-inspect-expression-expr expression))))
+
+(defun krb-clojure-replay-inspect-expression ()
+  (interactive)
+  (slime-inspect krb-clojure-replay-inspect-expression-expr))
 
 
 
@@ -800,6 +890,8 @@ the pre-existing package statements.
         (define-key map "fm"   'krb-clj-find-model)
 
         (define-key map "da"   'krb-clojure-fn-args-to-defs)
+        (define-key map "dv"   'krb-clojure-def-var)
+
 
         ;; (define-key map "tr"   'krb-clj-test-run-test-for-fn)
         ;; jump between test-fn and current-fn
@@ -813,9 +905,14 @@ the pre-existing package statements.
   (yas/minor-mode-on)
   ;;(slime-mode +1)
   (local-set-key "\C-cr"  krb-clj-mode-prefix-map)
+  (local-set-key "\C-c\M-i" 'slime-inspect)
   (local-set-key [f2]     'krb-clj-test-run-all-tests)
   ;; (local-set-key [f3]     'krb-clj-test-run-test-for-fn)
-  (local-set-key [f4]     'krb-clj-test-run-all-tests-for-buffer))
+  (local-set-key [f4]           'krb-clj-test-run-all-tests-for-buffer)
+  (local-set-key [f6]           'krb-clojure-replay-expression)
+  (local-set-key (kbd "C-<f6>") 'krb-clojure-set-replay-expression)
+  (local-set-key [f7]           'krb-clojure-replay-inspect-expression)
+  (local-set-key (kbd "C-<f7>") 'krb-clojure-set-replay-inspect-expression))
 
 (provide 'krb-clojure)
 ;; end of krb-clojure.el

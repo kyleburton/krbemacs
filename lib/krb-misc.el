@@ -544,8 +544,8 @@ to the given line number."
     (if (and (not (= 0 (length output)))
              (file-exists-p output))
         (find-file output)
-        (progn
-          (message "Not found: %s" file-name)))))
+      (progn
+        (message "Not found: %s" file-name)))))
 
 (defun krb-insert-register-or-string-insert-rectangle ()
   (interactive)
@@ -555,5 +555,55 @@ to the given line number."
 
 (global-set-key "\C-xri" 'krb-insert-register-or-string-insert-rectangle)
 (global-set-key "\C-c\C-f" 'krb-recursive-find-file-start-at-proj-root)
+
+
+;; from: http://ergoemacs.org/emacs/elisp_datetime.html
+(defun insert-iso8601-date-time ()
+  "Insert current date-time string in full
+ISO 8601 format.
+Example: 2010-11-29T23:23:35-08:00
+See: URL `http://en.wikipedia.org/wiki/ISO_8601'
+"
+  (interactive)
+  (when (region-active-p)
+    (delete-region (region-beginning) (region-end)))
+  (insert
+   (concat
+    (format-time-string "%Y-%m-%dT%T")
+    ((lambda (x) (concat (substring x 0 3) ":" (substring x 3 5)))
+     (format-time-string "%z")))))
+
+(defun iso8601-date-time ()
+  "Generate current date-time string in full
+ISO 8601 format.
+Example: 2010-11-29T23:23:35-08:00
+See: URL `http://en.wikipedia.org/wiki/ISO_8601'
+"
+  (interactive)
+  (concat
+   (format-time-string "%Y-%m-%dT%T")
+   ((lambda (x) (concat (substring x 0 3) ":" (substring x 3 5)))
+    (format-time-string "%z"))))
+
+(defun oink-oink ()
+  "You know, for kids."
+  (interactive)
+  (insert "\n")
+  (insert "            _                           _\n")
+  (insert "            ;`.                       ,'/\n")
+  (insert "            |`.`-.      _____      ,-;,'|\n")
+  (insert "            |  `-.\__,-'     `-.__//'   |\n")
+  (insert "            |     `|               \ ,  |\n")
+  (insert "            `.  ```                 ,  .'\n")
+  (insert "              \_`      .     ,   ,  `_/\n")
+  (insert "                \    ^  `   ,   ^ ` /\n")
+  (insert "                 | '  |  ____  | , |\n")
+  (insert "                 |     ,'    `.    |\n")
+  (insert "                 |    (  O' O  )   |\n")
+  (insert "                 `.    \__,.__/   ,'\n")
+  (insert "                   `-._  `--'  _,'\n")
+  (insert "                       `------'\n")
+  (insert "\n"))
+
 
 (provide 'krb-misc)
