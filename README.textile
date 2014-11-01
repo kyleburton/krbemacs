@@ -1,3 +1,11 @@
+h1. Slime and Swank
+
+2014-11-01T15:58:31Z
+
+This branch is for my older (now deprecated) Emacs setup that primarily used SLIME and Swank for Clojure development.  CIDER has become the most actively supported Emacs and Clojure integration library, which the master branch now represents.
+
+
+
 h1. Kyle's Emacs Configuration
 
 This git repository is my personal Emacs configuration and set up.  It is set up so that you can base your configuration off of it, with your own customizations, and still keep the base configuration up to date.  I have attempted to make it as easy to set up and use as I can, though it can always be improved.  If you have suggestions, recommendations or feedback I'd be very happy to hear from you.
