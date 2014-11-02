@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+CIDER_GIT_URL="git@github.com:clojure-emacs/cider.git"
+CIDER_GIT_TAG="v0.7.0"
+AC_CIDER_GIT_URL="git@github.com:clojure-emacs/ac-cider.git"
+AC_CIDER_GIT_TAG="0.2.0"
+
+bake_require "lib/sh/install_tasks"
+
+bake_task install_all "Install...everything"
+function install_all () {
+  test -d software || mkdir software
+  install_cider
+  install_ac_cider
+}
