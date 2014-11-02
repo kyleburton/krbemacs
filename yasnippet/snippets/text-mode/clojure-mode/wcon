@@ -1,2 +1,0 @@
-(rn.clorine.core/with-connection ${1::relayzone}
-  $0)

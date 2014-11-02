@@ -1,5 +1,0 @@
-#name: $.grep(..., function (..., ...) { ... });
-# --
-$.grep(${array}, function(${elt}, ${idx}) {
-    $0
-};

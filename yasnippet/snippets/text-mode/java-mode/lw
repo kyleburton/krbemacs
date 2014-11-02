@@ -1,2 +1,0 @@
-if ( LOG.isWarnEnabled() )
-  LOG.warn(String.format("${fmt}",${arg1}));

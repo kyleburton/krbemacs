@@ -1,5 +1,0 @@
-#name : def method { |...| ... }
-# --
-def ${mname} (${args}) 
-  $0
-end

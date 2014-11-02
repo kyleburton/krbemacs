@@ -1,2 +1,0 @@
-if ( LOG.isFatalEnabled() )
-  LOG.fatal(String.format("${fmt}",${arg1}));

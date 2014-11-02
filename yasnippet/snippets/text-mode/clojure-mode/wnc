@@ -1,2 +1,0 @@
-(rn-es.core/with-native-client ${1::relay-core}
-  $0)

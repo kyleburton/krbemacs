@@ -1,4 +1,0 @@
-desc "${descr}"
-task :#{name} do
-  $0
-end

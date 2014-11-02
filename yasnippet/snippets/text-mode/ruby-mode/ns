@@ -1,4 +1,0 @@
-# --
-namespace :#{ns} do
-  $0
-end

@@ -1,5 +1,0 @@
-#name: $.each(..., function (..., ...) { ... });
-# --
-$.each(${array}, function(${key}, ${value}) {
-    $0
-};

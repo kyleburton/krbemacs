@@ -1,3 +1,0 @@
-# name: add-hook
-# --
-(add-hook '${mode}-mode-hook '${hook-fn})

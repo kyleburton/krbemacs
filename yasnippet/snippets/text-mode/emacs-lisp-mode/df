@@ -1,3 +1,0 @@
-(defun ${name} (${args})
-  "${docstr}"
-  $0)

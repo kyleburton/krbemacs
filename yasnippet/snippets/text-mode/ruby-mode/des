@@ -1,5 +1,0 @@
-#name: rake spec describe block
-# --
-describe "${name}" do
-  $0
-end

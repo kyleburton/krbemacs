@@ -1,3 +1,0 @@
-unless ${condition}
-  $0
-end

@@ -1,1 +1,0 @@
-(def *log* (log/get-logger *ns*))

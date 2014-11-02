@@ -1,1 +1,0 @@
-(log/fatalf "${fmt}" $0)

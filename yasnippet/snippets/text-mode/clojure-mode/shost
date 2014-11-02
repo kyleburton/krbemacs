@@ -1,1 +1,0 @@
-(clojure.contrib.shell-out/sh "hostname")

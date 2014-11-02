@@ -1,2 +1,0 @@
-if ( LOG.isDebugEnabled() )
-  LOG.debug(String.format("${fmt}",${arg1}));

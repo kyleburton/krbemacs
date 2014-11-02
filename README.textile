@@ -1,4 +1,4 @@
-h1. Kyle's Emacs Configuration
+h1. My Emacs Configuration
 
 This git repository is my personal Emacs configuration and set up.  It is set up so that you can base your configuration off of it, with your own customizations, and still keep the base configuration up to date.  I have attempted to make it as easy to set up and use as I can, though it can always be improved.  If you have suggestions, recommendations or feedback I'd be very happy to hear from you.
 
@@ -7,62 +7,19 @@ Kyle Burton <kyle.burton@gmail.com>
 
 h1. Installation
 
-I've tried to make installation as simple as possible.  Once you've cloned the git repository, symlink (or copy if you can't symlink) the <code>.emacs</code> file from the git repository to your <code>$HOME</code> directory.  This is typically accomplished on a unix platform with commands like the following:
+I've tried to make installation as simple as possible.  No, scratch that, I've made it as easy for me to write as possible.  Once you've cloned the git repository, symlink (or copy if you can't symlink) the <code>.emacs</code> file from the git repository to your <code>$HOME</code> directory and run <code>bootstrap.sh</code>.  This is typically accomplished on a unix platform with commands like the following:
 
 <pre>
-kyle@indigo64 ~$ mkdir -p personal/configuration
-kyle@indigo64 ~$ cd personal/configuration
-kyle@indigo64 ~/personal/configuration$ git clone git://github.com/kyleburton/krbemacs.git
-kyle@indigo64 ~/personal/configuration$ cd krbemacs
-kyle@indigo64 ~/personal/configuration/krbemacs$ ln -s `pwd`/.emacs ~
+kyle@indigo64 ~$ mkdir -p personal/projects
+kyle@indigo64 ~$ cd personal/projects
+kyle@indigo64 ~/personal/projects$ git clone git://github.com/kyleburton/krbemacs.git
+kyle@indigo64 ~/personal/projects$ cd krbemacs
+kyle@indigo64 ~/personal/projects/krbemacs$ ln -s $(pwd)/.emacs ~
+kyle@indigo64 ~/personal/projects/krbemacs$ bash bootstrap.sh
 </pre>
 
 h2. Pre-requisites
 
-The only software that you need installed should be Emacs.  I have only been using recent versions of emacs (22.3) and do not know if it works with older versions of Emacs at this time.
+You will need to have a modern Emacs installed, be on a unix-like system and have shell utilities like curl.
 
-h1. Features
 
-At this time I'm doing most of my active software development in Ruby (Rails) and Clojure, so those are the two best represented languages in this configuration.  For other modes or libraries that did not come with the base install of Emacs, I have included them in this git repository so that they do not need to be installed or tested outside of what you get with this project.
-
-h2. Ruby
-
-The configuration includes <code>ruby-mode</code> which should activate when you open a <code>Rakefile</code> or a <code>*.rb</code> file.
-
-h2. Clojure
-
-h2. Snippet Support
-
-yasnippet is included in this configuration.  It is an easily customizable snippet (expansion) library.  You can find the actual snippets in <code></code>
-
-h1. Abbreviated Guide
-
-<code>M-x</code> means press the 'Meta' (typically the Alt) key and the 'x' at the same time.
-
-<code>M-X</code> means press the 'Meta' (typically the Alt) key, the Shift and the 'x' at the same time - 'alt and capital X'.
-
-Emacs supports the 'Esc' key as an alternate to the Meta key - though you don't hold it down, you press 'Esc' and release it and then the second character.  So <code>M-x</code> and <code>Esc x</code> will achieve the same thing in Emacs.  The reason I'm telling you this is that one day you may find yourself on a system that for some reason has re-mapped the Alt/Meta key to something else or that you've ssh'd into and for some reason Meta/Alt isn't working.  Knowing about Esc can at least get you by in these situations.
-
-<code>C-x</code> means press the 'Control' key and the 'x' at the same time.
-
-In these keystroke examples, the hyphen '-' means to press the keys at the same time, a space indicates that you should let go of the previous key before pressing the next one.  <code>C-c r C-t</code> means "press 'control-c' (at the same time), release them, press and release 'r', and press 'control-t' and release it".
-
-Emacs supports so many features that there are not enough single key key bindings (hotkeys, keyboard accelerators) to access all of its features.  This is why there are so many multi-key and multi-sequence key bindings.  Once you learn a bit about how to customize Emacs, you can rebind the features and keybindings to you liking - later on in this guide I'll show you how to do that with your own configuration.
-
-h2. Running a Function without a Keybinding
-
-Emacs allows you to run arbitrary internal functions.  There are two ways to do this.  There are two classes of functions in Emacs, one class is declared as being invokable directly by the user, these are called 'interactive', the other are just internal functions which you can't call directly (meaning from a keybinding or via <code>M-x</code>).
-
-If a function doesn't have a keybinding, and you know it's name, you can invoke it directly by pressing <code>M-x</code> and then typing the name of the function.  For instance, to see the version of the Emacs you're running, you can run the 'version' function directly by typing: <code>M-x version</code> and then pressing enter.
-
-h2. 'Forcing' a Mode in a File
-
-Emacs supports you setting the mode of a file from a comment at the top of the file.  This is useful in cases where the regular expression pattern matching used based on the file name extension doesn't recognized the type of the file and put it into the mode you want.  In some cases you may also wish to force Emacs into an alternate mode for a file that would otherwise be set to a specific mode.
-
-You can change the mode of a file with a comment (in the syntax of the langugae of the file) at the top with the form:
-
-<pre>
-  #!/bin/bash
-  # -*- zsh-mode -*
-  ...
-</pre>
