@@ -14,7 +14,7 @@
 (loop for package in '(clojure-mode dash pkg-info paredit ido auto-complete
 				    align-cljlet rainbow-mode rainbow-delimiters
 				    highlight-parentheses color-theme
-				    clojure-snippets)
+				    clojure-snippets queue)
       do
       (unless (package-installed-p package)
 	(package-install package)))
@@ -242,6 +242,8 @@ extensions (patterns). Eg:
 
 
 (yas-global-mode 1)
-(yas/load-directory ".emacs.d/snippets")
+(when (file-exists-p (expand-file-name "~/.emacs.d/snippets"))
+    (yas/load-directory (expand-file-name "~/.emacs.d/snippets")))
+
 ;; (yas/load-directory "software/clojure-snippets/snippets")
 

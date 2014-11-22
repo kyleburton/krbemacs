@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 CIDER_GIT_URL="git@github.com:clojure-emacs/cider.git"
-CIDER_GIT_TAG="v0.7.0"
+CIDER_GIT_TAG="v0.8.1"
 AC_CIDER_GIT_URL="git@github.com:clojure-emacs/ac-cider.git"
 AC_CIDER_GIT_TAG="0.2.0"
 
