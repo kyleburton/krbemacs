@@ -1,0 +1,3 @@
+#name: console.dir(...);
+# --
+console.dir($0);

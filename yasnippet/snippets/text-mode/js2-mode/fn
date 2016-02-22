@@ -1,0 +1,5 @@
+#name : function (...) { |...| }
+# --
+function (${args}) {
+    $0
+};
