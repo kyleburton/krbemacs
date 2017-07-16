@@ -4,13 +4,17 @@ bake_require github.com/kyleburton/bake-recipies/emacs/cider.sh
 
 bake_task install-all "Install...everything"
 function install-all () {
-  test -d software || mkdir software
-  emacs-install-cider     || echo "No Network?"
-  emacs-install-ac-cider  || echo "No Network?"
+  # test -d software || mkdir software
+  # emacs-install-cider     || echo "No Network?"
+  # emacs-install-ac-cider  || echo "No Network?"
 
   if [ ! -e $HOME/.emacs ]; then
     ln -s $(pwd)/.emacs $HOME/.emacs
   fi
 
   test -d $HOME/.emacs.d || mkdir $HOME/.emacs.d
+  local userdir="./users/$LOGNAME"
+  if [ -d "$userdir" ]; then
+    ln -s "$userdir" $HOME/.emacs.d/users/$LOGNAME
+  fi
 }
