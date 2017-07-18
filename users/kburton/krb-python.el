@@ -35,6 +35,7 @@
       (delete-region (point) end))))
 
 ;; TODO: support optional version
+;; TODO: support executing "pip install -r requirements.txt"
 (defun krbpy:ensure-requirements.txt (module)
   (interactive "sModule Name: ")
   ;; TODO: how to locate the requirements.txt?  
