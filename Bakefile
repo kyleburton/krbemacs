@@ -12,9 +12,10 @@ function install-all () {
     ln -s $(pwd)/.emacs $HOME/.emacs
   fi
 
-  test -d $HOME/.emacs.d || mkdir $HOME/.emacs.d
-  local userdir="./users/$LOGNAME"
+  test -d $HOME/.emacs.d/users || mkdir -p $HOME/.emacs.d/users
+  # TODO: don't be hard-coded here
+  local userdir="$(bake_bakefile_dir)/users/kburton"
   if [ -d "$userdir" ]; then
-    ln -s "$userdir" $HOME/.emacs.d/users/$LOGNAME
+    ln -s "$userdir" $HOME/.emacs.d/users/
   fi
 }

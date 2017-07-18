@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: pr
+# key: pr
+# --
+print("$1: {}".format($2))

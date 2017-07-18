@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: [
+# key: [
+# --
+[$2x for x in $1]
