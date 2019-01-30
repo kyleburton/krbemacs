@@ -15,6 +15,31 @@
 (require 'yasnippet)
 (autoload 'align-cljlet "align-cljlet")
 
+(defmacro -> (x &optional form &rest more)
+  (cond ((not (null more))
+         `(-> (-> ,x ,form) ,@more))
+        ((not (null form))
+         (if (sequencep form)
+             `(,(first form) ,x ,@(rest form))
+           (list form x)))
+        (t x)))
+
+(defmacro ->> (x form &rest more)
+  (cond ((not (null more)) `(->> (->> ,x ,form) ,@more))
+        (t (if (sequencep form)
+               `(,(first form) ,@(rest form) ,x)
+             (list form x)))))
+
+(defun p->g (plist k)
+  (plist-get plist k))
+
+(defun p->>g (k plist)
+  (plist-get plist k))
+
+(defun krb-json-string->plist (s)
+  (let ((json-object-type 'plist))
+    (json-read-from-string s)))
+
 (defun krb-clj-ns-for-file-name (file-name)
   "Compute a viable clojure namespace for the given file name."
   (interactive)
@@ -433,6 +458,20 @@ the pre-existing package statements.
   (with-temp-buffer
     (insert-file-contents file)
     (buffer-string)))
+
+(defun krb-get-cider-port-for-project ()
+  (interactive)
+  (-> (concat (krb-clj-find-lein-proj-root-dir)
+	      ".config.json")
+      krb-file-string
+      krb-json-string->plist
+      (p->g :nrepl)
+      (p->g :port)))
+
+(defun krb-auto-cider-connect ()
+  (interactive)
+  (let ((port (krb-get-cider-port-for-project)))
+    (cider-connect "localhost" port)))
 
 (defun krb-autoswank ()
   (interactive)
@@ -856,12 +895,24 @@ the pre-existing package statements.
   (slime-inspect krb-clojure-replay-inspect-expression-expr))
 
 
+;; oh yes, the threading macros from clojure: https://www.emacswiki.org/emacs/ThreadMacroFromClojure#toc2
+;; (defmacro -> (&rest body)
+;;   (let ((result (pop body)))
+;;     (dolist (form body result)
+;;       (setq result (append (list (car form) result)
+;; 			   (cdr form))))))
+
+;; (defmacro ->> (&rest body)
+;;   (let ((result (pop body)))
+;;     (dolist (form body result)
+;;       (setq result (append form (list result))))))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (global-set-key "\C-c\C-s\C-t" 'krb-clj-open-stacktrace-line)
 (global-set-key "\C-crfn" 'krb-clj-fixup-ns)
-(global-set-key "\C-css" 'krb-autoswank)
-(global-set-key "\C-csr" 'krb-remote-autoswank)
+(global-set-key "\C-css" 'krb-auto-cider-connect)
+(global-set-key "\C-csr" 'krb-remote-auto-cider-connect)
 (global-set-key "\C-csS" 'krb-swank-connect)
 
 
@@ -913,6 +964,7 @@ the pre-existing package statements.
   (local-set-key (kbd "C-<f6>") 'krb-clojure-set-replay-expression)
   (local-set-key [f7]           'krb-clojure-replay-inspect-expression)
   (local-set-key (kbd "C-<f7>") 'krb-clojure-set-replay-inspect-expression))
+
 
 (provide 'krb-clojure)
 ;; end of krb-clojure.el
