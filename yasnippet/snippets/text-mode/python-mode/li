@@ -1,0 +1,5 @@
+# -*- coding: utf-8 -*-
+# name: li
+# contributor: Kyle Burton <kyle.burton@gmail.com>
+# --
+log.info(u"$0".format())

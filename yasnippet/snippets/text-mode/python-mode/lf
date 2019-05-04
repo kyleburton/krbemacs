@@ -1,0 +1,5 @@
+# -*- coding: utf-8 -*-
+# name: lf
+# contributor: Kyle Burton <kyle.burton@gmail.com>
+# --
+log.fatal(u"$0".format())

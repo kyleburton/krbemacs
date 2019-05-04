@@ -428,6 +428,7 @@ to the given line number."
      (set (make-local-variable '*krb-output-base-file*) (buffer-file-name))
      (grep-mode))))
 
+;; TODO: I'm removing this in preference for the silver searcher (ag)
 (defun krb-grep-thing-at-point-editable (git-cmd)
   (interactive (list (read-string "Search For: " (format "git grep --full-name -i -n '%s'" (or (symbol-at-point) "")))))
   (let* ((starting-dir (krb-find-containing-parent-directory-of-current-buffer ".git"))
@@ -496,7 +497,7 @@ to the given line number."
          (error "Sorry, unrecognized type (not markdown or textile that I could tell): '%s'" filename))))
 
 ;; TODO: should put these into a keymap..
-(global-set-key "\C-crg" 'krb-grep-thing-at-point-editable)
+;; (global-set-key "\C-crg" 'krb-grep-thing-at-point-editable)
 (global-set-key "\C-cr\t" 'yas/expand)
 (global-set-key "\C-crr" 'krb-rerun-last-command)
 

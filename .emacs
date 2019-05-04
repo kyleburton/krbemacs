@@ -19,13 +19,26 @@ There are two things you can do about this warning:
     (add-to-list 'package-archives (cons "gnu" (concat proto "://elpa.gnu.org/packages/")))))
 (package-initialize)
 (unless (package-installed-p 'cider)
-    (package-install 'cider))
+  (package-install 'cider))
+
 
 
 
 (defun krb-insert-isodate ()
   (interactive)
   (let ((currdate (shell-command-to-string "isodate")))
+    (insert currdate)
+    (delete-backward-char 1)))
+
+(defun krb-insert-journaldate ()
+  (interactive)
+  (let ((currdate (shell-command-to-string "isodate j")))
+    (insert currdate)
+    (delete-backward-char 1)))
+
+(defun krb-insert-date ()
+  (interactive)
+  (let ((currdate (shell-command-to-string "isodate d")))
     (insert currdate)
     (delete-backward-char 1)))
 
@@ -55,8 +68,6 @@ There are two things you can do about this warning:
     (mark-whole-buffer)
     (indent-region (point) (mark))))
 
-(global-set-key "\C-cr\\" 'krb-reindent-buffer)
-
 
 (add-hook
  'paredit-mode-hook
@@ -85,7 +96,52 @@ There are two things you can do about this warning:
             (local-set-key "\C-cra" 'align-cljlet)
             (local-set-key "\M-k"   'kill-sexp)))
 
+
+
+
+(defun krb-find-buffer-with-name-prefix (pfx)
+  (remove-if-not
+   (lambda (buff)
+     (string-prefix-p pfx (buffer-name buff)))
+   (buffer-list)))
+
+;; (krb-find-buffer-with-name-prefix "*ag search text:")
+
+(require 'ag)
+(defun krb-ag-search-dwim-im-feeling-lucky ()
+  (interactive)
+  (ag (ag/dwim-at-point) default-directory)
+  ;; TODO: can we close the just opened window who's name starts with '*ag search text:'?
+  (next-error 1))
+
+(defun krb-ag-search-dwim ()
+  (interactive)
+  (ag (ag/dwim-at-point) default-directory)
+  ;; TODO: can we close the just opened window who's name starts with '*ag search text:'?
+  (next-error 1))
+
+(defun krb-ag-search (term)
+  (interactive (list (read-string "Term: " (ag/dwim-at-point))))
+  (ag term default-directory)
+  ;; TODO: can we close the just opened window who's name starts with '*ag search text:'?
+  (next-error 1))
+
+(defun krb-next-error ()
+  (interactive)
+  (next-error 1))
+
+(defun krb-prev-error ()
+  (interactive)
+  (next-error -1))
+
 (global-set-key "\M-g" 'goto-line)
+(global-set-key "\C-cr\\" 'krb-reindent-buffer)
+(global-set-key "\C-crg!" 'krb-ag-search-dwim-im-feeling-lucky)
+(global-set-key "\C-crgg" 'krb-ag-search-dwim)
+(global-set-key "\C-crGG" 'krb-ag-search)
+(global-set-key (kbd "M-<f3>") 'krb-prev-error)
+(global-set-key (kbd "<f3>") 'krb-next-error)
+
 
 (require 'color-theme)
 (color-theme-initialize)
@@ -105,6 +161,8 @@ There are two things you can do about this warning:
 (yas-global-mode 1)
 (when (file-exists-p (expand-file-name "~/.emacs.d/snippets"))
   (yas/load-directory (expand-file-name "~/.emacs.d/snippets")))
+(yas/load-directory (expand-file-name "~/code/github.com/kyleburton/krbemacs/yasnippet/snippets"))
+
 
 ;; TODO: customizes these directories so they're not hard-coded to kburton :/
 (defun load-directory (dir)
@@ -115,7 +173,8 @@ There are two things you can do about this warning:
 (load-directory "~/.emacs.d/users/kburton")
 (add-to-list 'load-path "~/.emacs.d/users/kburton/")
 (add-to-list 'load-path "~/code/github.com/kyleburton/krbemacs/lib")
-
+(load "blacken")
+(add-hook 'python-mode-hook 'blacken-mode)
 
 ;; see:https://www.emacswiki.org/emacs/GnuScreen
 
@@ -152,7 +211,7 @@ There are two things you can do about this warning:
     ("718fb4e505b6134cc0eafb7dad709be5ec1ba7a7e8102617d87d3109f56d9615" "f41ecd2c34a9347aeec0a187a87f9668fa8efb843b2606b6d5d92a653abe2439" default)))
  '(package-selected-packages
    (quote
-    (alchemist flatui-dark-theme flatui-theme klere-theme erlang flycheck-rebar3 emacsql-psql slime-docker rust-mode rainbow-mode rainbow-delimiters paredit highlight-parentheses haskell-mode flymake-python-pyflakes flycheck-pyflakes color-theme clojure-snippets change-inner align-cljlet))))
+    (better-defaults elpy ag ac-cider cider alchemist flatui-dark-theme flatui-theme klere-theme erlang flycheck-rebar3 emacsql-psql slime-docker rust-mode rainbow-mode rainbow-delimiters paredit highlight-parentheses haskell-mode flymake-python-pyflakes flycheck-pyflakes color-theme clojure-snippets change-inner align-cljlet))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -165,3 +224,22 @@ There are two things you can do about this warning:
 (setq-default indent-tabs-mode nil)
 (setq-default tab-width 2)
 
+
+;; JavaScript
+(setq js-indent-level 2)
+;; TODO: global key bindings / helper functions for inserting a log statments
+;;  * C-crld (debug)
+;;  * C-crli (info)
+;;  * C-crlw (warn)
+;;  * C-crle (error)
+;;  * C-crlf (fatal)
+;; these helpers should be customized per language
+;; python:     logger.info()
+;;     The python logger could include the pckage name and function name as a prefix in the string
+;; javascript: console.log("|")
+;; javascript: console.error("|")
+;;     The javascript loggers can look for the function name and if we're in a class and prefix the string w/those values
+
+
+(add-hook 'write-file-hooks 'delete-trailing-whitespace nil t)
+(menu-bar-mode -1)
