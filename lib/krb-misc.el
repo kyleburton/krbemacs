@@ -1,6 +1,5 @@
 ;; Utiliites
 
-
 (defmacro gsub! (sym reg rep)
   `(set ',sym (replace-regexp-in-string ,reg ,rep ,sym)))
 
