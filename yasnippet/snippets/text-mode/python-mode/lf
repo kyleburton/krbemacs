@@ -2,4 +2,4 @@
 # name: lf
 # contributor: Kyle Burton <kyle.burton@gmail.com>
 # --
-log.fatal(u"$0".format())
+logger.fatal(u"`(buffer-name)`.`(krb-python-get-current-function-name)`: $0".format())

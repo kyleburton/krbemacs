@@ -40,9 +40,9 @@ There are two things you can do about this warning:
 
 (defun krb-insert-date ()
   (interactive)
-  (let ((currdate (shell-command-to-string "isodate d")))
+  (let ((currdate (shell-command-to-string "isodate j")))
     (insert currdate)
-    (delete-backward-char 1)))
+    (delete-backward-char 10)))
 
 
 (defun krb-insert-todo ()
@@ -134,8 +134,12 @@ There are two things you can do about this warning:
 (global-set-key "\C-crg!" 'krb-ag-search-dwim-im-feeling-lucky)
 (global-set-key "\C-crgg" 'krb-ag-search-dwim)
 (global-set-key "\C-crGG" 'krb-ag-search)
+;; (global-set-key "\C-c\C-r\C-f" 'find-file-in-project)
+(global-set-key "\C-crff" 'find-file-in-project)
 (global-set-key (kbd "M-<f3>") 'krb-prev-error)
 (global-set-key (kbd "<f3>") 'krb-next-error)
+(global-set-key "\C-crff" #'find-file-in-project)
+
 
 
 (require 'color-theme)
@@ -145,19 +149,13 @@ There are two things you can do about this warning:
 ;; for some reason this isn't applying itself fully if run directly from the .emacs
 ;; the next few lines are a hack...
 ;; (color-theme-pok-wob)
-'(run-with-idle-timer
-  0 ;; 0.1 ;; 0.5 ;; 1
-  nil
-  '(lambda ()
-     (message "applying color theme color-theme-pok-wob")
-     '(color-theme-pok-wob)
-     (load-theme 'klere t)))
-
-;; TODO: load snippet from this git repo
-(yas-global-mode 1)
-(when (file-exists-p (expand-file-name "~/.emacs.d/snippets"))
-  (yas/load-directory (expand-file-name "~/.emacs.d/snippets")))
-(yas/load-directory (expand-file-name "~/code/github.com/kyleburton/krbemacs/yasnippet/snippets"))
+(run-with-idle-timer
+ 0 ;; 0.1 ;; 0.5 ;; 1
+ nil
+ '(lambda ()
+    (message "applying color theme color-theme-pok-wob")
+    '(color-theme-pok-wob)
+    (load-theme 'klere t)))
 
 
 ;; TODO: customizes these directories so they're not hard-coded to kburton :/
@@ -168,6 +166,17 @@ There are two things you can do about this warning:
 
 (add-to-list 'load-path "~/code/github.com/kyleburton/krbemacs/lib")
 (load "blacken")
+(load "krb-python.el")
+
+(require 'yasnippet)
+(yas-global-mode 1)
+;; (when (file-exists-p (expand-file-name "~/.emacs.d/snippets"))
+;;   (yas/load-directory (expand-file-name "~/.emacs.d/snippets")))
+;; (add-hook 'yas-mode-hook '(lambda () (setf (make-local-variable 'require-final-newline) nil)))
+;; (add-to-list 'yas-snippet-dirs (expand-file-name "~/code/github.com/kyleburton/krbemacs/yasnippet/snippets/text-mode"))
+;; yas-snippet-dirs
+(yas/load-directory (expand-file-name "~/code/github.com/kyleburton/krbemacs/yasnippet/snippets/text-mode"))
+
 (add-hook 'python-mode-hook 'blacken-mode)
 ;; (add-to-list 'load-path "~/.emacs.d/users/kburton/")
 ;;(load-directory "~/.emacs.d/users/kburton")

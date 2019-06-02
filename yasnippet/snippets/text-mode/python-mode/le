@@ -2,4 +2,4 @@
 # name: le
 # contributor: Kyle Burton <kyle.burton@gmail.com>
 # --
-log.error(u"$0".format())
+logger.error(u"`(buffer-name)`.`(krb-python-get-current-function-name)`: $0".format())
