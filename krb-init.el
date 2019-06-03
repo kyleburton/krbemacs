@@ -134,8 +134,6 @@ There are two things you can do about this warning:
 (global-set-key "\C-crg!" 'krb-ag-search-dwim-im-feeling-lucky)
 (global-set-key "\C-crgg" 'krb-ag-search-dwim)
 (global-set-key "\C-crGG" 'krb-ag-search)
-;; (global-set-key "\C-c\C-r\C-f" 'find-file-in-project)
-(global-set-key "\C-crff" 'find-file-in-project)
 (global-set-key (kbd "M-<f3>") 'krb-prev-error)
 (global-set-key (kbd "<f3>") 'krb-next-error)
 (global-set-key "\C-crff" #'find-file-in-project)
