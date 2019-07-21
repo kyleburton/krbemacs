@@ -605,5 +605,47 @@ See: URL `http://en.wikipedia.org/wiki/ISO_8601'
   (insert "                       `------'\n")
   (insert "\n"))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; TODO: move these out into a krb-js
+
+(defun krb-js-align-map ()
+  "When the point is within a JavaScript map, select the entire map and align the values.
+
+  {
+    'amount': 1.23,
+    'description': \"Pickled Herring, 12oz\"
+  }
+
+=>
+
+  {
+    'amount':        1.23,
+    'description':   \"Pickled Herring, 12oz\"
+  }
+
+
+
+  {'amount': 1.23,
+   'description': \"Pickled Herring, 12oz\" }
+
+=>
+
+  {'amount':      1.23,
+   'description': \"Pickled Herring, 12oz\" }
+
+"
+  (interactive)
+  (save-excursion
+    (search-backward "{")
+    (let ((beg (1+ (point))))
+      (forward-sexp 1)
+      (backward-char 1)
+      (align-regexp beg (point) ":\\(\\s-*\\)"))))
+
+;; TODO: determine the hook var(s) so this can be a local-set-key
+;; within js or jsx modes
+(global-set-key "\C-cjam" 'krb-js-align-map)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (provide 'krb-misc)
