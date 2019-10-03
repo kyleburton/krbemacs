@@ -498,7 +498,7 @@ to the given line number."
 ;; TODO: should put these into a keymap..
 ;; (global-set-key "\C-crg" 'krb-grep-thing-at-point-editable)
 (global-set-key "\C-cr\t" 'yas/expand)
-(global-set-key "\C-crr" 'krb-rerun-last-command)
+;; (global-set-key "\C-crr" 'krb-rerun-last-command)
 
 (add-hook 'java-mode-hook
           '(lambda ()))

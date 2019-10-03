@@ -147,7 +147,7 @@ There are two things you can do about this warning:
 ;; for some reason this isn't applying itself fully if run directly from the .emacs
 ;; the next few lines are a hack...
 ;; (color-theme-pok-wob)
-(run-with-idle-timer
+'(run-with-idle-timer
  0 ;; 0.1 ;; 0.5 ;; 1
  nil
  '(lambda ()
@@ -164,7 +164,7 @@ There are two things you can do about this warning:
 
 (add-to-list 'load-path "~/code/github.com/kyleburton/krbemacs/lib")
 (load "blacken")
-(load "krb-python.el")
+;; (load "krb-python.el")
 
 (require 'yasnippet)
 (yas-global-mode 1)
