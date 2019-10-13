@@ -180,19 +180,23 @@ There are two things you can do about this warning:
 ;; for some reason this isn't applying itself fully if run directly from the .emacs
 ;; the next few lines are a hack...
 ;; (color-theme-pok-wob)
-'(run-with-idle-timer
- 0 ;; 0.1 ;; 0.5 ;; 1
+(run-with-idle-timer
+ 0.5 ;; 0.1 ;; 0.5 ;; 1
  nil
  '(lambda ()
     (message "applying color theme color-theme-pok-wob")
     '(color-theme-pok-wob)
-    (load-theme 'klere t)))
+    '(load-theme 'klere t)
+    (color-theme-arjen)))
+
+;; (load-theme 'alect-black-alt t)
+;; (color-theme-arjen)
 
 
 ;; TODO: customizes these directories so they're not hard-coded to kburton :/
 (defun load-directory (dir)
   (let ((load-it (lambda (f)
-		   (load-file (concat (file-name-as-directory dir) f)))))
+		               (load-file (concat (file-name-as-directory dir) f)))))
     (mapc load-it (directory-files dir nil "\\.el$"))))
 
 (add-to-list 'load-path "~/code/github.com/kyleburton/krbemacs/lib")
