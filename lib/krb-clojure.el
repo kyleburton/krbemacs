@@ -894,6 +894,14 @@ the pre-existing package statements.
   (interactive)
   (slime-inspect krb-clojure-replay-inspect-expression-expr))
 
+(defun krb-clj-cider-jack-into-curr-project ()
+  (interactive)
+  (let ((local-clj-config-fname (concat (krb-clj-find-lein-proj-root-dir) "/.krb.el")))
+    (if (file-exists-p local-clj-config-fname)
+        (progn
+          (load-file local-clj-config-fname)
+          (krb-clojure-cider-jack-in))
+      (message "this project has no local elisp config: %s" local-clj-config-fname))))
 
 ;; oh yes, the threading macros from clojure: https://www.emacswiki.org/emacs/ThreadMacroFromClojure#toc2
 ;; (defmacro -> (&rest body)
@@ -915,13 +923,15 @@ the pre-existing package statements.
 (global-set-key "\C-csr" 'krb-remote-auto-cider-connect)
 (global-set-key "\C-csS" 'krb-swank-connect)
 
-
 (defvar krb-clj-mode-prefix-map nil)
+
 (setq krb-clj-mode-prefix-map
       (let ((map (make-sparse-keymap)))
         ;; (define-key map "t"    'krb-java-exec-mvn-test)     ;; all the tests
         ;; (define-key map "T"    'krb-clj-find-test-file)
         ;; (define-key map "\C-t" 'krb-clj-exec-mvn-one-test)  ;; just test the current buffer...
+        (define-key map "cji"  'krb-clj-cider-jack-into-curr-project)
+
         (define-key map "p"    'krb-clj-open-project-config-file)
         (define-key map "z"    'krb-clj-slime-repl-for-project)
         (define-key map "a"    'align-cljlet)
