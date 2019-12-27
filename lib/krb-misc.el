@@ -642,9 +642,34 @@ See: URL `http://en.wikipedia.org/wiki/ISO_8601'
       (backward-char 1)
       (align-regexp beg (point) ":\\(\\s-*\\)"))))
 
+(defun krb-js-fixup-imports ()
+  (interactive)
+  (save-excursion
+    (beginning-of-buffer)
+    (let ((start (point)))
+      (forward-paragraph 1)
+      (align-regexp start (point) "\\(\\s-*\\)from"))))
+
+
 ;; TODO: determine the hook var(s) so this can be a local-set-key
 ;; within js or jsx modes
 (global-set-key "\C-cjam" 'krb-js-align-map)
+(global-set-key "\C-crns" 'krb-js-fixup-imports)
+
+
+(defun krb-temp-thing ()
+  (interactive)
+  (let ((thing (ag/dwim-at-point))
+        (case-fold-search nil))
+    (save-excursion
+      (forward-line 1)
+      (let ((location (search-forward thing nil t)))
+        (if location
+            (message "[OK] Found: %s at %s" thing location)
+          (message "[ERROR] Not Found: %s" thing))))))
+
+(global-set-key "\C-crrr" 'krb-temp-thing)
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -369,80 +369,8 @@ Into a leiningen dependency string:
     (insert "[")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
-
 (remove-hook 'clojure-mode-hook 'krb-clj-mode-hook)
 (add-hook    'clojure-mode-hook 'krb-clj-mode-hook t)
-
-'(
-
-  (defun krb-import-thing-at-point (sym &optional shortname)
-    "For the symbol at the point (that the cursor is on), ensure it
-is imported.
-
-If the symbol looks like a java class name, ensure it is imported
-and strip the package name off of the current usage.  If the
-point is within 'java.io.File'
-
-   (java.io.File. \"foo\")
-
-This function will place an import in the namespace delcaration:
-
-   (ns some-namespace
-     (import [java.io File])) ;; <== causes this import
-
-And strip off the package name from that usage:
-
-   (File. \"foo\")
-
-If the symbol looks like a clojure function call, it will prompt
-the user for a short-name (unless one was supplied) and encode a
-require statement using that short-name in the ':as' clause.
-
-  (some.package/a-function \"an argument\")
-
-With a short-name of 'sp', will insert or modify the require:
-
-   (ns some-namespace
-     (require [some.package :as sp])) ;; <== causes this require statement
-
-and transforms the usage into:
-
-  (sp/a-function \"an argument\")
-
-Imports and requires will not be added if they are already
-present, additional symbols or classnames will be inserted into
-the pre-existing package statements.
-
-*** TODO: Once this has been written, it should be easy to write
-*** another function to scan the buffer and fix the import/uses -
-*** it can look at the current set of use statements for the
-*** ':as' clauses to figure out how to simplify forms in the
-*** current buffer.
-"
-    (interactive (list (read-string "Import: " (format "%s" (or (symbol-at-point) "")))))
-    (cond ((string-match "/" sym)
-           (message "has slash, split at that point: %s" sym))
-          ((not (string-match "\\." sym))
-           (message "no dots even? %s" sym))
-          (t
-           (message "no slash, split off the last word after the dot: %s" sym))))
-
-  )
-
-
-;; see: https://github.com/technomancy/slamhound
-(defun slamhound ()
-  (interactive)
-  (goto-char (point-min))
-  (kill-sexp)
-  (insert (first (slime-eval `(swank:eval-and-grab-output
-                               (format "(do (require 'slam.hound)
-                                          (slam.hound/reconstruct \"%s\"))"
-                                       ,buffer-file-name))))))
-
-;; krb-recursive-find-file-start-at-proj-root
 
 (defun krb-clj-open-stacktrace-line (line)
   (interactive "sLine: ")
@@ -462,73 +390,39 @@ the pre-existing package statements.
 (defun krb-get-cider-port-for-project ()
   (interactive)
   (-> (concat (krb-clj-find-lein-proj-root-dir)
-	      ".config.json")
+              ".config.json")
       krb-file-string
       krb-json-string->plist
       (p->g :nrepl)
       (p->g :port)))
 
+'(
+
+  (->
+   "/home/kyle/code/snapclean.me/asymmetrical-view.com/static-site-generator/.config.json"
+   krb-file-string
+   krb-json-string->plist
+   (p->g :nrepl)
+   (p->g :port))
+
+  (->
+   "/home/kyle/code/snapclean.me/asymmetrical-view.com/static-site-generator/.config.json"
+   krb-file-string
+   krb-json-string->plist)
+  ;; (:nrepl (:port 4002))
+
+  (cider--update-host-port nil)
+  ;; =>
+  (:host "localhost" :port 4002)
+
+  (cider--update-project-dir)
+  )
+
 (defun krb-auto-cider-connect ()
   (interactive)
   (let ((port (krb-get-cider-port-for-project)))
-    (cider-connect "localhost" port)))
-
-(defun krb-autoswank ()
-  (interactive)
-  (let ((local-emacs-file (concat (krb-clj-find-lein-proj-root-dir) ".local.emacs.el"))
-        (swank-port-file  (concat (krb-clj-find-lein-proj-root-dir)
-                                  ".swank.port"))
-        ;; 4005 is the default
-        (swank-port       4005))
-    (when (file-exists-p local-emacs-file)
-      (message "krb-autoswank: loading %s..." local-emacs-file)
-      (load-file local-emacs-file))
-    (message "krb-autoswank: swank port file: %s => '%s'" swank-port-file (krb-file-string swank-port-file))
-    (when (file-exists-p swank-port-file)
-      (setq swank-port (string-to-int (krb-file-string swank-port-file))))
-    (setq slime-protocol-version "20100404")
-    (slime-connect "localhost" swank-port)
-    (when (fboundp 'rn-reinit-service)
-      (message "krb-autoswank: : starting the service...")
-      (rn-reinit-service)
-      (message "krb-autoswank: : service should be starting..."))))
-
-
-(defun krb-swank-connect ()
-  (interactive)
-  (let ((local-emacs-file (concat (krb-clj-find-lein-proj-root-dir) ".local.emacs.el"))
-        (swank-port-file  (concat (krb-clj-find-lein-proj-root-dir)
-                                  ".swank.port"))
-        ;; 4005 is the default
-        (swank-port       4005))
-    (when (file-exists-p local-emacs-file)
-      (message "krb-autoswank: loading %s..." local-emacs-file)
-      (load-file local-emacs-file))
-    (message "krb-autoswank: swank port file: %s" swank-port-file)
-    (when (file-exists-p swank-port-file)
-      (setq swank-port (string-to-int (krb-file-string swank-port-file))))
-
-    (setq slime-protocol-version "20100404")
-    (slime-connect "localhost" swank-port)))
-
-
-(defun krb-remote-autoswank (port)
-  (interactive
-   (list
-    (read-number
-     "Remote Port: "
-     (let* ((swank-port-file (concat (krb-clj-find-lein-proj-root-dir)
-                                     ".swank.remote.port"))
-            (swank-port (if (not (file-exists-p swank-port-file))
-                            5005
-                          (string-to-int (krb-file-string swank-port-file)))))
-       (message "%s ? %s => %s"
-                swank-port-file
-                (file-exists-p swank-port-file)
-                swank-port)
-       swank-port))))
-  (setq slime-protocol-version "20100404")
-  (slime-connect "localhost" port))
+    (cider-connect-clj `(:host "localhost" :port ,port :project-dir ,(krb-clj-lein-project-root-dir-for-filename (buffer-file-name))))
+    (delete-window)))
 
 (defun krb-clj-cljrep (sym)
   (interactive (list (read-string (format "Cljrep term: %s" (or (symbol-at-point) "")))))
@@ -650,36 +544,30 @@ the pre-existing package statements.
   (let* ((test-path-prefix (concat (krb-clj-find-lein-proj-root-dir) "test/"))
          (res (string-prefix-p test-path-prefix (buffer-file-name))))
     (message "krb-clj-test-is-in-test-file?: %s vs %s => %s" test-path-prefix (buffer-file-name) res)
-    res)
-  ;; (krb-clj-find-lein-proj-root-dir)
-  ;; if teh current file name starts with (krb-clj-find-lein-proj-root-dir) "/test/" then yes, otherwise no
-  )
+    res))
 
-(defun krb-clj-test-test-path-for-buffer (proj-root fname)
-  (interactive (list (read-string "Project Root: " (krb-clj-find-lein-proj-root-dir))
-                     (read-string "File Name: " (buffer-file-name))))
-  (let* ((tpath (concat
-                 proj-root
-                 "test"
-                 (substring fname (length (concat proj-root "src")))))
-         (tdir    (file-name-directory   tpath))
-         (tfname  (concat "test_" (file-name-nondirectory tpath))))
-    (setq tpath (concat tdir tfname))
-    (message "the path is: %s" tpath)
-    tpath))
+(defun krb-clj-lein-project-root-dir-for-filename (fname)
+  (krb-find-file-up-from-dir "project.clj" (file-name-directory fname)))
 
-(defun krb-clj-test-source-path-for-buffer (proj-root fname)
-  (interactive (list (read-string "Project Root: " (krb-clj-find-lein-proj-root-dir))
-                     (read-string "File Name: " (buffer-file-name))))
-  (let ((tpath (concat
-                proj-root
-                "src"
-                (replace-regexp-in-string
-                 "/test_" "/"
-                 (substring fname (length (concat proj-root "test")))))))
-    (message "the path is: %s" tpath)
-    tpath))
+(defun krb-clj-file-name-sans-project-root (fname)
+  (let ((proj-root (krb-clj-lein-project-root-dir-for-filename fname)))
+    (substring fname (length proj-root))))
 
+(defun krb-clj-test-src-fname-to-test-fname (src-fname)
+  (->>
+   src-fname
+   krb-clj-file-name-sans-project-root
+   (replace-regexp-in-string "^src/" "test/")
+   (replace-regexp-in-string "\\.clj$" "_test.clj")
+   (concat (krb-clj-lein-project-root-dir-for-filename src-fname))))
+
+(defun krb-clj-test-test-fname-to-src-fname (test-fname)
+  (->>
+   test-fname
+   krb-clj-file-name-sans-project-root
+   (replace-regexp-in-string "^test/" "src/")
+   (replace-regexp-in-string "_test\\.clj$" ".clj")
+   (concat (krb-clj-lein-project-root-dir-for-filename test-fname))))
 
 (defun krb-clj-ensure-path-for-file (fname)
   (interactive "sFile Name: ")
@@ -697,7 +585,7 @@ the pre-existing package statements.
   (insert "\n")
   (insert "\n")
   (krb-clj-insert-use "clojure.test")
-  (let ((ns (krb-clj-ns-for-file-name (krb-clj-test-source-path-for-buffer (krb-clj-find-lein-proj-root-dir) (buffer-file-name)))))
+  (let ((ns (krb-clj-ns-for-file-name (krb-clj-test-test-fname-to-src-fname (buffer-file-name)))))
     (krb-clj-insert-require
      ns
      (krb-clj-ns-alias-for-ns ns))))
@@ -706,9 +594,9 @@ the pre-existing package statements.
   (interactive)
   (if (krb-clj-test-is-in-test-file?)
       (progn
-        (find-file (krb-clj-test-source-path-for-buffer (krb-clj-find-lein-proj-root-dir) (buffer-file-name))))
+        (find-file (krb-clj-test-test-fname-to-src-fname (buffer-file-name))))
     (progn
-      (let* ((test-path (krb-clj-test-test-path-for-buffer (krb-clj-find-lein-proj-root-dir) (buffer-file-name)))
+      (let* ((test-path (krb-clj-test-src-fname-to-test-fname (buffer-file-name)))
              (existed? (file-exists-p test-path)))
         (krb-clj-ensure-path-for-file test-path)
         (find-file test-path)
@@ -718,14 +606,14 @@ the pre-existing package statements.
 
 (defun krb-clj-test-run-all-tests ()
   (interactive)
-  (slime-interactive-eval "(clojure.test/run-all-tests)"))
+  (cider-read-and-eval "(clojure.test/run-all-tests)"))
 
 (defun krb-clj-test-run-all-tests-for-buffer ()
   (interactive)
   (let ((was-in-test? (krb-clj-test-is-in-test-file?)))
     (when (not was-in-test?)
       (krb-clj-test-switch-between-test-and-buffer))
-    (slime-interactive-eval "(run-tests)")
+    (cider-read-and-eval "(run-tests)")
     (when (not was-in-test?)
       (krb-clj-test-switch-between-test-and-buffer))))
 
@@ -825,7 +713,21 @@ the pre-existing package statements.
             (beginning-of-line)
             (insert (format "  (def %s %s)\n" arg arg)))
       (save-buffer)
-      (slime-eval-defun))))
+      (cider-load-buffer))))
+
+(defun krb-clojure-remove-fn-args-to-defs ()
+  (interactive)
+  (save-excursion
+    (let ((args-list (krb-clojure-get-current-fn-args)))
+      (loop for arg in args-list
+            do
+            (beginning-of-defun)
+            (search-forward (format "(def %s %s)" arg arg))
+            (beginning-of-line)
+            (kill-line)
+            (kill-line))
+      (save-buffer)
+      (cider-load-buffer))))
 
 
 (defun krb-clojure-def-var ()
@@ -850,13 +752,13 @@ the pre-existing package statements.
    (list
     (read-string
      ;; prompt
-     (concat "Autoeval Expression: " (slime-last-expression) ": ")
+     (concat "Autoeval Expression: " (cider-last-sexp) ": ")
      ;; initial-input
-     (slime-last-expression)
+     (cider-last-sexp)
      ;; history
      'krb-clojure-set-replay-expression-hist
      ;; default-value
-     (slime-last-expression)
+     (cider-last-sexp)
      ;; inherit-input-method
      t)))
   (if (not (= (length expression) 0))
@@ -866,7 +768,7 @@ the pre-existing package statements.
 
 (defun krb-clojure-replay-expression ()
   (interactive)
-  (slime-interactive-eval krb-clojure-replay-expression-expr))
+  (cider-read-and-eval krb-clojure-replay-expression-expr))
 
 (defvar krb-clojure-replay-inspect-expression-expr nil)
 (make-variable-buffer-local 'krb-clojure-replay-inspect-expression-expr)
@@ -876,13 +778,13 @@ the pre-existing package statements.
    (list
     (read-string
      ;; prompt
-     (concat "Autoinspect Expression: " (slime-last-expression) ": ")
+     (concat "Autoinspect Expression: " (cider-last-sexp) ": ")
      ;; initial-input
-     (slime-last-expression)
+     (cider-last-sexp)
      ;; history
      'krb-clojure-set-replay-inspect-expression-hist
      ;; default-value
-     (slime-last-expression)
+     (cider-last-sexp)
      ;; inherit-input-method
      t)))
   (if (not (= (length expression) 0))
@@ -921,20 +823,24 @@ the pre-existing package statements.
 (global-set-key "\C-crfn" 'krb-clj-fixup-ns)
 (global-set-key "\C-css" 'krb-auto-cider-connect)
 (global-set-key "\C-csr" 'krb-remote-auto-cider-connect)
-(global-set-key "\C-csS" 'krb-swank-connect)
 
 (defvar krb-clj-mode-prefix-map nil)
 
 (setq krb-clj-mode-prefix-map
       (let ((map (make-sparse-keymap)))
-        ;; (define-key map "t"    'krb-java-exec-mvn-test)     ;; all the tests
-        ;; (define-key map "T"    'krb-clj-find-test-file)
-        ;; (define-key map "\C-t" 'krb-clj-exec-mvn-one-test)  ;; just test the current buffer...
+        (define-key map "a"    'align-cljlet)
+
         (define-key map "cji"  'krb-clj-cider-jack-into-curr-project)
 
-        (define-key map "p"    'krb-clj-open-project-config-file)
-        (define-key map "z"    'krb-clj-slime-repl-for-project)
-        (define-key map "a"    'align-cljlet)
+        ;; or should we use a prefix arg to remove instead of a separate keybinding?
+        (define-key map "da"   'krb-clojure-fn-args-to-defs)
+        (define-key map "dA"   'krb-clojure-remove-fn-args-to-defs)
+        (define-key map "dv"   'krb-clojure-def-var)
+
+        (define-key map "fm"   'krb-clj-find-model)
+
+        (define-key map "k"    'align-cljlet)
+
         (define-key map "lo"   'krb-clj-log-open-config-file)
         (define-key map "ld"   'krb-clj-log-set-debug-for-buffer)
         (define-key map "li"   'krb-clj-log-set-info-for-buffer)
@@ -948,11 +854,8 @@ the pre-existing package statements.
         (define-key map "ts"   'krb-clj-test-run-all-tests)
         (define-key map "tR"   'krb-clj-test-run-all-tests-for-buffer)
 
-        (define-key map "fm"   'krb-clj-find-model)
-
-        (define-key map "da"   'krb-clojure-fn-args-to-defs)
-        (define-key map "dv"   'krb-clojure-def-var)
-
+        (define-key map "p"    'krb-clj-open-project-config-file)
+        (define-key map "z"    'krb-clj-slime-repl-for-project)
 
         ;; (define-key map "tr"   'krb-clj-test-run-test-for-fn)
         ;; jump between test-fn and current-fn
