@@ -136,6 +136,8 @@ There are two things you can do about this warning:
 
 (require 'ag)
 (add-to-list 'ag-ignore-list "public/js/compiled/cljs-runtime/")
+;; ag-ignore-list
+
 (defun krb-ag-search-dwim-im-feeling-lucky ()
   (interactive)
   ;; (ag (ag/dwim-at-point) default-directory)

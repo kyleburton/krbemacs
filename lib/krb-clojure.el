@@ -418,11 +418,27 @@ Into a leiningen dependency string:
   (cider--update-project-dir)
   )
 
+(defvar krb-clj-cider-connect-fn nil)
+(defvar krb-clj-cider-connect-args nil)
+
 (defun krb-auto-cider-connect ()
   (interactive)
-  (let ((port (krb-get-cider-port-for-project)))
-    (cider-connect-clj `(:host "localhost" :port ,port :project-dir ,(krb-clj-lein-project-root-dir-for-filename (buffer-file-name))))
-    (delete-window)))
+  (cond
+   ((and krb-clj-cider-connect-fn
+         krb-clj-cider-connect-args)
+    (message "krb-auto-cider-connect: krb-clj-cider-connect-fn=%s/%s; krb-clj-cider-connect-args=%s/%s; cider-shadow-default-options=%s"
+             krb-clj-cider-connect-fn   (type-of krb-clj-cider-connect-fn)
+             krb-clj-cider-connect-args (type-of krb-clj-cider-connect-args)
+             cider-shadow-default-options)
+    ;; not sure how to automatically set cider-shadow-default-options
+    ;; it's defined as a defcustom, using .dir-locals.el does seem to give it
+    ;; a value, though it doesn't seem to be visibile to the cider code
+    ;; (and cider-shadow-default-options (setq cider-shadow-default-options cider-shadow-default-options))
+    (funcall krb-clj-cider-connect-fn (copy-tree krb-clj-cider-connect-args)))
+   (t
+    (let ((port (krb-get-cider-port-for-project)))
+      (cider-connect-clj `(:host "localhost" :port ,port :project-dir ,(krb-clj-lein-project-root-dir-for-filename (buffer-file-name))))
+      (delete-window)))))
 
 (defun krb-clj-cljrep (sym)
   (interactive (list (read-string (format "Cljrep term: %s" (or (symbol-at-point) "")))))
