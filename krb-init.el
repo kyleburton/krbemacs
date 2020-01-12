@@ -135,7 +135,7 @@ There are two things you can do about this warning:
   (krb-find-file-up-from-dir ".git" default-directory))
 
 (require 'ag)
-(add-to-list 'ag-ignore-list "public/js/compiled/cljs-runtime/")
+(add-to-list 'ag-ignore-list "public/js/compiled/")
 ;; ag-ignore-list
 
 (defun krb-ag-search-dwim-im-feeling-lucky ()
@@ -305,6 +305,7 @@ There are two things you can do about this warning:
 (add-hook 'sh-mode-hook #'krb-bash-mode-hook)
 ;; (add-hook 'sh-mode-hook 'flycheck-mode)
 ;; (remove-hook 'sh-mode-hook 'flycheck-mode)
+(global-flycheck-mode)
 
 
 ;; TODO: do this only for the appropriate modes (eg: Erlang)

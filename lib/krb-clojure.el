@@ -13,6 +13,7 @@
 (require 'paredit)
 (require 'highlight-parentheses)
 (require 'yasnippet)
+(require 'flycheck-clj-kondo)
 (autoload 'align-cljlet "align-cljlet")
 
 (defmacro -> (x &optional form &rest more)
