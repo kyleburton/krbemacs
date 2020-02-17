@@ -1,57 +1,55 @@
-;; Utiliites
+;;; krb-misc.el --- My miscelaneous helper functions.
+;;
+;; Public domain.
 
+;; Author: Kyle Burton <kyle.burton@gmail.com>
+;; Maintainer: Kyle Burton <kyle.burton@gmail.com>
+;; Created: 2008-11-21
+;; Keywords: misc
+
+;; This file is public domain software. Do what you want.
+
+;;; Commentary:
+;;
+;; These are miscelaneous helper functions that I use from other
+;; libraries or directly from Emacs.
+;;
+
+;;; Code:
+;;
 (defmacro gsub! (sym reg rep)
+  "Replace all occurances of REG with REP, re-assign to SYM using `set'.
+\(let ((text \"this,that,other\")) gsub! text \",\" \"|\")"
   `(set ',sym (replace-regexp-in-string ,reg ,rep ,sym)))
 
-(defmacro if-let (predicate consequent &optional otherwise)
-  (destructuring-bind
-      (sym expr)
-      predicate
-    (message "sym=%s; expr=%s" sym expr)
-    (if otherwise
-        `(let ((,sym ,expr))
-           (if ,sym
-               ,consequent
-             ,otherwise))
-      `(let ((,sym ,expr))
-         (if ,sym
-             ,consequent)))))
+(defun krb-mark-whole-buffer ()
+  "Copied from `mark-whole-buffer', which is declared to be for interactive use only."
+  (push-mark)
+  (push-mark (point-max) nil t)
+  (goto-char (minibuffer-prompt-end)))
 
-;; TODO: impement a cond-let, nicer than an if-let cascade...
-;; (defmacro cond-let (&rest blocks)
-;;  )
-
-;; (cond-let
-;;  ((x (some-expression))
-;;   (body-form-using x))
-;;  ((y (some-expression))
-;;   (body-form-using y))
-;;  (t
-;;   (default-clause)))
-
-;;
 (defun krb-reindent-entire-buffer ()
+  "Marks and indents the entire active buffer."
   (interactive)
   (save-excursion
-    (mark-whole-buffer)
+    (krb-mark-whole-buffer)
     (indent-region (point) (mark))))
 
-(defun krb-buffer-line-at-point ()
-  (or (cdr (nth 2 (posn-at-point))) 0))
-
 (defun krb-current-file-line-number ()
+  "Return the line number of the buffer where the point is."
   (let ((start (point)))
     (save-excursion
       (count-lines (point-min)
                    start))))
 
 (defun krb-insert-date ()
-  "Inserts a date into the current buffer."
+  "Insert a date into the current buffer."
   (interactive)
   (insert (shell-command-to-string "date"))
   (backward-delete-char 1))
 
 (defun krb-join-lines (num)
+  "Join the given NUM of lines (this will call `join-line' repeatedly)."
   (interactive (list (read-string "Num Lines: " "1")))
   (if (> num 0)
       (progn
@@ -59,15 +57,14 @@
         (krb-join-lines (- num 1)))))
 
 (defmacro krb-shift (lat)
-  "Destructive shift off of the right hand side of the list of atoms.
+  "Destructive shift off of the right hand side of the list of atoms, LAT.
 As opposed to pop which works on the left."
   `(let ((rev (reverse ,lat)))
      (setq ,lat (reverse (cdr rev)))
      (car rev)))
 
 (defun goto-percent (pct)
-  "Computes the character position of the given percentage of the current
-buffer and places the cursor at that position."
+  "Computes the character position of the given percentage, PCT, of the current buffer and places the cursor at that position."
   (interactive "nGoto percent: ")
   (let* ((size (point-max))
          (charpos (/ (* size pct) 100)))
@@ -75,7 +72,7 @@ buffer and places the cursor at that position."
     (message "Moved to charpos: %d/%d." charpos size)))
 
 (defun match-paren (arg)
-  "Go to the matching paren if on an open paren; otherwise insert %."
+  "Go to the matching paren if on an open paren; otherwise insert ARG."
   (interactive "p")
   (cond ((looking-at "\\s\(")
          (forward-list 1)
@@ -86,7 +83,7 @@ buffer and places the cursor at that position."
         (t (self-insert-command (or arg 1)))))
 
 (defun krb-word-under-cursor ()
-  "Returns the 'word' at the point."
+  "Return the 'word' at the point."
   (interactive)
   (save-excursion
     (backward-word 1)
@@ -95,22 +92,24 @@ buffer and places the cursor at that position."
       (buffer-substring beg (point)))))
 
 (defun krb-string-join (delim lat)
+  "Join the list of items LAT with DELIM.."
   (if (not lat)
       ""
-    (let ((string (car lat)))
+    (let ((string (format "%s" (car lat))))
       (loop for item in (cdr lat)
             do
-            (setq string (concat string delim item)))
+            (setq string (concat string delim (format "%s" item))))
       string)))
 
 (defun krb-get-pwd-as-list ()
+  "Return the current buffer's file path as a list (splitting on '/')."
   (rest (split-string buffer-file-name "/")))
 
-;; (krb-get-pwd-as-list)
-;; (buffer-file-name)
-
 (defun krb-string-find (buff pat pos)
-  (let ((pos 0) (loop t) (max (- (length buff) (length pat))))
+  "Find the given substring, PAT, in the string BUFF, starting at postition POS."
+  (let ((pos 0)
+        (loop t)
+        (max (- (length buff) (length pat))))
     (while (and loop (< pos max))
       (cond ((string= pat (substring buff pos (+ pos (length pat))))
              (setq loop nil))
@@ -119,108 +118,39 @@ buffer and places the cursor at that position."
     (if (= pos max) -1 pos)))
 
 
-(defun krb-string-strip-lib-prefix (name)
-  (let ((pos (krb-string-find name "clj" 0)))
-    (message "pos=%s" pos)
-    (cond ((= -1 pos) name)
-          (t
-           (substring name (+ 1 pos (length "clj")))))))
-
-;; (krb-string-strip-lib-prefix "src/clj/com/github/kyleburton/mileage.clj")
-
-(defun krb-get-pwd-as-list-no-lib ()
-  (split-string (krb-string-strip-lib-prefix buffer-file-name) "/"))
-
-;; (krb-get-pwd-as-list-no-lib)
-
-(defun krb-string-strip-file-suffix (name)
-  (let ((pos (krb-string-find name "." 0)))
-    (cond ((= -1 pos) name)
-          (t (substring name 0 pos)))))
-
-;; (krb-string-strip-file-suffix "src/clj/com/github/kyleburton/mileage.clj")
-
-
-
-
-(defun krb-seq-first (aseq)
-  (cond ((listp aseq)
-         (first aseq))
-        ((vectorp aseq)
-         (aref aseq 0))
-        (t
-         (error "krb-seq-first: not a list or vector: %s" aseq))))
-
-;; (krb-seq-first '(1 2 3))
-;; (krb-seq-first [1 2 3])
-
-(defmacro l1 (&rest body)
-  `#'(lambda (%1)
-       ,@body))
-
-(defmacro l* (&rest body)
-  `#'(lambda (&rest %*)
-       ,@body))
-
-(defun krb-seq->list (aseq)
-  (cond ((listp aseq)
-         aseq)
-        ((vectorp aseq)
-         (loop for item across aseq
-               collect item))
-        (t
-         (error "krb-seq->list: not a list or vector: %s" aseq))))
-
-(defun krb-seq->vector (aseq)
-  (cond ((vectorp aseq)
-         aseq)
-        ((listp aseq)
-         (loop for item in aseq
-               with the-vec = (make-vector (length aseq) 0)
-               for vec-idx  = 0 then (+ vec-idx 1)
-               finally (return the-vec)
-               do
-               (aset the-vec vec-idx item)))
-        (t
-         (error "krb-seq->vector: not a list or vector: %s" aseq))))
-
-(defun krb-vector-conj (the-vec elt)
-  (let ((new-vec (make-vector (+ 1 (length the-vec)) 0)))
-    (loop for item across the-vec
-          for idx = 0 then (+ 1 idx)
-          do
-          (aset new-vec idx item))
-    (aset new-vec
-          (- (length new-vec) 1)
-          elt)
-    new-vec))
-
-
 (defun krb-path-strip (path)
-  "
-    (krb-path-strip buffer-file-name)                  => \"/Users/\"
-    (krb-path-strip (krb-path-strip buffer-file-name)) => \"/\"
-    (krb-path-strip \"/Users/\")                       => \"/\"
-    (krb-path-strip \"/Users\")                        => \"/\"
-    (krb-path-strip \"/\")                             => \"/\"
-    (krb-path-strip nil)                               => nil
+  "Strip off the firsrt directory part from PATH, returning '/' for '/'.
 
-"
+\(krb-path-strip the-buffer-file-name)                  => \"/Users/\"
+\(krb-path-strip (krb-path-strip the-buffer-file-name)) => \"/\"
+\(krb-path-strip \"/Users/\")                           => \"/\"
+\(krb-path-strip \"/Users\")                            => \"/\"
+\(krb-path-strip \"/\")                                 => \"/\"
+\(krb-path-strip nil)                                   => nil"
   (cond ((null path)
          nil)
         (t
          (file-name-directory (directory-file-name (file-name-directory path))))))
 
+;; (krb-path-strip "/this/that/other")
+;; (krb-path-strip "/")
+
 
 (defun krb-find-containing-parent-directory-of-current-buffer (target-file-name &optional starting-directory)
-  "Search backwards up the directory structure for the directory containing hte given literal file name).
+  "Search backwards up the directory structure.
+The search will begin at STARTING-DIRECTORY if specified,
+defaulting to the current buffer's directory, for the directory
+containing TARGET-FILE-NAME).
 
- These examples are from a mac, using a (starting-directory of \"/Users/kburton/.emacs-local\")
-   (krb-find-containing-parent-directory-of-current-buffer \".bashrc\")    => \"/Users/kburton/.bashrc\"
-    (krb-find-containing-parent-directory-of-current-buffer \".localized\") => \"/Users/.localized\"
-    (krb-find-containing-parent-directory-of-current-buffer \"Users\")      => \"/Users\"
+These examples are from a mac, using a starting-directory of
+\"/Users/kburton/.emacs-local\"
 
-"
+\(krb-find-containing-parent-directory-of-current-buffer \".bashrc\")
+;; => \"/Users/kburton/.bashrc\"
+\(krb-find-containing-parent-directory-of-current-buffer \".localized\")
+;; => \"/Users/.localized\"
+\(krb-find-containing-parent-directory-of-current-buffer \"Users\")
+;; => \"/Users\""
   (let* ((path (or starting-directory (file-name-directory (buffer-file-name))))
          (candidate (format "%s%s" path target-file-name)))
     ;;     (message "krb-find-containing-parent-directory-of-current-buffer: target-file-name=%s path=%s candidate=%s"
@@ -237,28 +167,32 @@ buffer and places the cursor at that position."
       (krb-find-containing-parent-directory-of-current-buffer target-file-name (krb-path-strip path))))))
 
 (defun krb-clear-buffer (buffer-name)
+  "Clears the buffer named by BUFFER-NAME."
   (interactive "bBuffer: ")
-  (if (get-buffer buffer-name)
-      (save-excursion
-        (set-buffer buffer-name)
-        (goto-char (point-max))
-        (kill-region 1 (point)))))
+  (with-current-buffer buffer-name
+    (set-buffer buffer-name)
+    (goto-char (point-max))
+    (kill-region 1 (point))))
 
 (defun krb-ensure-buffer-exists (buffer-name)
+  "Ensure the buffer named by BUFFER-NAME exists."
   (if (not (get-buffer buffer-name))
       (save-excursion
         (switch-to-buffer buffer-name))))
 
 (defun krb-ins-into-buffer (buffer-name text)
+  "Insert TEXT into the buffer named by BUFFER-NAME."
   (krb-ensure-buffer-exists buffer-name)
-  (save-excursion
+  (with-current-buffer buffer-name
     (set-buffer buffer-name)
     (insert text)))
 
 (defun krb-insf-into-buffer (buffer-name &rest args)
+  "Format ARGS (via call to apply `message') and insert into BUFFER-NAME."
   (krb-ins-into-buffer buffer-name (apply 'message args)))
 
 (defmacro krb-with-fresh-output-buffer (buffer-name &rest body)
+  "Clears (by killing the buffer) BUFFER-NAME, create BUFFER-NAME and insert BODY."
   `(let ((*krb-buffer-name* ,buffer-name)
          ;; prevents it from additionally being displayed in a minibuffer when the output is small
          (max-mini-window-height 0))
@@ -271,7 +205,7 @@ buffer and places the cursor at that position."
        (pop-to-buffer ,buffer-name))))
 
 (defun krb-get-current-line-in-buffer ()
-  "Returns the text of the current line in the buffer."
+  "Return the text of the current line in the buffer."
   (save-excursion
     (beginning-of-line)
     (let ((start (point)))
@@ -281,10 +215,12 @@ buffer and places the cursor at that position."
 (defvar *krb-last-exec-cmd* nil)
 
 (defun krb-shell-command (cmd buffer-name)
+  "Execute CMD and insert output into BUFFER-NAME."
   (setq *krb-last-exec-cmd* (list cmd buffer-name))
   (shell-command cmd buffer-name))
 
 (defun krb-rerun-last-command ()
+  "Rerun the \"last shell command\", stored in `*krb-last-exec-cmd*'."
   (interactive)
   (message "krb-rerun-last-command: %s" *krb-last-exec-cmd*)
   (if *krb-last-exec-cmd*
@@ -295,7 +231,7 @@ buffer and places the cursor at that position."
   "Stack to support push/pop location operations.  Similar to TAGS, used by my krb-* functions.")
 
 (defun krb-jump-stack-clear ()
-  "Reset the stack"
+  "Reset the jump stack (`*krb-jump-stack*')."
   (interactive)
   (setq *krb-jump-stack* (list)))
 
@@ -307,9 +243,9 @@ buffer and places the cursor at that position."
 ;; TODO: this needs bettter documetnation and probably a better name...
 ;; TODO: take an optional list of directories to look in (eg: similar to how PATH is used, loop through, returning the first one found - the
 (defun krb-try-resolve-file-path (fname)
-  ;; if *krb-output-base-directory* is set, and the given fname
-  ;; doens't exist, try pre-pending *krb-output-base-directory* and
-  ;; see if that exists, if not fallback to the original and error...
+  "If *krb-output-base-directory* is set, and the given fname
+doens't exist, try pre-pending *krb-output-base-directory* and
+see if that exists, if not fallback to the original and error..."
   (let ((c1 fname)
         (c2 (format "%s/%s" *krb-output-base-directory* fname)))
     (message "krb-try-resolve-file-path: fname=%s c1=%s" fname c1)
