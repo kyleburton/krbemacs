@@ -6,7 +6,7 @@
 ;; (url-copy-file "https://raw.githubusercontent.com/technomancy/find-file-in-project/master/find-file-in-project.el" "find-file-in-project.el")
 
 
-(load (expand-file-name "~/code/github.com/kyleburton/krbemacs/find-file-in-project.el"))
+(load (expand-file-name "~/code/github.com/kyleburton/krbemacs/lib/find-file-in-project.el"))
 
 (let* ((no-ssl (and (memq system-type '(windows-nt ms-dos))
                     (not (gnutls-available-p))))
@@ -337,6 +337,21 @@ There are two things you can do about this warning:
 (add-hook 'write-file-hooks 'delete-trailing-whitespace nil t)
 ;; I no likey the menu bar, don't need it, bye bye
 (menu-bar-mode -1)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; rust mode helpers
+(defun krb-rust-compile-and-run ()
+    "Execute 'cargo run'."
+  (interactive)
+  (compile "cargo run"))
+
+(defun krb-rust-mode ()
+  "My rust helpers and keybindings."
+  (interactive)
+  (local-set-key "\C-c\C-k" 'krb-rust-compile-and-run))
+
+(add-hook 'rust-mode-hook 'krb-rust-mode)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; windmove / windmove bindings
 (global-set-key "\C-xwh" #'windmove-left)

@@ -593,6 +593,18 @@ See: URL `http://en.wikipedia.org/wiki/ISO_8601'
 (global-set-key "\C-crns" 'krb-js-fixup-imports)
 
 
+(defun krb-open-file-at-point ()
+  "Open the file under the point."
+  (interactive)
+  (save-excursion
+    (let (spos epos fname line)
+      (beginning-of-line)
+      (setq spos (point))
+      (end-of-line)
+      (setq epos (point))
+      (setq line (buffer-substring spos epos))
+      (find-file (concat default-directory line)))))
+
 (defun krb-temp-thing ()
   (interactive)
   (let ((thing (ag/dwim-at-point))
