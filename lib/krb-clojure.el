@@ -686,8 +686,8 @@ Into a leiningen dependency string:
 
 (defun krb-clj-args-parser/parse-variable (str tokens)
   "Parse a variable from the front of STR appending into TOKENS."
-  (message "krb-clj-args-parser/parse-variable: str=%s; tokens=%s" str tokens)
-  (let* ((result   (krb-clj-args-parser/split-string-at-regex "[^a-zA-Z0-9\-_]" str))
+  ;; (message "krb-clj-args-parser/parse-variable: str=%s; tokens=%s" str tokens)
+  (let* ((result   (krb-clj-args-parser/split-string-at-regex "[^a-zA-Z0-9\-_/]" str))
          (matched? (nth 0 result)))
     (if matched?
         (krb-clj-args-parser/parse-string
@@ -700,13 +700,22 @@ Into a leiningen dependency string:
 ;; (krb-clj-args-parser/parse-variable "this that other" nil)
 ;; (krb-clj-args-parser/parse-string "this that other" nil)
 
+;; TODO: need to support discarding the LAST token
 (defun krb-clj-args-parser/discard-next-token! (str)
   "Discard the next whitespace delimited token from STR or raise an error."
   (let* ((result (krb-clj-args-parser/split-string-at-regex "[ \n]" str))
          (matched? (nth 0 result)))
     (if matched?
         (string-trim-left (nth 2 result))
-      (error "Error[krb-clj-args-parser/discard-next-token!]: unable to discard token from str=%s; tokens=%s" str tokens))))
+      ;; (error "Error[krb-clj-args-parser/discard-next-token!]: unable to discard token from str=%s; tokens=%s" str tokens)
+      ;; No more tokens, discard the remainder
+      "")))
+
+'(
+
+  (krb-clj-args-parser/discard-next-token! "s/Str")
+
+  )
 
 (defun krb-clj-args-parser/parse-typehint (str tokens)
   "Parse a typehint from the front of STR appending into TOKENS."
@@ -756,7 +765,6 @@ Into a leiningen dependency string:
 ;; "&"        parse-rest-form
 (defun krb-clj-args-parser/parse-string (str &optional tokens)
   "Parse STR into an AST.  TOKENS is an optional set of already parsed tokens (used in recursive parsing)."
-  (message "krb-clj-args-parser/parse-string: str=%s; tokens=%s" str tokens)
   (cond
    ((string-match "^[a-zA-Z]" str)
     (krb-clj-args-parser/parse-variable str tokens))
@@ -770,14 +778,28 @@ Into a leiningen dependency string:
     (krb-clj-args-parser/parse-vector-destructure str tokens))
    ((string-match "^&" str)
     (krb-clj-args-parser/parse-rest-form str tokens))
-   ((string-match "^$" str)
-    (list nil tokens))
    ((string-match "^ " str)
     (krb-clj-args-parser/parse-string (substring str 1) tokens))
+   ((string-match "^\n" str)
+    (krb-clj-args-parser/parse-string (substring str 1) tokens))
+   ((string-match "^\t" str)
+    (krb-clj-args-parser/parse-string (substring str 1) tokens))
+   ((string-match "^$" str)
+    (list nil tokens))
    (t
     (error "Error[krb-clj-args-parser/parse-string]: unexpected form: str=%s; tokens=%s" str tokens))))
 
 '(
+  (progn
+    (message "================================================================================")
+    (krb-clj-args-parser/parse-string
+     "board :- game-board/BoardConfig
+                  rownum :- s/Int
+                  colnum :- s/Int
+                  cellnum :- s/Int
+                  val :- s/Str"
+     nil))
+
   (krb-clj-args-parser/parse-string "")
   (krb-clj-args-parser/parse-string "this that other")
   (krb-clj-args-parser/parse-string "^String this ^Date that ^Integer other")
@@ -797,56 +819,85 @@ Into a leiningen dependency string:
 
 (defun krb-clj-args-parser/tokenize-string (str tokens)
   "Tokenize the string STR accumulating into TOKENS."
-  ;; (message "krb-clj-args-parser/tokenize-string: str=%s; tokens=%s" str tokens)
+  (message "krb-clj-args-parser/tokenize-string: str=%s; tokens=%s" str tokens)
   (cond
    ((not str)
     tokens)
 
-   ((string-match "^ " str)
-    (krb-clj-args-parser/tokenize-string (substring str 1) tokens))
+   ((string-match "\\`[ \n]" str)
+    (message "krb-clj-args-parser/tokenize-string: FOUND space str=%s" str)
+    (krb-clj-args-parser/tokenize-string (string-trim-left str) tokens))
+   ;; (string-match "\\`[ \n]" "\nfoo")
+   ;; (string-match "\\`[ \n]" "foo")
+   ;; (string-trim-left "\n  \n  \n\n  foo")
 
-   ((string-match "^[a-zA-Z]" str)
+   ((string-match "\\`[a-zA-Z]" str)
+    (message "krb-clj-args-parser/tokenize-string: FOUND symbol str='%s'" str)
     (destructuring-bind (matched? symbol str)
-        (krb-clj-args-parser/split-string-at-regex "[^a-zA-Z0-9\-_]" str)
+        (krb-clj-args-parser/split-string-at-regex "[^a-zA-Z0-9\-_/]" str)
       (krb-clj-args-parser/tokenize-string str (append tokens `((symbol ,symbol))))))
+   ;; (krb-clj-args-parser/split-string-at-regex "[^a-zA-Z0-9\-_/]" "foo\nbar")
 
-   ((string-match "^^" str)
+   ((string-match "\\`^" str)
+    (message "krb-clj-args-parser/tokenize-string: FOUND typehint str=%s" str)
     (destructuring-bind (matched? symbol str)
-        (krb-clj-args-parser/split-string-at-regex "[^a-zA-Z0-9\-_]" (substring str 1))
+        (krb-clj-args-parser/split-string-at-regex "[^a-zA-Z0-9\-_/]" (substring str 1))
       (krb-clj-args-parser/tokenize-string str (append tokens `((typehint ,symbol))))))
 
-   ((string-match "^:-" str)
+   ((string-match "\\`:-" str)
+    (message "krb-clj-args-parser/tokenize-string: FOUND schema-typehint str=%s" str)
     (destructuring-bind (matched? symbol str)
-        (krb-clj-args-parser/split-string-at-regex "[^a-zA-Z0-9\-_]" (substring str 1))
+        (krb-clj-args-parser/split-string-at-regex "[^a-zA-Z0-9\-_/:]" (substring str 2))
       (krb-clj-args-parser/tokenize-string str (append tokens `((schema-typehint ":-"))))))
 
-   ((string-match "^:" str)
+   ((string-match "\\`:" str)
+    (message "krb-clj-args-parser/tokenize-string: FOUND keyword str=%s" str)
     (destructuring-bind (matched? symbol str)
-        (krb-clj-args-parser/split-string-at-regex "[^a-zA-Z0-9\-_]" (substring str 1))
+        (krb-clj-args-parser/split-string-at-regex "[^a-zA-Z0-9\-_/:]" (substring str 1))
       (krb-clj-args-parser/tokenize-string str (append tokens `((keyword ,(concat ":" symbol)))))))
 
-   ((string-match "^{" str)
+   ((string-match "\\`{" str)
+    (message "krb-clj-args-parser/tokenize-string: FOUND map-start str=%s" str)
     (krb-clj-args-parser/tokenize-string (substring str 1) (append tokens `((map-start "{")))))
 
-   ((string-match "^\\[" str)
+   ((string-match "\\`\\[" str)
+    (message "krb-clj-args-parser/tokenize-string: FOUND vec-start str=%s" str)
     (krb-clj-args-parser/tokenize-string (substring str 1) (append tokens `((vec-start "[")))))
 
-   ((string-match "^}" str)
+   ((string-match "\\`}" str)
+    (message "krb-clj-args-parser/tokenize-string: FOUND map-end str=%s" str)
     (krb-clj-args-parser/tokenize-string (substring str 1) (append tokens `((map-end "}")))))
 
-   ((string-match "^]" str)
+   ((string-match "\\`]" str)
+    (message "krb-clj-args-parser/tokenize-string: FOUND vec-end str=%s" str)
     (krb-clj-args-parser/tokenize-string (substring str 1) (append tokens `((vec-end "]")))))
 
-   ((string-match "^&" str)
+   ((string-match "\\`&" str)
+    (message "krb-clj-args-parser/tokenize-string: FOUND rest-args str=%s" str)
     (krb-clj-args-parser/tokenize-string (substring str 1) (append tokens `((rest-args "&")))))
 
    ((equal "" str)
+    (message "krb-clj-args-parser/tokenize-string: END str='%s'" str)
     tokens)
 
    (t
     (error "Error[krb-clj-args-parser/parse-string]: unexpected form: str=%s; tokens=%s" str tokens))))
 
 '(
+  (progn
+    (message "================================================================================")
+    (krb-clj-args-parser/tokenize-string
+     "board :- game-board/BoardConfig
+                  rownum :- s/Int
+                  colnum :- s/Int
+                  cellnum :- s/Int
+                  val :- s/Str"
+     nil))
+
+  (krb-clj-args-parser/split-string-at-regex "[^a-zA-Z0-9\-_/]" "s/Str")
+  (krb-clj-args-parser/split-string-at-regex "[^a-zA-Z0-9\-_/]" "this that")
+
+
   (krb-clj-args-parser/tokenize-string "" nil)
   (krb-clj-args-parser/tokenize-string "a b c" nil)
   (krb-clj-args-parser/tokenize-string "a b [c d e]" nil)
@@ -1015,8 +1066,12 @@ Into a leiningen dependency string:
 
   )
 
+(defvar xx-args-list 'unset)
+(setf xx-args-list 'unset)
 (defun krb-clj-args-parser/arg-symbols-from-arglist (arglist)
   "From ARGLIST, parse out all the defined symbols."
+  (message "krb-clj-args-parser/arg-symbols-from-arglist: arglist=%s" arglist)
+  (setf xx-args-list arglist)
   (let ((symbols nil))
     (krb-clj-visit-tree
      (krb-clj-args-parser/parse-tokens
@@ -1029,9 +1084,32 @@ Into a leiningen dependency string:
 
 '(
 
+  (krb-clj-args-parser/arg-symbols-from-arglist "board :- game-board/BoardConfig
+                  rownum :- s/Int
+                  colnum :- s/Int
+                  cellnum :- s/Int
+                  val :- s/Str")
+
+  (krb-clj-args-parser/tokenize-string "board :- game-board/BoardConfig
+                  rownum :- s/Int
+                  colnum :- s/Int
+                  cellnum :- s/Int
+                  val :- s/Str" nil)
+
   (krb-clj-args-parser/parse-tokens
    (krb-clj-args-parser/tokenize-string "board :- BoardConfig cell-info :- CellInfo" nil)
    nil)
+
+  (krb-clj-args-parser/parse-tokens
+   (krb-clj-args-parser/tokenize-string
+    "board :- game-board/BoardConfig
+                  rownum :- s/Int
+                  colnum :- s/Int
+                  cellnum :- s/Int
+                  val :- s/Str"
+    nil)
+   nil)
+
 
   (krb-clj-args-parser/arg-symbols-from-arglist "board :- BoardConfig cell-info :- CellInfo")
   (krb-clj-args-parser/arg-symbols-from-arglist "^String name")
@@ -1055,8 +1133,28 @@ Into a leiningen dependency string:
       (backward-char 1)
       (forward-sexp 1)
       (backward-char 1)
-      ;; strip meta-data from the list
       (krb-clj-args-parser/arg-symbols-from-arglist (buffer-substring start (point))))))
+
+'(comment
+
+  (defun krb-tmp ()
+    "A test function."
+    (interactive)
+    '(message "krb-tmp: krb-clojure-get-current-fn-args=%s" (krb-clojure-get-current-fn-args))
+    (save-excursion
+      (beginning-of-defun)
+      (search-forward "[")
+      (let ((start (point)))
+        (backward-char 1)
+        (forward-sexp 1)
+        (backward-char 1)
+        (message "krb-tmp: arglist='%s'" (buffer-substring start (point))))))
+
+
+
+  )
+
+
 
 ;; How should this work in order to handle clojure?
 ;; . rewind to the defn
@@ -1080,7 +1178,6 @@ Into a leiningen dependency string:
    (defn name [& [args] ...)
    (defn name [^Type arg1] ...)
    (defn name [form :- Type ...] ...)
-   ;; TODO: support destrucutring.
    (defn name [{:keys [a b c] :as foo}] ...)
 
 Convert the function arguments to local defs."
@@ -1362,11 +1459,6 @@ To insert the bindings, call krb-clojure-let-bindings-to-defs."
   (local-set-key (kbd "C-<f7>") 'krb-clojure-set-replay-inspect-expression)
 
   (setq ffip-prune-patterns `("*/.shadow-cljs" ,@ffip-prune-patterns)))
-
-(defun krb-tmp ()
-  "A test function."
-  (interactive)
-  (cider-interactive-eval "(+ 3 2)"))
 
 (provide 'krb-clojure)
 ;; end of krb-clojure.el
