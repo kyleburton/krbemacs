@@ -27,10 +27,15 @@ There are two things you can do about this warning:
     ;; For important compatibility libraries like cl-lib
     (add-to-list 'package-archives (cons "gnu" (concat proto "://elpa.gnu.org/packages/")))))
 (package-initialize)
-(unless (package-installed-p 'cider)
-  (package-install 'cider))
 
+(dolist (package '(cider google-this))
+  (unless (package-installed-p package)
+    (package-install package)))
 
+;; silver searcher aka ag
+;; NB: ag-ignore-list is a buffer local, so should be set in
+;; buffer-mode hook functions ...
+(require 'ag)
 
 (ido-mode t)
 
@@ -94,20 +99,20 @@ There are two things you can do about this warning:
     ))
 
 (add-hook 'clojure-mode-hook (lambda ()
-			       (cider-mode +1)
-			       (paredit-mode +1)
-			       (rainbow-delimiters-mode +1)
-			       (auto-complete-mode +1)))
+                               (cider-mode +1)
+                               (paredit-mode +1)
+                               (rainbow-delimiters-mode +1)
+                               (auto-complete-mode +1)))
 
 (add-hook 'emacs-lisp-mode-hook (lambda ()
-				  (paredit-mode +1)
-				  (rainbow-delimiters-mode +1)))
+                                  (paredit-mode +1)
+                                  (rainbow-delimiters-mode +1)))
 
 (add-hook 'paredit-mode-hook
           (lambda ()
             (local-set-key "\C-cra" 'align-cljlet)
             (local-set-key "\M-k"   'kill-sexp)
-	    (local-set-key "\C-crfn" 'krb-clj-fixup-ns)))
+            (local-set-key "\C-crfn" 'krb-clj-fixup-ns)))
 
 
 
@@ -144,42 +149,58 @@ There are two things you can do about this warning:
 ;; (krb-find-file-up-from-dir ".git" "/home/kyle/code/github.com/lawrencexia/ticket-webapp/public_html/tix/src/views/InventoryModal/")
 
 (defun krb-find-file-up-from-current-buffer (fname)
+  "Find the absolute path to FNAME by going up the directory hierarchy."
   (interactive "sFile Name:")
   (let ((res (krb-find-file-up-from-dir fname default-directory)))
     (message "krb-find-file-up-from-dir: %s" res)
     res))
 
 (defun krb-git-dir-for-current-buffer ()
+  "Find the directory containing the .git directory."
   (krb-find-file-up-from-dir ".git" default-directory))
 
-(require 'ag)
-(add-to-list 'ag-ignore-list "public/js/compiled/")
-;; ag-ignore-list
+(defun krb-project-dir-for-current-buffer ()
+  "Find the project root dir for `default-directory`."
+  (ag/longest-string
+   (krb-find-file-up-from-dir "project.clj" default-directory)
+   (krb-find-file-up-from-dir "pom.xml" default-directory)
+   (krb-find-file-up-from-dir "build.gradle" default-directory)
+   (krb-find-file-up-from-dir "rebar.config" default-directory)
+   (krb-find-file-up-from-dir "Bakefile" default-directory)
+   (krb-find-file-up-from-dir "Makefile" default-directory)
+   (krb-find-file-up-from-dir ".git" default-directory)))
+
+;; (krb-project-dir-for-current-buffer)
 
 (defun krb-ag-search-dwim-im-feeling-lucky ()
+  "Perform a search for the term at the point w/o any confirmation or editing."
   (interactive)
-  ;; (ag (ag/dwim-at-point) default-directory)
-  (ag (ag/dwim-at-point) (krb-git-dir-for-current-buffer))
+  (ag (ag/dwim-at-point) (krb-project-dir-for-current-buffer))
   ;; TODO: can we close the just opened window who's name starts with '*ag search text:'?
   (next-error 1))
 
 (defun krb-ag-search-dwim ()
+  "Search for the term at point."
   (interactive)
   ;; (ag (ag/dwim-at-point) default-directory)
-  (ag (ag/dwim-at-point) (krb-git-dir-for-current-buffer))
+  (ag (ag/dwim-at-point)
+      (krb-project-dir-for-current-buffer))
   (next-error 1))
 
 (defun krb-ag-search (term)
+  "Search for the given TERM."
   (interactive (list (read-string "Term: " (ag/dwim-at-point))))
   ;; (ag term default-directory)
   (ag term (krb-git-dir-for-current-buffer))
   (next-error 1))
 
 (defun krb-next-error ()
+  "Wrapper for `next-error`."
   (interactive)
   (next-error 1))
 
 (defun krb-prev-error ()
+  "Wrapper for (`next-error` -1)."
   (interactive)
   (next-error -1))
 
@@ -201,7 +222,7 @@ There are two things you can do about this warning:
 
 (add-to-list 'load-path "~/code/github.com/kyleburton/krbemacs/lib")
 (load "blacken")
-;; (load "krb-python.el")
+(load "krb-python.el")
 
 (require 'yasnippet)
 (yas-global-mode 1)
@@ -212,26 +233,15 @@ There are two things you can do about this warning:
 ;; yas-snippet-dirs
 (yas/load-directory (expand-file-name "~/code/github.com/kyleburton/krbemacs/yasnippet/snippets/text-mode"))
 
-(add-hook 'python-mode-hook 'blacken-mode)
 ;; (add-to-list 'load-path "~/.emacs.d/users/kburton/")
 ;;(load-directory "~/.emacs.d/users/kburton")
-(add-hook 'python-mode-hook 'jedi:setup)
-(setq jedi:complete-on-dot t)
-(defun krb-python-setup ()
-  "Apply my personal python setttings and keybindings."
-  (interactive)
-  (local-set-key "\M-." #'jedi:goto-definition)
-  (local-set-key "\M-," #'jedi:goto-definition-pop-marker))
-(add-hook 'python-mode-hook 'krb-python-setup)
 
 ;; see:https://www.emacswiki.org/emacs/GnuScreen
-
 (defun terminal-init-screen ()
   "Terminal initialization function for screen-256color."
   (load "term/xterm")
   (xterm-register-default-colors)
   (tty-set-up-initial-frame-faces))
-
 
 
 (defun krb-slime-inspect-expr-before-point ()
@@ -286,6 +296,7 @@ There are two things you can do about this warning:
 
 
 (load "krb-clojure.el")
+(load "krb-javascript.el")
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -338,21 +349,16 @@ There are two things you can do about this warning:
 ;; I no likey the menu bar, don't need it, bye bye
 (menu-bar-mode -1)
 
+(load "krb-rust.el")
+
+;; http://pragmaticemacs.com/emacs/google-search-from-inside-emacs/
+;; (use-package google-this
+;;              :config
+;;              (google-this-mode 1))
+(google-this-mode 1)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; rust mode helpers
-(defun krb-rust-compile-and-run ()
-    "Execute 'cargo run'."
-  (interactive)
-  (compile "cargo run"))
-
-(defun krb-rust-mode ()
-  "My rust helpers and keybindings."
-  (interactive)
-  (local-set-key "\C-c\C-k" 'krb-rust-compile-and-run))
-
-(add-hook 'rust-mode-hook 'krb-rust-mode)
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+;; global keybindings
 ;; windmove / windmove bindings
 (global-set-key "\C-xwh" #'windmove-left)
 (global-set-key "\C-xwj" #'windmove-down)

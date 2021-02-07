@@ -618,6 +618,15 @@ See: URL `http://en.wikipedia.org/wiki/ISO_8601'
 
 (global-set-key "\C-crrr" 'krb-temp-thing)
 
+(defun krb-fixfix ()
+  (interactive)
+  (beginning-of-line)
+  (search-forward "(")
+  (backward-char 1)
+  (forward-sexp 1)
+  (backward-char 1)
+  (insert ", schema_name=\"tix\"")
+  (next-error))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

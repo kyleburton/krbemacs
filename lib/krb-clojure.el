@@ -14,6 +14,8 @@
 (require 'highlight-parentheses)
 (require 'yasnippet)
 (require 'flycheck-clj-kondo)
+
+;;; Code:
 (autoload 'align-cljlet "align-cljlet")
 
 (defmacro -> (x &optional form &rest more)
@@ -96,6 +98,12 @@
         root-dir
       (error "krb-java-find-lein-proj-root-dir: unable to find project.clj file looking backward from (%s)"
              (or start-dir (buffer-file-name))))))
+
+(defun krb-tmp ()
+  (interactive)
+  (message "root=%s; from default-directory=%s"
+           (krb-clj-find-lein-proj-root-dir default-directory)
+           default-directory))
 
 (defun krb-clj-calculate-test-class-name (&optional file-name proj-root)
   (let* ((file-name       (or file-name buffer-file-name))
@@ -369,9 +377,6 @@ Into a leiningen dependency string:
     (beginning-of-line)
     (insert "[")))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(remove-hook 'clojure-mode-hook 'krb-clj-mode-hook)
-(add-hook    'clojure-mode-hook 'krb-clj-mode-hook t)
 
 (defun krb-clj-open-stacktrace-line (line)
   (interactive "sLine: ")
@@ -423,6 +428,7 @@ Into a leiningen dependency string:
 (defvar krb-clj-cider-connect-args nil)
 
 (defun krb-auto-cider-connect ()
+  "Automatically connect to the local CIDER repl (.config.json)."
   (interactive)
   (cond
    ((and krb-clj-cider-connect-fn
@@ -687,7 +693,7 @@ Into a leiningen dependency string:
 (defun krb-clj-args-parser/parse-variable (str tokens)
   "Parse a variable from the front of STR appending into TOKENS."
   ;; (message "krb-clj-args-parser/parse-variable: str=%s; tokens=%s" str tokens)
-  (let* ((result   (krb-clj-args-parser/split-string-at-regex "[^a-zA-Z0-9\-_/]" str))
+  (let* ((result   (krb-clj-args-parser/split-string-at-regex "[^_a-zA-Z0-9\-_/]" str))
          (matched? (nth 0 result)))
     (if matched?
         (krb-clj-args-parser/parse-string
@@ -766,7 +772,7 @@ Into a leiningen dependency string:
 (defun krb-clj-args-parser/parse-string (str &optional tokens)
   "Parse STR into an AST.  TOKENS is an optional set of already parsed tokens (used in recursive parsing)."
   (cond
-   ((string-match "^[a-zA-Z]" str)
+   ((string-match "^[_a-zA-Z]" str)
     (krb-clj-args-parser/parse-variable str tokens))
    ((string-match "^\\^" str)
     (krb-clj-args-parser/parse-typehint str tokens))
@@ -831,7 +837,7 @@ Into a leiningen dependency string:
    ;; (string-match "\\`[ \n]" "foo")
    ;; (string-trim-left "\n  \n  \n\n  foo")
 
-   ((string-match "\\`[a-zA-Z]" str)
+   ((string-match "\\`[_a-zA-Z]" str)
     (message "krb-clj-args-parser/tokenize-string: FOUND symbol str='%s'" str)
     (destructuring-bind (matched? symbol str)
         (krb-clj-args-parser/split-string-at-regex "[^a-zA-Z0-9\-_/]" str)
@@ -881,7 +887,7 @@ Into a leiningen dependency string:
     tokens)
 
    (t
-    (error "Error[krb-clj-args-parser/parse-string]: unexpected form: str=%s; tokens=%s" str tokens))))
+    (error "Error[krb-clj-args-parser/tokenize-string]: unexpected form: str=%s; tokens=%s" str tokens))))
 
 '(
   (progn
@@ -1170,34 +1176,6 @@ Into a leiningen dependency string:
 ;;   need to handle: destructuring into maps
 ;;   arbitrary nesting for destructuring :/
 ;;   need to handle type-hints on the args
-(defun krb-clojure-fn-args-to-defs ()
-  "Handle the following conditions:
-
-   (defn name [] ...)
-   (defn name [& args] ...)
-   (defn name [& [args] ...)
-   (defn name [^Type arg1] ...)
-   (defn name [form :- Type ...] ...)
-   (defn name [{:keys [a b c] :as foo}] ...)
-
-Convert the function arguments to local defs."
-  (interactive)
-  (save-excursion
-    (let ((args-list (krb-clojure-get-current-fn-args)))
-      (beginning-of-defun)
-      (search-forward "[")
-      (backward-char 1)
-      (forward-sexp 1)
-      (next-line 1)
-      (beginning-of-line)
-      (loop for arg in args-list
-            do
-            (beginning-of-line)
-            (insert (format "  (def %s %s)\n" arg arg)))
-      (save-buffer)
-      (cider-load-buffer))))
-
-
 (defun krb-clojure-remove-fn-args-to-defs ()
   (interactive)
   (save-excursion
@@ -1211,6 +1189,38 @@ Convert the function arguments to local defs."
             (kill-line))
       (save-buffer)
       (cider-load-buffer))))
+
+
+(defun krb-clojure-fn-args-to-defs (pfx-arg)
+  "Handle the following conditions:
+
+   (defn name [] ...)
+   (defn name [& args] ...)
+   (defn name [& [args] ...)
+   (defn name [^Type arg1] ...)
+   (defn name [form :- Type ...] ...)
+   (defn name [{:keys [a b c] :as foo}] ...)
+
+Convert the function arguments to local defs.
+With the prefix argument PFX-ARG, defs will be removed"
+
+  (interactive "P")
+  (if pfx-arg
+      (krb-clojure-remove-fn-args-to-defs)
+      (save-excursion
+        (let ((args-list (krb-clojure-get-current-fn-args)))
+          (beginning-of-defun)
+          (search-forward "[")
+          (backward-char 1)
+          (forward-sexp 1)
+          (next-line 1)
+          (beginning-of-line)
+          (loop for arg in args-list
+                do
+                (beginning-of-line)
+                (insert (format "  (def %s %s)\n" arg arg)))
+          (save-buffer)
+          (cider-load-buffer)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1442,7 +1452,20 @@ To insert the bindings, call krb-clojure-let-bindings-to-defs."
 
         map))
 
+(defun krb-clj-add-ignore-patterns-for-ffip-and-ag ()
+  "Add the ignore patterns for the ffip and ag libraries."
+  (interactive)
+  ;; NB: ag-ignore-list entries must end in a slash
+  (add-to-list 'ag-ignore-list      "public/js/compiled/")
+
+  (add-to-list 'ffip-prune-patterns "*/.shadow-cljs")
+  (add-to-list 'ffip-prune-patterns "*/resources/public/js/compiled")
+  (add-to-list 'ffip-prune-patterns "*/target/stale")
+  (add-to-list 'ffip-prune-patterns "*/node_modules"))
+;; ffip-prune-patterns
+
 (defun krb-clj-mode-hook ()
+  "Clojure mode hook and customizations."
   (interactive)
   (paredit-mode +1)
   (highlight-parentheses-mode t)
@@ -1458,7 +1481,20 @@ To insert the bindings, call krb-clojure-let-bindings-to-defs."
   (local-set-key [f7]           'krb-clojure-replay-inspect-expression)
   (local-set-key (kbd "C-<f7>") 'krb-clojure-set-replay-inspect-expression)
 
-  (setq ffip-prune-patterns `("*/.shadow-cljs" ,@ffip-prune-patterns)))
+  (krb-clj-add-ignore-patterns-for-ffip-and-ag))
+
+(defun krb-cljs-mode-hook ()
+  "ClojureScript mode hook and customizations."
+  (krb-clj-add-ignore-patterns-for-ffip-and-ag)
+  (setq ag-project-root-function '(lambda (fname)
+                                    (let ((root-dir (krb-clj-find-lein-proj-root-dir default-directory)))
+                                      (message "ag-project-root-function: using root=%s" root-dir)
+                                      root-dir))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(remove-hook 'clojure-mode-hook 'krb-clj-mode-hook)
+(add-hook    'clojure-mode-hook 'krb-clj-mode-hook t)
+(add-hook    'clojurescript-mode-hook 'krb-cljs-mode-hook t)
 
 (provide 'krb-clojure)
-;; end of krb-clojure.el
+;;; krb-clojure.el ends here
