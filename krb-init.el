@@ -1,12 +1,27 @@
-;;; Code:
-(require 'package)
+;;; krb-init --- My custom emacs initialization.
 
-;; init
+;;; Commentary:
+
+;;; lots of customization :)
+
+;;; Code:
+
+(add-to-list 'load-path "~/code/github.com/kyleburton/krbemacs/lib")
+(require 'package)
+(require 'ag)
+(require 'cider)
+(require 'yasnippet)
+(require 'flycheck)
+(require 'js2-mode)
+(require 'paredit)
+(require 'rainbow-delimiters)
+(require 'auto-complete)
 ;; https://github.com/technomancy/find-file-in-project
 ;; (url-copy-file "https://raw.githubusercontent.com/technomancy/find-file-in-project/master/find-file-in-project.el" "find-file-in-project.el")
+;; (load "find-file-in-project.el")
+(require 'find-file-in-project)
+(require 'slime)
 
-
-(load (expand-file-name "~/code/github.com/kyleburton/krbemacs/lib/find-file-in-project.el"))
 
 (let* ((no-ssl (and (memq system-type '(windows-nt ms-dos))
                     (not (gnutls-available-p))))
@@ -35,7 +50,6 @@ There are two things you can do about this warning:
 ;; silver searcher aka ag
 ;; NB: ag-ignore-list is a buffer local, so should be set in
 ;; buffer-mode hook functions ...
-(require 'ag)
 
 (ido-mode t)
 
@@ -65,10 +79,10 @@ There are two things you can do about this warning:
   (interactive)
   (let ((currdate (shell-command-to-string "isodate j")))
     (insert currdate)
-    (delete-backward-char 10)))
-
+    (delete-char -10)))
 
 (defun krb-insert-todo ()
+  "Insert a TODO comment at the current line."
   (interactive)
   (comment-dwim nil)
   (insert "TODO[")
@@ -78,10 +92,10 @@ There are two things you can do about this warning:
   (insert "] "))
 
 (defun krb-reindent-buffer ()
+  "Reindent the entire buffer."
   (interactive)
   (save-excursion
-    (mark-whole-buffer)
-    (indent-region (point) (mark))))
+    (indent-region (point-min) (point-max))))
 
 (global-set-key "\C-cr\\" 'krb-reindent-buffer)
 (global-set-key (kbd "<f5>") 'revert-buffer)
@@ -118,7 +132,8 @@ There are two things you can do about this warning:
 
 
 (defun krb-find-buffer-with-name-prefix (pfx)
-  (remove-if-not
+  "Locate the buffer who's name begins with PFX."
+  (cl-remove-if-not
    (lambda (buff)
      (string-prefix-p pfx (buffer-name buff)))
    (buffer-list)))
@@ -126,6 +141,13 @@ There are two things you can do about this warning:
 ;; (krb-find-buffer-with-name-prefix "*ag search text:")
 
 (defun krb-dirname (path)
+  "Return the directory name portion of PATH.  Examples:
+\(krb-dirname \"/this/that/other.txt\") => \"/this/that/\"
+\(krb-dirname \"/this/that/\")          => \"/this/\"
+\(krb-dirname \"/this/that\")           => \"/this/\"
+\(krb-dirname \"/this/\")               => \"/\"
+\(krb-dirname \"/this\")                => \"/\"
+\(krb-dirname \"/\")                    => \"/\""
   (file-name-directory (directory-file-name path)))
 
 ;; (krb-dirname "/this/that/other.txt")
@@ -135,6 +157,7 @@ There are two things you can do about this warning:
 ;; (krb-dirname "/this")
 ;; (krb-dirname "/")
 (defun krb-find-file-up-from-dir (fname dname)
+  "Locate the full path to FNAME starting at DNAME and going up the directory tree."
   (let* ((path     dname)
          (fullpath (concat path fname)))
     (while (and
@@ -204,6 +227,16 @@ There are two things you can do about this warning:
   (interactive)
   (next-error -1))
 
+;; TODO: customizes these directories so they're not hard-coded to kburton :/
+(defun load-directory (dir)
+  "Load all of the *.el files in DIR."
+  (let ((load-it (lambda (f)
+		               (load-file (concat (file-name-as-directory dir) f)))))
+    (mapc load-it (directory-files dir nil "\\.el$"))))
+
+(load "blacken")
+(load "krb-python.el")
+
 (global-set-key "\M-g" 'goto-line)
 (global-set-key "\C-cr\\" 'krb-reindent-buffer)
 (global-set-key "\C-crg!" 'krb-ag-search-dwim-im-feeling-lucky)
@@ -214,37 +247,27 @@ There are two things you can do about this warning:
 (global-set-key "\C-crff" #'find-file-in-project)
 
 
-;; TODO: customizes these directories so they're not hard-coded to kburton :/
-(defun load-directory (dir)
-  (let ((load-it (lambda (f)
-		               (load-file (concat (file-name-as-directory dir) f)))))
-    (mapc load-it (directory-files dir nil "\\.el$"))))
-
-(add-to-list 'load-path "~/code/github.com/kyleburton/krbemacs/lib")
-(load "blacken")
-(load "krb-python.el")
-
-(require 'yasnippet)
 (yas-global-mode 1)
 ;; (when (file-exists-p (expand-file-name "~/.emacs.d/snippets"))
 ;;   (yas/load-directory (expand-file-name "~/.emacs.d/snippets")))
 ;; (add-hook 'yas-mode-hook '(lambda () (setf (make-local-variable 'require-final-newline) nil)))
 ;; (add-to-list 'yas-snippet-dirs (expand-file-name "~/code/github.com/kyleburton/krbemacs/yasnippet/snippets/text-mode"))
 ;; yas-snippet-dirs
-(yas/load-directory (expand-file-name "~/code/github.com/kyleburton/krbemacs/yasnippet/snippets/text-mode"))
+(yas-load-directory (expand-file-name "~/code/github.com/kyleburton/krbemacs/yasnippet/snippets/text-mode"))
 
 ;; (add-to-list 'load-path "~/.emacs.d/users/kburton/")
 ;;(load-directory "~/.emacs.d/users/kburton")
 
 ;; see:https://www.emacswiki.org/emacs/GnuScreen
-(defun terminal-init-screen ()
-  "Terminal initialization function for screen-256color."
-  (load "term/xterm")
-  (xterm-register-default-colors)
-  (tty-set-up-initial-frame-faces))
+;; (require 'term/xterm)
+;; (defun terminal-init-screen ()
+;;   "Terminal initialization function for screen-256color."
+;;   (xterm-register-default-colors)
+;;   (tty-set-up-initial-frame-faces))
 
 
 (defun krb-slime-inspect-expr-before-point ()
+  "Evaluate and inspect the expression to the left of the cursor."
   (interactive)
   (save-excursion
     (backward-sexp 1)
@@ -254,11 +277,13 @@ There are two things you can do about this warning:
       (slime-inspect (buffer-substring-no-properties start (point))))))
 
 (defun krb-slime-mode-hook ()
+  "Initialization for entering SLIME mode."
   (local-set-key (kbd "C-c M-i") 'krb-slime-inspect-expr-before-point))
 
 (add-hook 'slime-mode-hook             #'krb-slime-mode-hook)
 
 (defun krb-yank-inner-region-delimited-by (delimiter)
+  "Yank the contents of the region delimited by the given matching DELIMITER one of: () {} []."
   (interactive "sDelimiter: ")
   (let* ((delims '(("(" ")")
                    (")" "(")
@@ -284,12 +309,14 @@ There are two things you can do about this warning:
 ;; (defvar krb-yank-to-here-mark nil)
 
 (defun krb-yank-to-here ()
+  "Set the`krb-yank-to-here-mark`, which can be returned to by calling krb-yank-to-here-commit."
   (interactive)
   ;; (make-local-variable 'krb-yank-to-here-mark)
   ;; (setq krb-yank-to-here-mark (list (buffer-name) (point) (mark)))
   (bookmark-set "krb-yank-to-here-mark"))
 
 (defun krb-yank-to-here-commit ()
+  "Jump back to `krb-yank-to-here-mark` and yank the accumulated text."
   (interactive)
   (bookmark-jump "krb-yank-to-here-mark")
   (yank))
@@ -297,6 +324,7 @@ There are two things you can do about this warning:
 
 (load "krb-clojure.el")
 (load "krb-javascript.el")
+
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -318,10 +346,12 @@ There are two things you can do about this warning:
 
 
 (add-hook 'before-save-hook 'delete-trailing-whitespace)
-(add-hook 'sh-mode-hook #'krb-bash-mode-hook)
+;; NB: krb-bash-mode-hook, where did you go?
+;; (add-hook 'sh-mode-hook #'krb-bash-mode-hook)
 ;; (add-hook 'sh-mode-hook 'flycheck-mode)
 ;; (remove-hook 'sh-mode-hook 'flycheck-mode)
 (global-flycheck-mode)
+(setq flycheck-emacs-lisp-load-path 'inherit)
 
 
 ;; TODO: do this only for the appropriate modes (eg: Erlang)
@@ -330,7 +360,8 @@ There are two things you can do about this warning:
 
 
 ;; JavaScript
-(setq js-indent-level 2)
+(setq js2-basic-offset 2)
+;; (setq js-indent-level 2)
 ;; TODO: global key bindings / helper functions for inserting a log statments
 ;;  * C-crld (debug)
 ;;  * C-crli (info)
@@ -345,7 +376,7 @@ There are two things you can do about this warning:
 ;;     The javascript loggers can look for the function name and if we're in a class and prefix the string w/those values
 
 
-(add-hook 'write-file-hooks 'delete-trailing-whitespace nil t)
+(add-hook 'write-file-functions 'delete-trailing-whitespace nil t)
 ;; I no likey the menu bar, don't need it, bye bye
 (menu-bar-mode -1)
 
@@ -355,6 +386,7 @@ There are two things you can do about this warning:
 ;; (use-package google-this
 ;;              :config
 ;;              (google-this-mode 1))
+(require 'google-this)
 (google-this-mode 1)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -371,3 +403,6 @@ There are two things you can do about this warning:
 (global-set-key "\C-cry!" #'krb-yank-to-here-commit)
 ;; TODO: krb-yank-there (takes current selection & yanks to the spot
 ;; we marked, appending as we yank more and more things?
+
+(provide 'krb-init)
+;;; krb-init.el ends here

@@ -17,6 +17,74 @@
 
 ;;; Code:
 ;;
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; http://codewinds.com/blog/2015-04-02-emacs-flycheck-eslint-jsx.html
+;; (add-to-list 'auto-mode-alist '("\\.jsx$" . web-mode))
+;; (require 'flycheck)
+;; (add-hook 'after-init-hook #'global-flycheck-mode)
+;; (setq-default flycheck-disabled-checkers
+;;               (append flycheck-disabled-checkers
+;;                       '(javascript-jshint)))
+;; (flycheck-add-mode 'javascript-eslint 'web-mode)
+;; (setq-default flycheck-temp-prefix ".flycheck")
+;; (setq-default flycheck-disabled-checkers
+;;               (append flycheck-disabled-checkers
+;;                       '(json-jsonlist)))
+;; (when (memq window-system '(mac ns))
+;;     (exec-path-from-shell-initialize))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; (require 'js2-mode)
+;; (defvar krb-js-tmp nil)
+
+;; (defun krb-msg-after (&rest args)
+;;   "Capture ARGS into krb-js-tmp."
+;;   (setq krb-js-tmp (list 'called args)))
+
+;; (defun krbtmp1 ()
+;;   "Install."
+;;   (interactive)
+;;   (add-function :after #'js2-echo-error #'krb-msg-after))
+
+;; (defun krbtmp2 ()
+;;   "Uninstall."
+;;   (interactive)
+;;   (remove-function  #'js2-echo-error #'krb-msg-after))
+
+(defun krb-js-try-autofix-next-error ()
+  "Grab the text property."
+  (interactive)
+  (js2-next-error)
+  (let ((err-msg (get-text-property (point) 'help-echo)))
+    (if (string= err-msg "missing ; after statement")
+        (progn
+          (message "... AUTOFIXED missing ;")
+          (js2-end-of-line)
+          (insert ";")
+          t)
+      (progn
+        (message "... UNRECOGNIZED ERROR: %s" err-msg)
+        nil))))
+
+(defun krbtmp ()
+  "Thing in a loop."
+  (interactive)
+  (if (krb-js-try-autofix-next-error)
+      (progn
+        (js2-reparse)
+        (run-with-idle-timer 0.1 nil #'krbtmp)
+        (message "will schedcule another"))
+    (message "last error or failed :(")))
+
+(defvar krb-js-tmp nil)
+(defun krbtmp2 ()
+  "Thing2."
+  (interactive)
+  (krb-js-fixup-imports)
+  (krbtmp))
+
+
 (defun krb-js-log-buffer-filename ()
   "Get the current buffer's filename for use in logging."
   ;; if the buffer-file-name contains "/src/"

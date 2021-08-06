@@ -8,7 +8,7 @@
 ;; TODO: run maven in the background (it's outputting to a buffer anyhow)
 ;; TODO: fix the maven output so compilation mode knows how to find the freaking files, sigh
 
-(require 'cl)
+(require 'cl-lib)
 (require 'krb-misc)
 (require 'paredit)
 (require 'highlight-parentheses)

@@ -273,14 +273,14 @@ see if that exists, if not fallback to the original and error..."
   "Pop the top entry off of the jump stack (discard it) and jump to that location."
   (interactive)
   (destructuring-bind
-      (file line buffer)
-      (pop *krb-jump-stack*)
-    (message "krb-jump-stack-pop: %s(%s)/%s" file line buffer)
-    (cond (file
-           (find-file file))
-          (buffer
-           (set-buffer buffer)))
-    (goto-line line)))
+   (file line buffer)
+   (pop *krb-jump-stack*)
+   (message "krb-jump-stack-pop: %s(%s)/%s" file line buffer)
+   (cond (file
+          (find-file file))
+         (buffer
+          (set-buffer buffer)))
+   (goto-line line)))
 
 (defun krb-el-find-symbol-in-current-buffer (symbol-name)
   "Find the elisp symbol in the current buffer - starting at the top of the buffer, search forward for the declaration of the symbol (not just any usage).  Returns the buffer file name and the line number, but does not go to the location."
@@ -329,10 +329,10 @@ to the given line number."
   (interactive)
   (message "krb-jump-to-file: current-line: %s" (krb-get-current-line-in-buffer))
   (destructuring-bind
-      (fname lnum)
-      (krb-parse-file/line-from-string (krb-get-current-line-in-buffer))
-    (message "krb-jump-to-file: fname=%s lnum=%s" fname lnum)
-    (krb-jump-stack-push fname lnum)))
+   (fname lnum)
+   (krb-parse-file/line-from-string (krb-get-current-line-in-buffer))
+   (message "krb-jump-to-file: fname=%s lnum=%s" fname lnum)
+   (krb-jump-stack-push fname lnum)))
 
 
 ;; TODO: support a prefix command to do things like invert the matching logic (eg: -v)
@@ -585,6 +585,35 @@ See: URL `http://en.wikipedia.org/wiki/ISO_8601'
     (let ((start (point)))
       (forward-paragraph 1)
       (align-regexp start (point) "\\(\\s-*\\)from"))))
+
+(defun krb-js-comment-jsx ()
+  "Comment the selection or current line if not selection.
+
+   |<div>thing</div>
+
+=>
+
+   {/*<div>thing</div>*/}
+"
+  (interactive)
+  (if (= (point) (mark))
+      ;; no selection
+      (save-excursion
+        (message "krb-js-comment-jsx: NO selection point=%s; mark=%s" (point) (mark))
+        (end-of-line)
+        (insert "*/}")
+        (beginning-of-line)
+        (indent-for-tab-command)
+        (insert "{/*"))
+    ;; there is a selection (eg: multiple lines
+    (save-excursion
+      (message "krb-js-comment-jsx: HAS selection point=%s; mark=%s" (point) (mark))
+      (let ((beg (min (mark) (point)))
+            (end (min (mark) (point))))
+        (goto-char end)
+        (insert "*/}")
+        (goto-char beg)
+        (insert "{/*")))))
 
 
 ;; TODO: determine the hook var(s) so this can be a local-set-key
