@@ -96,14 +96,14 @@ As opposed to pop which works on the left."
   (if (not lat)
       ""
     (let ((string (format "%s" (car lat))))
-      (loop for item in (cdr lat)
-            do
-            (setq string (concat string delim (format "%s" item))))
+      (cl-loop for item in (cdr lat)
+               do
+               (setq string (concat string delim (format "%s" item))))
       string)))
 
 (defun krb-get-pwd-as-list ()
   "Return the current buffer's file path as a list (splitting on '/')."
-  (rest (split-string buffer-file-name "/")))
+  (cl-rest (split-string buffer-file-name "/")))
 
 (defun krb-string-find (buff pat pos)
   "Find the given substring, PAT, in the string BUFF, starting at postition POS."
@@ -272,15 +272,15 @@ see if that exists, if not fallback to the original and error..."
 (defun krb-jump-stack-pop ()
   "Pop the top entry off of the jump stack (discard it) and jump to that location."
   (interactive)
-  (destructuring-bind
-   (file line buffer)
-   (pop *krb-jump-stack*)
-   (message "krb-jump-stack-pop: %s(%s)/%s" file line buffer)
-   (cond (file
-          (find-file file))
-         (buffer
-          (set-buffer buffer)))
-   (goto-line line)))
+  (cl-destructuring-bind
+      (file line buffer)
+      (pop *krb-jump-stack*)
+    (message "krb-jump-stack-pop: %s(%s)/%s" file line buffer)
+    (cond (file
+           (find-file file))
+          (buffer
+           (set-buffer buffer)))
+    (goto-line line)))
 
 (defun krb-el-find-symbol-in-current-buffer (symbol-name)
   "Find the elisp symbol in the current buffer - starting at the top of the buffer, search forward for the declaration of the symbol (not just any usage).  Returns the buffer file name and the line number, but does not go to the location."
@@ -296,8 +296,8 @@ see if that exists, if not fallback to the original and error..."
   (interactive (list (read-string "Symbol: " (format "%s" (symbol-at-point)))))
   (let ((pos (krb-el-find-symbol-in-current-buffer symbol-name)))
     (message "krb-el-visit-symbol-in-current-buffer: pos=%s" pos)
-    (krb-jump-stack-push (first pos)
-                         (second pos))))
+    (krb-jump-stack-push (cl-first pos)
+                         (cl-second pos))))
 
 ;; TODO: need much better hueristics for this...
 (defun krb-parse-file/line-from-string (s)
@@ -328,11 +328,11 @@ to the given line number."
   ;; TODO: try multiple regexes, find multiple types of files, make this work on Win32?
   (interactive)
   (message "krb-jump-to-file: current-line: %s" (krb-get-current-line-in-buffer))
-  (destructuring-bind
-   (fname lnum)
-   (krb-parse-file/line-from-string (krb-get-current-line-in-buffer))
-   (message "krb-jump-to-file: fname=%s lnum=%s" fname lnum)
-   (krb-jump-stack-push fname lnum)))
+  (cl-destructuring-bind
+      (fname lnum)
+      (krb-parse-file/line-from-string (krb-get-current-line-in-buffer))
+    (message "krb-jump-to-file: fname=%s lnum=%s" fname lnum)
+    (krb-jump-stack-push fname lnum)))
 
 
 ;; TODO: support a prefix command to do things like invert the matching logic (eg: -v)
@@ -475,7 +475,7 @@ to the given line number."
             (format "find %s -name '*%s*' | grep -v '/.rsync_cache/' | grep -v '~$'" starting-dir file-name)))
          (raw-output (shell-command-to-string cmd))
          (output
-          (first (split-string raw-output "\n"))))
+          (cl-first (split-string raw-output "\n"))))
     (message "output of {%s} '%s'" cmd raw-output)
     (if (and (not (= 0 (length output)))
              (file-exists-p output))
@@ -656,6 +656,7 @@ See: URL `http://en.wikipedia.org/wiki/ISO_8601'
   (backward-char 1)
   (insert ", schema_name=\"tix\"")
   (next-error))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

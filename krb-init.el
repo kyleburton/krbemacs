@@ -266,6 +266,10 @@ There are two things you can do about this warning:
 ;;   (tty-set-up-initial-frame-faces))
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; sbcl / common lisp
+(setf inferior-lisp-program "/home/linuxbrew/.linuxbrew/bin/sbcl")
+
 (defun krb-slime-inspect-expr-before-point ()
   "Evaluate and inspect the expression to the left of the cursor."
   (interactive)
@@ -278,9 +282,11 @@ There are two things you can do about this warning:
 
 (defun krb-slime-mode-hook ()
   "Initialization for entering SLIME mode."
-  (local-set-key (kbd "C-c M-i") 'krb-slime-inspect-expr-before-point))
+  (local-set-key (kbd "C-c M-i") 'krb-slime-inspect-expr-before-point)
+  (paredit-mode))
 
 (add-hook 'slime-mode-hook             #'krb-slime-mode-hook)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun krb-yank-inner-region-delimited-by (delimiter)
   "Yank the contents of the region delimited by the given matching DELIMITER one of: () {} []."
@@ -382,6 +388,18 @@ There are two things you can do about this warning:
 
 (load "krb-rust.el")
 
+
+;; ;; find-file-in-project ffip customizations
+;; (defvar krb-ag-project-root nil)
+;; (make-local-variable 'krb-ag-project-root)
+;; (defun krb-ag-project-root-function (fname)
+;;   "Return the project root for FNAME.  Return the value of krb-ag-project-root.
+;; To use this, set it in the .dir-locals.el for your project:
+;; 	((ag-project-root-function . krb-ag-project-root-function)
+;; 	 (krb-ag-project-root . \"~/code/github.com/kyleburton/krbemacs\"))"
+;;   (messasge "krb-ag-project-root-function: fname=%s returning krb-ag-project-root=%s" fname krb-ag-project-root)
+;;   krb-ag-project-root)
+
 ;; http://pragmaticemacs.com/emacs/google-search-from-inside-emacs/
 ;; (use-package google-this
 ;;              :config
@@ -403,6 +421,7 @@ There are two things you can do about this warning:
 (global-set-key "\C-cry!" #'krb-yank-to-here-commit)
 ;; TODO: krb-yank-there (takes current selection & yanks to the spot
 ;; we marked, appending as we yank more and more things?
+
 
 (provide 'krb-init)
 ;;; krb-init.el ends here

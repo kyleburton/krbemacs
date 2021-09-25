@@ -23,14 +23,14 @@
          `(-> (-> ,x ,form) ,@more))
         ((not (null form))
          (if (sequencep form)
-             `(,(first form) ,x ,@(rest form))
+             `(,(cl-first form) ,x ,@(cl-rest form))
            (list form x)))
         (t x)))
 
 (defmacro ->> (x form &rest more)
   (cond ((not (null more)) `(->> (->> ,x ,form) ,@more))
         (t (if (sequencep form)
-               `(,(first form) ,@(rest form) ,x)
+               `(,(cl-first form) ,@(cl-rest form) ,x)
              (list form x)))))
 
 (defun p->g (plist k)
@@ -487,7 +487,7 @@ Into a leiningen dependency string:
 
 (defun krb-clj-log-open-config-file ()
   (interactive)
-  (let ((fpath (second (assoc "path" (krb-clj-get-logging-config)))))
+  (let ((fpath (cl-second (assoc "path" (krb-clj-get-logging-config)))))
     (find-file fpath)))
 
 
@@ -505,7 +505,7 @@ Into a leiningen dependency string:
             (kill-line)))
       (save-buffer)
       (kill-buffer)
-      (funcall (eval (second (assoc "reload" (krb-clj-get-logging-config))))))))
+      (funcall (eval (cl-second (assoc "reload" (krb-clj-get-logging-config))))))))
 
 (defun krb-clj-log-show-level-for-buffer ()
   (interactive)
@@ -551,7 +551,7 @@ Into a leiningen dependency string:
                       level))
       (save-buffer)
       (kill-buffer)
-      (funcall (eval (second (assoc "reload" (krb-clj-get-logging-config))))))))
+      (funcall (eval (cl-second (assoc "reload" (krb-clj-get-logging-config))))))))
 
 
 
@@ -600,7 +600,7 @@ Into a leiningen dependency string:
 
 (defun krb-clj-ns-alias-for-ns (ns)
   (interactive "sNamespace: ")
-  (first (reverse (split-string ns "\\."))))
+  (cl-first (reverse (split-string ns "\\."))))
 
 (defun krb-clj-test-generate-skeleton-test-in-buffer ()
   (interactive)
@@ -645,7 +645,7 @@ Into a leiningen dependency string:
   (let* ((project-root (krb-clj-find-lein-proj-root-dir))
          (cmd (format "find %s/src/ -type d -name models" project-root))
          (find-output
-          (first
+          (cl-first
            (split-string
             (shell-command-to-string cmd)
             "\n"))))
@@ -659,7 +659,7 @@ Into a leiningen dependency string:
          (tmp-buff-name "*krb-clj-find-model*"))
     (message "found files: %s" found-files)
     (if (= 1 (length found-files))
-        (find-file (first found-files))
+        (find-file (cl-first found-files))
       (krb-with-fresh-output-buffer
        tmp-buff-name
        (save-excursion
@@ -839,26 +839,26 @@ Into a leiningen dependency string:
 
    ((string-match "\\`[_a-zA-Z]" str)
     (message "krb-clj-args-parser/tokenize-string: FOUND symbol str='%s'" str)
-    (destructuring-bind (matched? symbol str)
+    (cl-destructuring-bind (matched? symbol str)
         (krb-clj-args-parser/split-string-at-regex "[^a-zA-Z0-9\-_/]" str)
       (krb-clj-args-parser/tokenize-string str (append tokens `((symbol ,symbol))))))
    ;; (krb-clj-args-parser/split-string-at-regex "[^a-zA-Z0-9\-_/]" "foo\nbar")
 
    ((string-match "\\`^" str)
     (message "krb-clj-args-parser/tokenize-string: FOUND typehint str=%s" str)
-    (destructuring-bind (matched? symbol str)
+    (cl-destructuring-bind (matched? symbol str)
         (krb-clj-args-parser/split-string-at-regex "[^a-zA-Z0-9\-_/]" (substring str 1))
       (krb-clj-args-parser/tokenize-string str (append tokens `((typehint ,symbol))))))
 
    ((string-match "\\`:-" str)
     (message "krb-clj-args-parser/tokenize-string: FOUND schema-typehint str=%s" str)
-    (destructuring-bind (matched? symbol str)
+    (cl-destructuring-bind (matched? symbol str)
         (krb-clj-args-parser/split-string-at-regex "[^a-zA-Z0-9\-_/:]" (substring str 2))
       (krb-clj-args-parser/tokenize-string str (append tokens `((schema-typehint ":-"))))))
 
    ((string-match "\\`:" str)
     (message "krb-clj-args-parser/tokenize-string: FOUND keyword str=%s" str)
-    (destructuring-bind (matched? symbol str)
+    (cl-destructuring-bind (matched? symbol str)
         (krb-clj-args-parser/split-string-at-regex "[^a-zA-Z0-9\-_/:]" (substring str 1))
       (krb-clj-args-parser/tokenize-string str (append tokens `((keyword ,(concat ":" symbol)))))))
 
@@ -916,10 +916,10 @@ Into a leiningen dependency string:
 (defun krb-clj-args-parser/parse-map (tokens res)
   "Document this TOKENS, RES."
   (message "krb-clj-args-parser/parse-map: tokens=%s; res=%s" tokens res)
-  (setq tokens (rest tokens))
+  (setq tokens (cl-rest tokens))
   (let (map-contents)
     (while (not (equal 'map-end (caar tokens)))
-      (destructuring-bind (tokens2 res2)
+      (cl-destructuring-bind (tokens2 res2)
           (krb-clj-args-parser/parse-tokens tokens nil)
         (message "krb-clj-args-parser/parse-map: tokens2=%s; res2=%s" tokens res)
         (setq map-contents (append map-contents res2))
@@ -928,7 +928,7 @@ Into a leiningen dependency string:
       (when (not tokens)
         (error "Error[krb-clj-args-parser/parse-map]: unterminated map!")))
     ;; return the pair of (remaining-tokens ast), dropping the 'map-end
-    (list (rest tokens) (append res `((map ,map-contents))))))
+    (list (cl-rest tokens) (append res `((map ,map-contents))))))
 
 '(
 
@@ -952,10 +952,10 @@ Into a leiningen dependency string:
 (defun krb-clj-args-parser/parse-vec (tokens res)
   "Parse a clojure vec from the stream of TOKENS, accumulating into RES."
   (message "krb-clj-args-parser/parse-vec: tokens=%s; res=%s" tokens res)
-  (setq tokens (rest tokens))
+  (setq tokens (cl-rest tokens))
   (let (vec-contents)
     (while (not (equal 'vec-end (caar tokens)))
-      (destructuring-bind (tokens2 res2)
+      (cl-destructuring-bind (tokens2 res2)
           (krb-clj-args-parser/parse-tokens tokens nil)
         (message "krb-clj-args-parser/parse-vec: tokens2=%s; res2=%s" tokens res)
         (setq vec-contents (append vec-contents res2))
@@ -964,7 +964,7 @@ Into a leiningen dependency string:
       (when (not tokens)
         (error "Error[krb-clj-args-parser/parse-vec]: unterminated vec!")))
     ;; return the pair of (remaining-tokens ast), dropping the 'vec-end
-    (list (rest tokens) (append res `((vec ,vec-contents))))))
+    (list (cl-rest tokens) (append res `((vec ,vec-contents))))))
 
 '(
 
@@ -987,11 +987,11 @@ Into a leiningen dependency string:
      ((equal 'vec-start ttype)
       (krb-clj-args-parser/parse-vec tokens res))
      ((equal 'keyword ttype)
-      (krb-clj-args-parser/parse-tokens (rest tokens) (append res `(,token))))
+      (krb-clj-args-parser/parse-tokens (cl-rest tokens) (append res `(,token))))
      ((equal 'symbol ttype)
-      (krb-clj-args-parser/parse-tokens (rest tokens) (append res `(,token))))
+      (krb-clj-args-parser/parse-tokens (cl-rest tokens) (append res `(,token))))
      ((equal 'rest-args ttype)
-      (krb-clj-args-parser/parse-tokens (rest tokens) (append res `(,token))))
+      (krb-clj-args-parser/parse-tokens (cl-rest tokens) (append res `(,token))))
      ((equal 'schema-typehint ttype)
       (krb-clj-args-parser/parse-tokens (cddr tokens) (append res `((schema-typehint ,(cadadr tokens))))))
      (t
@@ -1022,7 +1022,7 @@ Into a leiningen dependency string:
   (krb-clj-args-parser/parse-tokens
    (krb-clj-args-parser/tokenize-string "{:keys [a b c] :as foo}" nil))
 
-  (destructuring-bind (matched? symbol str)
+  (cl-destructuring-bind (matched? symbol str)
       (krb-clj-args-parser/split-string-at-regex "[^a-zA-Z0-9\-_]" (substring "^String" 1))
     (list 'matched? matched? 'symbol symbol 'str str))
 
@@ -1039,7 +1039,7 @@ Into a leiningen dependency string:
    (t
     ;; (message "krb-clj-visit-tree: iterate over tree=%s" tree)
     (apply visitor tree tree nil)
-    (loop for elt in tree
+    (cl-loop for elt in tree
           do
           (krb-clj-visit-tree elt visitor)))))
 
@@ -1053,7 +1053,7 @@ Into a leiningen dependency string:
      tokens
      (lambda (tree elt)
        (if (and (listp elt)
-                (equal 'symbol (first elt)))
+                (equal 'symbol (cl-first elt)))
            (setq symbols (cons (cadr elt) symbols)))
        (message "visit: elt=%s; tree=%s" elt tree)))
     (list tokens symbols))
@@ -1084,7 +1084,7 @@ Into a leiningen dependency string:
       (krb-clj-args-parser/tokenize-string arglist nil))
      (lambda (tree elt)
        (if (and (listp elt)
-                (equal 'symbol (first elt)))
+                (equal 'symbol (cl-first elt)))
            (setq symbols (cons (cadr elt) symbols)))))
     (reverse symbols)))
 
@@ -1180,7 +1180,7 @@ Into a leiningen dependency string:
   (interactive)
   (save-excursion
     (let ((args-list (krb-clojure-get-current-fn-args)))
-      (loop for arg in args-list
+      (cl-loop for arg in args-list
             do
             (beginning-of-defun)
             (search-forward (format "(def %s %s)" arg arg))
@@ -1215,7 +1215,7 @@ With the prefix argument PFX-ARG, defs will be removed"
           (forward-sexp 1)
           (next-line 1)
           (beginning-of-line)
-          (loop for arg in args-list
+          (cl-loop for arg in args-list
                 do
                 (beginning-of-line)
                 (insert (format "  (def %s %s)\n" arg arg)))
@@ -1265,7 +1265,7 @@ To remove call krb-clojure-remove-let-bindings-defs."
           (let ((symbols (krb-clj-args-parser/arg-symbols-from-arglist (buffer-substring expr-start (point)))))
             (forward-sexp 1)
             (insert "\n_ (do ")
-            (loop for sym in symbols
+            (cl-loop for sym in symbols
                   do
                   (insert "(def " sym " " sym ")"))
             (insert ")")))
