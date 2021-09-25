@@ -17,6 +17,8 @@
 ;;; Code:
 ;;
 
+(require 'subr-x) ;; new(ish) string functions string-trim, string-remove-prefix
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; terraform helpers
@@ -45,10 +47,6 @@
       (search-forward "=")
       (backward-char 1)
       (string-trim (buffer-substring start (point))))))
-
-(defun krb-tmp ()
-  (interactive)
-  (message "krb-tf-get-property-name-near-point=%s" (krb-tf-get-property-name-near-point)))
 
 (defun krb-tf-doc-url-for-inner-resource-type (&optional property-name)
   "Return the http documentation url for the resource the point is within.  PROPERTY-NAME will link to that anchor in the page."
