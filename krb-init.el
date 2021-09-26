@@ -22,6 +22,8 @@
 (require 'find-file-in-project)
 (require 'slime)
 
+(load "krb-tf.el")
+(load "krb-go.el")
 
 (let* ((no-ssl (and (memq system-type '(windows-nt ms-dos))
                     (not (gnutls-available-p))))
@@ -41,11 +43,16 @@ There are two things you can do about this warning:
   (when (< emacs-major-version 24)
     ;; For important compatibility libraries like cl-lib
     (add-to-list 'package-archives (cons "gnu" (concat proto "://elpa.gnu.org/packages/")))))
+
+(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
+
 (package-initialize)
 
 (dolist (package '(cider google-this))
   (unless (package-installed-p package)
     (package-install package)))
+
+
 
 ;; silver searcher aka ag
 ;; NB: ag-ignore-list is a buffer local, so should be set in

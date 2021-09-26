@@ -657,6 +657,20 @@ See: URL `http://en.wikipedia.org/wiki/ISO_8601'
   (insert ", schema_name=\"tix\"")
   (next-error))
 
+(defun krb-find-buffer-for-fname (fname)
+  "Find the (first) buffer that is associated to FNAME."
+  (car
+   (cl-loop for buf in (buffer-list)
+            if (string= fname (buffer-file-name buf))
+            collect buf)))
+
+'(;;comment
+  (krb-find-buffer-for-fname "krb-go.el")
+  (krb-find-buffer-for-fname "/home/kyle/code/github.com/kyleburton/krbemacs/lib/krb-go.el")
+
+  (buffer-file-name (car (buffer-list)))
+  "/home/kyle/code/github.com/kyleburton/krbemacs/lib/krb-go.el"
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
