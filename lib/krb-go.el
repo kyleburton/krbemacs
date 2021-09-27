@@ -23,7 +23,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun krb-go-convert-to-test-file-name-nondirectory (&optional fname)
+(defun krb-go-convert-to-test-file-name (&optional fname)
   "Convert the given FNAME (defaulting to `buffer-file-name`) to it's test equivalent (add _test)."
   (let ((fname (or fname (buffer-file-name))))
     (format "%s_test.go"
@@ -32,10 +32,10 @@
              (string-remove-suffix "_test.go")
              (string-remove-suffix ".go")))))
 
-(defun krb-go-convert-from-test-file-name-nondirectory (&optional fname)
+(defun krb-go-convert-from-test-file-name (&optional fname)
   "Convert the given FNAME (defaulting to `buffer-file-name`) to it's base equivalent (drop _test)."
   (let ((fname (or fname (buffer-file-name))))
-    (format "%s.go" (string-remove-suffix fname "_test.go"))))
+    (format "%s.go" (string-remove-suffix "_test.go" fname))))
 
 (defun krb-go-in-test-file-p (&optional fname)
   "Return non-nil (true) if FNAME (defaults to `buffer-file-name`) name has a `_test.go` suffix."
@@ -47,7 +47,7 @@
   (when (buffer-modified-p)
     (save-buffer))
   (let* ((default-directory  (file-name-directory    (buffer-file-name)))
-         (fname              (file-name-nondirectory (krb-go-convert-to-test-file-name-nondirectory)))
+         (fname              (file-name-nondirectory (krb-go-convert-to-test-file-name)))
          (tmp-buffname       (format "*go-test:%s*" fname)))
     (message "krb-go-reindent-buffer: cd to %s and run `go fmt` on %s" default-directory fname)
     (with-output-to-temp-buffer tmp-buffname
@@ -63,9 +63,16 @@
 (defun krb-go-jump-between-test-and-file ()
   "Jump between the current file and its corresponding test file."
   (interactive)
-  (if (krb-go-in-test-file-p)
-      (switch-to-buffer (krb-find-buffer-for-fname (krb-go-convert-from-test-file-name-nondirectory)))
-    (switch-to-buffer (krb-find-buffer-for-fname (krb-go-convert-to-test-file-name-nondirectory)))))
+  (let* ((target-fname (if (krb-go-in-test-file-p)
+                              (krb-go-convert-from-test-file-name)
+                         (krb-go-convert-to-test-file-name)))
+         (buffer (krb-find-buffer-for-fname target-fname)))
+    (if buffer
+        (switch-to-buffer buffer)
+      (find-file target-fname)))
+  '(if (krb-go-in-test-file-p)
+       (switch-to-buffer (krb-find-buffer-for-fname (krb-go-convert-from-test-file-name)))
+     (switch-to-buffer (krb-find-buffer-for-fname (krb-go-convert-to-test-file-name)))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -90,7 +97,9 @@
   (let ((govet (flycheck-checker-get 'go-vet 'command)))
     (when (equal (cadr govet) "tool")
       (message "krb-go-mode-hook: removing tool from flycheck go-vet")
-      (setf (cdr govet) (cddr govet)))))
+      (setf (cdr govet) (cddr govet))))
+  ;; use godef, which is recommended by the emacs go-mode documentation
+  (local-set-key (kbd "M-.") #'godef-jump))
 
 (add-hook 'before-save-hook #'gofmt-before-save t)
 (add-hook 'go-mode-hook     #'krb-go-mode-hook  t)
