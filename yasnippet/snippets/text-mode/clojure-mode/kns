@@ -1,0 +1,8 @@
+# name: kns ...
+# key: kns
+# --
+(ns `(krb-clj-ns-for-file-name (buffer-file-name))`
+  [:require
+    [clojure.tools.logging    :as log]])
+
+$0

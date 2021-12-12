@@ -36,8 +36,8 @@ There are two things you can do about this warning:
 2. Remove this warning from your init file so you won't see it again."))
   ;; Comment/uncomment these two lines to enable/disable MELPA and MELPA Stable as desired
   ;; (add-to-list 'package-archives (cons "melpa" (concat proto "://melpa.org/packages/")) t)
-  (add-to-list 'package-archives
-               '("melpa-stable" . "https://stable.melpa.org/packages/") t)
+  ;; (add-to-list 'package-archives
+  ;;              '("melpa-stable" . "https://stable.melpa.org/packages/") t)
 
   ;;(add-to-list 'package-archives (cons "melpa-stable" (concat proto "://stable.melpa.org/packages/")) t)
   (when (< emacs-major-version 24)
@@ -260,7 +260,10 @@ There are two things you can do about this warning:
 ;; (add-hook 'yas-mode-hook '(lambda () (setf (make-local-variable 'require-final-newline) nil)))
 ;; (add-to-list 'yas-snippet-dirs (expand-file-name "~/code/github.com/kyleburton/krbemacs/yasnippet/snippets/text-mode"))
 ;; yas-snippet-dirs
-(yas-load-directory (expand-file-name "~/code/github.com/kyleburton/krbemacs/yasnippet/snippets/text-mode"))
+
+;; doesn't seem to work?
+;; (yas-load-directory (expand-file-name "~/code/github.com/kyleburton/krbemacs/yasnippet/snippets/text-mode"))
+(add-to-list 'yas-snippet-dirs (expand-file-name "~/code/github.com/kyleburton/krbemacs/yasnippet/snippets/text-mode"))
 
 ;; (add-to-list 'load-path "~/.emacs.d/users/kburton/")
 ;;(load-directory "~/.emacs.d/users/kburton")

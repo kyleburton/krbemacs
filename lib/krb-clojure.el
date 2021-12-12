@@ -15,6 +15,8 @@
 (require 'yasnippet)
 (require 'flycheck-clj-kondo)
 (require 'cider)
+(require 'ag)
+(require 'find-file-in-project)
 
 ;;; Code:
 (autoload 'align-cljlet "align-cljlet")
@@ -29,7 +31,7 @@
            (list form x)))
         (t x)))
 
-(defmacro ->> (x form &rest more)
+(defmacro ->> (x &optional form &rest more)
   "Emacs Lisp clone of Clojure's \"right\" threading macro.  Threads X through FORM and then every other form in MORE."
   (cond ((not (null more)) `(->> (->> ,x ,form) ,@more))
         (t (if (sequencep form)
@@ -65,6 +67,7 @@
          (gsub! file-name "^.+/\\([^/]+\\)$" "\\1")))
   (gsub! file-name "_" "-")
   (gsub! file-name "\\.clj$" "")
+  (gsub! file-name "\\.cljs$" "")
   file-name)
 
 ;; (krb-clj-ns-for-file-name "~/personal/projects/sandbox/clj-xpath/src/test/clj/com/github/kyleburton/clj_xpath_test.clj")
@@ -536,13 +539,16 @@ This uses a .config.json file in the project root (adjacent to the project.clj).
     res))
 
 (defun krb-clj-lein-project-root-dir-for-filename (fname)
+  "From the directory for FNAME, search parent directories until the project.clj is found, returning that path."
   (krb-find-file-up-from-dir "project.clj" (file-name-directory fname)))
 
 (defun krb-clj-file-name-sans-project-root (fname)
+  "Strip the project root (location of project.clj) from the front of FNAME."
   (let ((proj-root (krb-clj-lein-project-root-dir-for-filename fname)))
     (substring fname (length proj-root))))
 
 (defun krb-clj-test-src-fname-to-test-fname (src-fname)
+  "Transform SRC-FNAME from src/ to test/.  \"src/pkg/fname.clj\" becomes \"test/pkg/fname_test.clj\"."
   (->>
    src-fname
    krb-clj-file-name-sans-project-root
@@ -551,6 +557,7 @@ This uses a .config.json file in the project root (adjacent to the project.clj).
    (concat (krb-clj-lein-project-root-dir-for-filename src-fname))))
 
 (defun krb-clj-test-test-fname-to-src-fname (test-fname)
+  "Transform TEST-FNAME from test/ to src/.  \"test/pkg/fname_test.clj\" becomes \"src/pkg/fname.clj\"."
   (->>
    test-fname
    krb-clj-file-name-sans-project-root
@@ -559,16 +566,19 @@ This uses a .config.json file in the project root (adjacent to the project.clj).
    (concat (krb-clj-lein-project-root-dir-for-filename test-fname))))
 
 (defun krb-clj-ensure-path-for-file (fname)
+  "Ensure the directory structure for FNAME exists."
   (interactive "sFile Name: ")
   (let ((dname (file-name-directory fname)))
     (if (not (file-directory-p dname))
         (make-directory dname t))))
 
 (defun krb-clj-ns-alias-for-ns (ns)
+  "Split NS, returning the last part, eg: 'clojure.data.json' will return 'json'."
   (interactive "sNamespace: ")
   (cl-first (reverse (split-string ns "\\."))))
 
 (defun krb-clj-test-generate-skeleton-test-in-buffer ()
+  "Generate skeleton clojure test code in the current buffer."
   (interactive)
   (insert "(ns " (krb-clj-ns-for-file-name (buffer-file-name)) ")\n")
   (insert "\n")
@@ -580,6 +590,7 @@ This uses a .config.json file in the project root (adjacent to the project.clj).
      (krb-clj-ns-alias-for-ns ns))))
 
 (defun krb-clj-test-switch-between-test-and-buffer ()
+  "Switch the active buffer between the test and source file, think of this as a toggle allowing you to quickly work on both a test and implementation.."
   (interactive)
   (if (krb-clj-test-is-in-test-file?)
       (progn
@@ -594,10 +605,12 @@ This uses a .config.json file in the project root (adjacent to the project.clj).
         (message "existed[%s]? %s" test-path existed?)))))
 
 (defun krb-clj-test-run-all-tests ()
+  "Execute all the test for the project, call (clojure.test/run-all-tests)."
   (interactive)
   (cider-read-and-eval "(clojure.test/run-all-tests)"))
 
 (defun krb-clj-test-run-all-tests-for-buffer ()
+  "Run the test for the current file (if src, first jump to the corresponding test file)."
   (interactive)
   (let ((was-in-test? (krb-clj-test-is-in-test-file?)))
     (when (not was-in-test?)
@@ -607,6 +620,7 @@ This uses a .config.json file in the project root (adjacent to the project.clj).
       (krb-clj-test-switch-between-test-and-buffer))))
 
 (defun krb-clj-project-models-dir ()
+  "Locate the current project's models directory."
   (interactive)
   (let* ((project-root (krb-clj-find-lein-proj-root-dir))
          (cmd (format "find %s/src/ -type d -name models" project-root))
@@ -618,6 +632,7 @@ This uses a .config.json file in the project root (adjacent to the project.clj).
     find-output))
 
 (defun krb-clj-find-model (thing)
+  "Locate a model for THING."
   (interactive (list (read-string "Model: " (format "%s" (or (symbol-at-point) "")))))
   (let* ((cmd (format "find %s -name \"%s\" -type f" (krb-clj-project-models-dir) thing))
          (find-output (shell-command-to-string cmd))
@@ -635,7 +650,7 @@ This uses a .config.json file in the project root (adjacent to the project.clj).
          (while (not (eobp))
            (end-of-line)
            (insert ":1:select")
-           (next-line 1))
+           (forward-line 1))
          (goto-char (point-min))
          (grep-mode))))))
 
@@ -647,7 +662,45 @@ This uses a .config.json file in the project root (adjacent to the project.clj).
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(declare-function krb-clj-args-parser/parse-string "krb-clojure")
+;; NB: declare function is for letting the elisp compiler know we're using
+;; functions that were defined external to this file, not within this file.
+;;   (declare-function krb-clj-args-parser/parse-string "krb-clojure")
+;; instead, lets try moving krb-clj-args-parser/parse-string above it's
+;; first usage
+
+;; "^"        parse-type-hint
+;; ":-"       parse-schema-type-hint
+;; "{"        parse-map
+;; "["        parse-vector
+;; "[a-zA-Z]" parse-symbol
+;; "&"        parse-rest-form
+(defun krb-clj-args-parser/parse-string (str &optional tokens)
+  "Parse STR into an AST.  TOKENS is an optional set of already parsed tokens (used in recursive parsing)."
+  (cond
+   ((string-match "^[_a-zA-Z]" str)
+    (krb-clj-args-parser/parse-variable str tokens))
+   ((string-match "^\\^" str)
+    (krb-clj-args-parser/parse-typehint str tokens))
+   ((string-match "^:-" str)
+    (krb-clj-args-parser/parse-schema-typehint str tokens))
+   ((string-match "^{" str)
+    (krb-clj-args-parser/parse-map-destructure str tokens))
+   ((string-match "^\\[" str)
+    (krb-clj-args-parser/parse-vector-destructure str tokens))
+   ((string-match "^&" str)
+    (krb-clj-args-parser/parse-rest-form str tokens))
+   ((string-match "^ " str)
+    (krb-clj-args-parser/parse-string (substring str 1) tokens))
+   ((string-match "^\n" str)
+    (krb-clj-args-parser/parse-string (substring str 1) tokens))
+   ((string-match "^\t" str)
+    (krb-clj-args-parser/parse-string (substring str 1) tokens))
+   ((string-match "^$" str)
+    (list nil tokens))
+   (t
+    (error "Error[krb-clj-args-parser/parse-string]: unexpected form: str=%s; tokens=%s" str tokens))))
+
+
 
 (defun krb-clj-args-parser/split-string-at-regex (regexp str)
   "Split STR at the position matching REGEXP."
@@ -728,38 +781,6 @@ This uses a .config.json file in the project root (adjacent to the project.clj).
   "Parse a rest (&) form from the front of STR appending into TOKENS."
   (list str tokens))
 
-
-;; "^"        parse-type-hint
-;; ":-"       parse-schema-type-hint
-;; "{"        parse-map
-;; "["        parse-vector
-;; "[a-zA-Z]" parse-symbol
-;; "&"        parse-rest-form
-(defun krb-clj-args-parser/parse-string (str &optional tokens)
-  "Parse STR into an AST.  TOKENS is an optional set of already parsed tokens (used in recursive parsing)."
-  (cond
-   ((string-match "^[_a-zA-Z]" str)
-    (krb-clj-args-parser/parse-variable str tokens))
-   ((string-match "^\\^" str)
-    (krb-clj-args-parser/parse-typehint str tokens))
-   ((string-match "^:-" str)
-    (krb-clj-args-parser/parse-schema-typehint str tokens))
-   ((string-match "^{" str)
-    (krb-clj-args-parser/parse-map-destructure str tokens))
-   ((string-match "^\\[" str)
-    (krb-clj-args-parser/parse-vector-destructure str tokens))
-   ((string-match "^&" str)
-    (krb-clj-args-parser/parse-rest-form str tokens))
-   ((string-match "^ " str)
-    (krb-clj-args-parser/parse-string (substring str 1) tokens))
-   ((string-match "^\n" str)
-    (krb-clj-args-parser/parse-string (substring str 1) tokens))
-   ((string-match "^\t" str)
-    (krb-clj-args-parser/parse-string (substring str 1) tokens))
-   ((string-match "^$" str)
-    (list nil tokens))
-   (t
-    (error "Error[krb-clj-args-parser/parse-string]: unexpected form: str=%s; tokens=%s" str tokens))))
 
 '(
   (progn
@@ -1097,6 +1118,7 @@ This uses a .config.json file in the project root (adjacent to the project.clj).
   )
 
 (defun krb-clojure-get-current-fn-args ()
+  "Return a parsed representation of the arglist for the function the point is in."
   (interactive)
   (save-excursion
     (beginning-of-defun)
@@ -1143,6 +1165,7 @@ This uses a .config.json file in the project root (adjacent to the project.clj).
 ;;   arbitrary nesting for destructuring :/
 ;;   need to handle type-hints on the args
 (defun krb-clojure-remove-fn-args-to-defs ()
+  "Clear the in-function def'd arguments."
   (interactive)
   (save-excursion
     (let ((args-list (krb-clojure-get-current-fn-args)))
@@ -1179,7 +1202,7 @@ With the prefix argument PFX-ARG, defs will be removed"
         (search-forward "[")
         (backward-char 1)
         (forward-sexp 1)
-        (next-line 1)
+        (forward-line 1)
         (beginning-of-line)
         (cl-loop for arg in args-list
                  do
@@ -1277,7 +1300,7 @@ To insert the bindings, call krb-clojure-let-bindings-to-defs."
                   (> (point) binding-startpos))
         (backward-sexp 1)
         (beginning-of-line)
-        (delete-backward-char 1)
+        (delete-char 1)
         (paredit-kill))
       (save-buffer)
       (cider-load-buffer))))
@@ -1286,6 +1309,7 @@ To insert the bindings, call krb-clojure-let-bindings-to-defs."
 
 
 (defun krb-clojure-def-var ()
+  "Wrap the current line in a def."
   (interactive)
   (save-excursion
     (end-of-line)
@@ -1296,7 +1320,7 @@ To insert the bindings, call krb-clojure-let-bindings-to-defs."
     (insert " ")
     (yank)
     (insert ")"))
-  (next-line))
+  (forward-line))
 
 
 (defvar krb-clojure-replay-expression-expr nil)
