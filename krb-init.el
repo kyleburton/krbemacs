@@ -432,6 +432,18 @@ There are two things you can do about this warning:
 ;; TODO: krb-yank-there (takes current selection & yanks to the spot
 ;; we marked, appending as we yank more and more things?
 
+;; string-inflection toggle bidings for "case"
+(global-set-key "\C-ctcc" #'string-inflection-camelcase)
+(global-set-key "\C-ctcu" #'string-inflection-underscore)
+(global-set-key "\C-ctcU" #'string-inflection-capital-underscore)
+(global-set-key "\C-ctcl" #'string-inflection-lower-camelcase)
+;; NB: not sure how to bind to the hyphen, which i'd prefer for kebab-case
+;; (global-set-key (kbd "C-c t c -") #'string-inflection-kebab-case)
+;; (message "\x2D")
+;; CTRL-C 'T'oggle 'C'ase hyphen (aka kebab)
+;; (global-set-key "\C-ctc\x2D" #'string-inflection-kebab-case)
+(global-set-key "\C-ctck" #'string-inflection-kebab-case)
+
 
 (provide 'krb-init)
 ;;; krb-init.el ends here
