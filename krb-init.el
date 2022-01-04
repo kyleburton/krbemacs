@@ -7,6 +7,9 @@
 ;;; Code:
 
 ;; https://elpa.nongnu.org/
+(with-eval-after-load 'package
+  (add-to-list 'package-archives '("nongnu" . "https://elpa.nongnu.org/nongnu/")))
+
 (dolist (package '(cider js2-mode rainbow-delimiters))
   (unless (package-installed-p package)
     (package-install package)))
@@ -14,9 +17,6 @@
 ;; (package-installed-p 'rainbow-delimiters)
 ;; (package-installed-p 'js2-mode)
 ;; (package-install 'js2-mode)
-
-
-(with-eval-after-load 'package (add-to-list 'package-archives '("nongnu" . "https://elpa.nongnu.org/nongnu/")))
 
 (add-to-list 'load-path "~/code/github.com/kyleburton/krbemacs/lib")
 (require 'package)
@@ -27,7 +27,8 @@
 (require 'js2-mode)
 (require 'paredit)
 (require 'rainbow-delimiters)
-(require 'auto-complete)
+;; is this missing in emacs 27?
+;; (require 'auto-complete)
 ;; https://github.com/technomancy/find-file-in-project
 ;; (url-copy-file "https://raw.githubusercontent.com/technomancy/find-file-in-project/master/find-file-in-project.el" "find-file-in-project.el")
 ;; (load "find-file-in-project.el")
@@ -53,7 +54,8 @@ There are two things you can do about this warning:
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 
 
-(dolist (package '(cider google-this js2-mode))
+;; google-this
+(dolist (package '(cider js2-mode))
   (unless (package-installed-p package)
     (package-install package)))
 
@@ -425,8 +427,8 @@ There are two things you can do about this warning:
 ;; (use-package google-this
 ;;              :config
 ;;              (google-this-mode 1))
-(require 'google-this)
-(google-this-mode 1)
+;; (require 'google-this)
+;; (google-this-mode 1)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; global keybindings
