@@ -53,6 +53,7 @@
 ;; (krb-json-string->plist "{\"thing\": 3.14159}")
 ;; => (:thing 3.14159)
 
+
 (defun krb-clj-ns-for-file-name (file-name)
   "Compute a viable clojure namespace for the given FILE-NAME."
   (interactive)
@@ -1348,6 +1349,8 @@ To insert the bindings, call krb-clojure-let-bindings-to-defs."
 (defun krb-clojure-replay-expression ()
   (interactive)
   (cider-read-and-eval krb-clojure-replay-expression-expr))
+
+;; (cider-read-and-eval "(+ 3 2)")
 
 (defvar krb-clojure-replay-inspect-expression-expr nil)
 (make-variable-buffer-local 'krb-clojure-replay-inspect-expression-expr)

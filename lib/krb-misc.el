@@ -17,6 +17,10 @@
 
 ;;; Code:
 ;;
+
+;; (require 'krb-clojure)
+(require 'json)
+
 (defmacro gsub! (sym reg rep)
   "Replace all occurances of REG with REP, re-assign to SYM using `set'.
 \(let ((text \"this,that,other\")) gsub! text \",\" \"|\")"
@@ -670,6 +674,61 @@ See: URL `http://en.wikipedia.org/wiki/ISO_8601'
 
   (buffer-file-name (car (buffer-list)))
   "/home/kyle/code/github.com/kyleburton/krbemacs/lib/krb-go.el"
+  )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; JWT helpers
+;; From: https://gist.github.com/inouetmhr/4116307
+(defun base64-to-base64url (str)
+  "Convert a base64 string (STR) to url encoding."
+  (->>
+   str
+   (replace-regexp-in-string "=+$" "")
+   (replace-regexp-in-string "+" "-")
+   (replace-regexp-in-string "/" "_")))
+
+(defun base64url-to-base64 (str)
+  "Convert a base64url string (STR) to base64 encoding."
+  (let* ((str (->>
+               str
+               (replace-regexp-in-string "-" "+")
+               (replace-regexp-in-string "_" "/")))
+         (mod (% (length str) 4)))
+    (cond
+     ((= mod 1) (concat str "==="))
+     ((= mod 2) (concat str "=="))
+     ((= mod 3) (concat str "="))
+     (t str))))
+
+(defun base64url-encode-string (str)
+  "Base64url encode STR."
+  (base64-to-base64url (base64-encode-string str t)))
+
+(defun base64url-decode-string (str)
+  "Base64url deencode STR."
+  (base64-decode-string (base64url-to-base64 str)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun krb-jwt-decode (jwt)
+  "Deocde JWT."
+  ;; TODO: also parse the json?
+  (let* ((parts     (split-string jwt "\\."))
+         (header    (base64url-decode-string (nth 0 parts)))
+         (payload   (base64url-decode-string (nth 1 parts)))
+         (signature (base64url-decode-string (nth 2 parts))))
+    (list
+     'header    header
+     'payload   payload
+     'signature signature)))
+
+'(
+
+  (json-read-from-string
+   (plist-get
+    (krb-jwt-decode "eyJraWQiOiJzMSIsImFsZyI6IlJTMjU2In0.eyJzdWIiOiI0YTc3NzEyNy04OTk1LTUwZjEtYjc4My02Mzk4Y2M0MzVlMGQiLCJzY3AiOlsib3BlbmlkIiwibGluayIsImxvbF9yZWdpb24iLCJsb2wiLCJzdW1tb25lciIsIm9mZmxpbmVfYWNjZXNzIl0sImNsbSI6WyJsb2xfYWNjb3VudCIsIm9wZW5pZCIsInB3IiwibG9sIiwib3JpZ2luYWxfcGxhdGZvcm1faWQiLCJvcmlnaW5hbF9hY2NvdW50X2lkIiwicGhvdG8iLCJsb2xfcmVnaW9uIiwiYWNjdF9nbnQiLCJwdnBuZXRfYWNjb3VudF9pZCIsInJlZ2lvbiIsInJnbl9OQTEiLCJhY2N0IiwidXNlcm5hbWUiLCIhRkFRQyJdLCJkYXQiOnsicCI6IiIsImxuayI6W10sInIiOiJOQTEiLCJjIjoidWUxIiwidSI6NDI2NjcwODd9LCJpc3MiOiJodHRwczpcL1wvYXV0aC5yaW90Z2FtZXMuY29tIiwiZXhwIjoxNTkzNjIxNzIyLCJpYXQiOjE1OTM2MTgxMjIsImp0aSI6Ik1ib1dHNm9mN3NrIiwiY2lkIjoicmlvdC1jbGllbnQifQ.Ha4eUyUVOOxIqD3kvM5nb5xWcgM5sDiTcEzYjPw_6Sj-UZ2KF3N4y8bdltIrNOBTQx0jSM5xsC_XOxliAa3qY94avXgue_MMa4uFIi8hPp93283CZEpaVPafPw_h2gAls_DEnu_j0PmaZpJR_GAak83aFnKC3W20SsmJ61EMK80")
+    'payload))
+
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -6,6 +6,18 @@
 
 ;;; Code:
 
+;; https://elpa.nongnu.org/
+(dolist (package '(cider js2-mode rainbow-delimiters))
+  (unless (package-installed-p package)
+    (package-install package)))
+
+;; (package-installed-p 'rainbow-delimiters)
+;; (package-installed-p 'js2-mode)
+;; (package-install 'js2-mode)
+
+
+(with-eval-after-load 'package (add-to-list 'package-archives '("nongnu" . "https://elpa.nongnu.org/nongnu/")))
+
 (add-to-list 'load-path "~/code/github.com/kyleburton/krbemacs/lib")
 (require 'package)
 (require 'ag)
@@ -35,23 +47,15 @@ There are two things you can do about this warning:
 1. Install an Emacs version that does support SSL and be safe.
 2. Remove this warning from your init file so you won't see it again."))
   ;; Comment/uncomment these two lines to enable/disable MELPA and MELPA Stable as desired
-  ;; (add-to-list 'package-archives (cons "melpa" (concat proto "://melpa.org/packages/")) t)
-  ;; (add-to-list 'package-archives
-  ;;              '("melpa-stable" . "https://stable.melpa.org/packages/") t)
-
-  ;;(add-to-list 'package-archives (cons "melpa-stable" (concat proto "://stable.melpa.org/packages/")) t)
   (when (< emacs-major-version 24)
     ;; For important compatibility libraries like cl-lib
     (add-to-list 'package-archives (cons "gnu" (concat proto "://elpa.gnu.org/packages/")))))
-
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 
-(package-initialize)
 
-(dolist (package '(cider google-this))
+(dolist (package '(cider google-this js2-mode))
   (unless (package-installed-p package)
     (package-install package)))
-
 
 
 ;; silver searcher aka ag
@@ -163,20 +167,25 @@ There are two things you can do about this warning:
 ;; (krb-dirname "/this/")
 ;; (krb-dirname "/this")
 ;; (krb-dirname "/")
+;; (krb-dirname nil)
 (defun krb-find-file-up-from-dir (fname dname)
-  "Locate the full path to FNAME starting at DNAME and going up the directory tree."
-  (let* ((path     dname)
+  "Starting from DNAME, locate the directory containing FNAME, searching up the directory hierarchy."
+  (let* ((path     (expand-file-name dname))
          (fullpath (concat path fname)))
     (while (and
-            (not (file-exists-p (concat path fname)))
+            (not (file-exists-p fullpath))
             (not (string= "/" path)))
       (setq path     (krb-dirname path))
-      (setq fullpath (concat path fname)))
+      (setq fullpath (concat path "/" fname)))
     (if (string= "/" path)
         nil
       path)))
 
-;; (krb-find-file-up-from-dir ".git" "/home/kyle/code/github.com/lawrencexia/ticket-webapp/public_html/tix/src/views/InventoryModal/")
+;; (krb-find-file-up-from-dir ".git" "/Users/kburton/code/gh.riotgames.com/chat/ejabberd/ejabberd/test")
+;; (krb-find-file-up-from-dir ".git" "~/code/gh.riotgames.com/chat/ejabberd/ejabberd/apps/ejabberd/src/")
+;; (expand-file-name "~/code/gh.riotgames.com/chat/ejabberd/ejabberd/apps/ejabberd/src/")
+;; (krb-dirname "/Users/kburton/code/gh.riotgames.com/chat/ejabberd/ejabberd/apps/ejabberd/src//")
+;; (concat "foo" "/" "bar")
 
 (defun krb-find-file-up-from-current-buffer (fname)
   "Find the absolute path to FNAME by going up the directory hierarchy."
@@ -223,6 +232,8 @@ There are two things you can do about this warning:
   ;; (ag term default-directory)
   (ag term (krb-git-dir-for-current-buffer))
   (next-error 1))
+
+;; (defun krb-tmp () (interactive) (message "krb-tmp: dir=%s" (krb-git-dir-for-current-buffer)))
 
 (defun krb-next-error ()
   "Wrapper for `next-error`."
