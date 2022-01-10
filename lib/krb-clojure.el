@@ -17,6 +17,9 @@
 (require 'cider)
 (require 'ag)
 (require 'find-file-in-project)
+(require 'pcase)
+(require 'seq)
+
 
 ;;; Code:
 (autoload 'align-cljlet "align-cljlet")
@@ -405,7 +408,7 @@ This uses a .config.json file in the project root (adjacent to the project.clj).
   ;; =>
   (:host "localhost" :port 4002)
 
-  (cider--update-project-dir)
+  ()  (cider--update-project-dir)
   )
 
 (defvar krb-clj-cider-connect-fn nil)
@@ -1399,6 +1402,108 @@ To insert the bindings, call krb-clojure-let-bindings-to-defs."
 ;;     (dolist (form body result)
 ;;       (setq result (append form (list result))))))
 
+(defun krb-clj-cider-parse-kv-pairs (kv-pairs)
+  "Convert KV-PAIRS into an nrepl-dict."
+  (apply #'nrepl-dict kv-pairs))
+
+(defun krb-clj-cider-nrepl-sync-eval (input)
+  "Evaluate and return the value of INPUT return an nrepl-dict."
+  (interactive)
+  (pcase (cider-nrepl-sync-request:eval input)
+    (`(dict ,status ,resp-code . ,kv-pairs)
+     (krb-clj-cider-parse-kv-pairs kv-pairs))
+    (response
+     (message "krb-clj-cider-nrepl-sync-eval: unrecognized-response, response=%s" response))))
+
+'(
+  (cider-nrepl-sync-request:eval "*ns*" nil "artzone-admin.views.diagnostic-log-panel")
+
+  (nrepl-dict-get (nrepl-dict "this" "that") "this")
+  (nrepl-dict-get (cider-nrepl-sync-request:eval "panel-did-mount" nil "artzone-admin.views.diagnostic-log-panel") "value")
+
+  )
+
+(defun krb-clj-namespace-for-buffer ()
+  "Get the namespace for the current buffer (from the ns-form at the top of the file)."
+  (interactive)
+  (save-excursion
+    (goto-char (point-min))
+    (search-forward "(ns ")
+    (let ((start (point)))
+      (forward-sexp 1)
+      (buffer-substring start (point)))))
+
+(defun krb-clj-get-current-defn-name ()
+  "Return the function name that point is within."
+  (interactive)
+  (save-excursion
+    (search-backward "(defn ")
+    (search-forward "(defn ")
+    (let ((start (point)))
+      (forward-sexp 1)
+      (buffer-substring start (point)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; logging helpers, toggle off of clojure vs clojurescript mode
+(defun krb-clj-insert-log-statement (log-level)
+  "Insert a log statement for LOG-LEVEL."
+  (interactive)
+  (cond
+   ((string= major-mode "clojurescript-mode")
+    (indent-for-tab-command)
+    (insert (format
+             "(js/console.%s \"[%s|%s/%s]: \")"
+             (cond
+              ((string= log-level "trace") "trace")
+              ((string= log-level "warn") "error")
+              ((string= log-level "error") "error")
+              ((string= log-level "fatal") "error")
+              (t "log"))
+             (upcase (symbol-name log-level))
+             (krb-clj-namespace-for-buffer)
+             (krb-clj-get-current-defn-name)))
+    (forward-char -2))
+
+   ((string= major-mode "clojure-mode")
+    (insert (format "(log/%sf \"\")"
+                    (symbol-name log-level)))
+    (forward-char -2))
+
+   (t
+    (mesage "ERROR: don't know what logging system to use for major-mode=%s; log-level=%s"
+            major-mode log-level))))
+
+
+(defun krb-clj-insert-log-trace ()
+  "Insert a log trace statement."
+  (interactive)
+  (krb-clj-insert-log-statement 'trace))
+
+(defun krb-clj-insert-log-debug ()
+  "Insert a log debug statement."
+  (interactive)
+  (krb-clj-insert-log-statement 'debug))
+
+(defun krb-clj-insert-log-info ()
+  "Insert a log info statement."
+  (interactive)
+  (krb-clj-insert-log-statement 'info))
+
+(defun krb-clj-insert-log-warn ()
+  "Insert a log warn statement."
+  (interactive)
+  (krb-clj-insert-log-statement 'warn))
+
+(defun krb-clj-insert-log-error ()
+  "Insert a log error statement."
+  (interactive)
+  (krb-clj-insert-log-statement 'error))
+
+(defun krb-clj-insert-log-fatal ()
+  "Insert a log fatal statement."
+  (interactive)
+  (krb-clj-insert-log-statement 'fatal))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (global-set-key "\C-c\C-s\C-t" 'krb-clj-open-stacktrace-line)
@@ -1439,6 +1544,14 @@ To insert the bindings, call krb-clojure-let-bindings-to-defs."
         (define-key map "tR"   'krb-clj-test-run-all-tests-for-buffer)
         (define-key map "p"    'krb-clj-open-project-config-file)
 
+        ;; logging helpers
+        (define-key map "lt"   'krb-clj-insert-log-trace)
+        (define-key map "ld"   'krb-clj-insert-log-debug)
+        (define-key map "li"   'krb-clj-insert-log-info)
+        (define-key map "lw"   'krb-clj-insert-log-warn)
+        (define-key map "lf"   'krb-clj-insert-log-error)
+        (define-key map "le"   'krb-clj-insert-log-fatal)
+
         ;; (define-key map "tr"   'krb-clj-test-run-test-for-fn)
         ;; jump between test-fn and current-fn
 
@@ -1462,6 +1575,8 @@ To insert the bindings, call krb-clojure-let-bindings-to-defs."
   (paredit-mode +1)
   (highlight-parentheses-mode t)
   (yas-minor-mode-on)
+  (rainbow-delimiters-mode +1)
+  (auto-complete-mode +1)
   (local-set-key "\C-cr"     krb-clj-mode-prefix-map)
   (local-set-key "\C-c\M-i"  'cider-inspect)
   (local-set-key [f2]        'krb-clj-test-run-all-tests)
@@ -1485,7 +1600,14 @@ To insert the bindings, call krb-clojure-let-bindings-to-defs."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (remove-hook 'clojure-mode-hook 'krb-clj-mode-hook)
 (add-hook    'clojure-mode-hook 'krb-clj-mode-hook t)
+
+(remove-hook 'clojurescript-mode-hook 'krb-clj-mode-hook)
+(add-hook    'clojurescript-mode-hook 'krb-clj-mode-hook t)
+
+(remove-hook 'clojurescript-mode-hook 'krb-cljs-mode-hook)
 (add-hook    'clojurescript-mode-hook 'krb-cljs-mode-hook t)
+
+
 
 (provide 'krb-clojure)
 ;;; krb-clojure.el ends here

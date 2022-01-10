@@ -64,7 +64,7 @@
   "Jump between the current file and its corresponding test file."
   (interactive)
   (let* ((target-fname (if (krb-go-in-test-file-p)
-                              (krb-go-convert-from-test-file-name)
+                           (krb-go-convert-from-test-file-name)
                          (krb-go-convert-to-test-file-name)))
          (buffer (krb-find-buffer-for-fname target-fname)))
     (if buffer
@@ -105,6 +105,49 @@
 (add-hook 'go-mode-hook     #'krb-go-mode-hook  t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun krb-struct-to-markdown ()
+  "Convert a struct type into a markdown table."
+  (interactive)
+  ;; find the beginning of the typedef "struct"
+  ;; structs have the form
+  ;;    `type` NAME `struct { ... }
+  ;; struct fields have the form:
+  ;;   NAME TYPE <tags>
+  (save-excursion
+    (let ((start (point)))
+      (move-end-of-line 1)
+      (backward-char 1)
+      (forward-sexp 1)
+      (kill-ring-save start (point))
+      (switch-to-buffer-other-window "datastore.md")
+      (goto-char (point-max))
+      (insert "\n")
+      (yank)
+      (backward-sexp 1)
+      (beginning-of-line)
+      (kill-word 1)
+      (indent-for-tab-command)
+      (insert "## ")
+      (forward-sexp 1)
+      (kill-line)
+      (forward-line)
+      (insert "\n")
+      ;; loop till we're at the close bracelook
+      (while (not (looking-at-p "}"))
+        (end-of-line)
+        (insert "  //") ;; makes killing the reminader of the line simpler
+        (beginning-of-line)
+        (forward-sexp 2)
+        (kill-line)
+        (beginning-of-line)
+        (insert "| ")
+        (forward-sexp 1)
+        (insert " | ")
+        (end-of-line)
+        (insert " |")
+        (forward-line))
+      (kill-line))))
 
 (provide 'krb-go)
 ;;; krb-go.el ends here

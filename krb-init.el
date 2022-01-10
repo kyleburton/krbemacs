@@ -125,12 +125,6 @@ There are two things you can do about this warning:
     ;; (setq abbrev-mode t)
     ))
 
-(add-hook 'clojure-mode-hook (lambda ()
-                               (cider-mode +1)
-                               (paredit-mode +1)
-                               (rainbow-delimiters-mode +1)
-                               (auto-complete-mode +1)))
-
 (add-hook 'emacs-lisp-mode-hook (lambda ()
                                   (paredit-mode +1)
                                   (rainbow-delimiters-mode +1)))
