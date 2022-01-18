@@ -1436,12 +1436,15 @@ To insert the bindings, call krb-clojure-let-bindings-to-defs."
 (defun krb-clj-get-current-defn-name ()
   "Return the function name that point is within."
   (interactive)
-  (save-excursion
-    (search-backward "(defn ")
-    (search-forward "(defn ")
-    (let ((start (point)))
-      (forward-sexp 1)
-      (buffer-substring start (point)))))
+  (condition-case nil
+      (save-excursion
+        (search-backward "(defn ")
+        (search-forward "(defn ")
+        (let ((start (point)))
+          (forward-sexp 1)
+          (buffer-substring start (point))))
+    (error
+     "$fn")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; logging helpers, toggle off of clojure vs clojurescript mode
@@ -1465,6 +1468,7 @@ To insert the bindings, call krb-clojure-let-bindings-to-defs."
     (forward-char -2))
 
    ((string= major-mode "clojure-mode")
+    (indent-for-tab-command)
     (insert (format "(log/%sf \"\")"
                     (symbol-name log-level)))
     (forward-char -2))
@@ -1505,6 +1509,28 @@ To insert the bindings, call krb-clojure-let-bindings-to-defs."
   (krb-clj-insert-log-statement 'fatal))
 
 
+(defun krb-clj-insert-throw ()
+  "Insert an exception aka throw statement."
+  (interactive)
+  (indent-for-tab-command)
+  (cond
+   ((string= major-mode "clojurescript-mode")
+    (insert
+     (format
+      "(throw (js/Error. (str \"[%s/%s] \")))"
+      (krb-clj-namespace-for-buffer)
+      (krb-clj-get-current-defn-name)))
+    (forward-char -4))
+
+   ((string= major-mode "clojure-mode")
+    (insert "(throw (RuntimeException. (format \"\")))")
+    (forward-char -4))
+
+   (t
+    (mesage "ERROR: don't know what error/throw statement to use for major-mode=%s"
+            major-mode))))
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (global-set-key "\C-c\C-s\C-t" 'krb-clj-open-stacktrace-line)
 (global-set-key "\C-crfn" 'krb-clj-fixup-ns)
@@ -1531,11 +1557,11 @@ To insert the bindings, call krb-clojure-let-bindings-to-defs."
         (define-key map "k"    'align-cljlet)
 
         (define-key map "lo"   'krb-clj-log-open-config-file)
-        (define-key map "ld"   'krb-clj-log-set-debug-for-buffer)
-        (define-key map "li"   'krb-clj-log-set-info-for-buffer)
-        (define-key map "lw"   'krb-clj-log-set-warn-for-buffer)
-        (define-key map "le"   'krb-clj-log-set-error-for-buffer)
-        (define-key map "lf"   'krb-clj-log-set-fatal-for-buffer)
+        ;; (define-key map "ld"   'krb-clj-log-set-debug-for-buffer)
+        ;; (define-key map "li"   'krb-clj-log-set-info-for-buffer)
+        ;; (define-key map "lw"   'krb-clj-log-set-warn-for-buffer)
+        ;; (define-key map "le"   'krb-clj-log-set-error-for-buffer)
+        ;; (define-key map "lf"   'krb-clj-log-set-fatal-for-buffer)
         (define-key map "lk"   'krb-clj-log-unset-for-buffer)
         (define-key map "ls"   'krb-clj-log-show-level-for-buffer)
 
@@ -1549,8 +1575,12 @@ To insert the bindings, call krb-clojure-let-bindings-to-defs."
         (define-key map "ld"   'krb-clj-insert-log-debug)
         (define-key map "li"   'krb-clj-insert-log-info)
         (define-key map "lw"   'krb-clj-insert-log-warn)
-        (define-key map "lf"   'krb-clj-insert-log-error)
-        (define-key map "le"   'krb-clj-insert-log-fatal)
+        (define-key map "le"   'krb-clj-insert-log-error)
+        (define-key map "lf"   'krb-clj-insert-log-fatal)
+
+
+        ;; 'e'xception helpers
+        (define-key map "ee"   'krb-clj-insert-throw)
 
         ;; (define-key map "tr"   'krb-clj-test-run-test-for-fn)
         ;; jump between test-fn and current-fn

@@ -222,11 +222,14 @@ There are two things you can do about this warning:
       (krb-project-dir-for-current-buffer))
   (next-error 1))
 
+(defvar krb-ag-search-directory nil
+  "Used by krb-ag-search as the starting point for ag searches, when nil (the default) krb-ag-search will default to (krb-project-dir-for-current-buffer).  It is recommend you use dir-locals or a mode-hook to make this a buffer local.")
+
 (defun krb-ag-search (term)
   "Search for the given TERM."
   (interactive (list (read-string "Term: " (ag/dwim-at-point))))
   ;; (ag term default-directory)
-  (ag term (krb-git-dir-for-current-buffer))
+  (ag term (or krb-ag-search-directory (krb-git-dir-for-current-buffer)))
   (next-error 1))
 
 ;; (defun krb-tmp () (interactive) (message "krb-tmp: dir=%s" (krb-git-dir-for-current-buffer)))
