@@ -74,6 +74,43 @@
        (switch-to-buffer (krb-find-buffer-for-fname (krb-go-convert-from-test-file-name)))
      (switch-to-buffer (krb-find-buffer-for-fname (krb-go-convert-to-test-file-name)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun krb-go-get-surrounding-fn-name ()
+  "Get the name of the function the point is within."
+  (interactive)
+  ;; func Thing(args...) return {
+  ;; func (self Struct) Thing(args...) return {
+  (save-excursion
+    (beginning-of-defun)
+    (forward-word 1) ;; past func
+    (forward-char 1)
+    (if (looking-at-p "(")
+        (progn
+          (forward-sexp 1)
+          (forward-char 1)))
+    (let ((start (point)))
+      (forward-sexp 1)
+      (buffer-substring start (point)))))
+
+(defun krb-go-insert-log (level)
+  "Insert a log statement for LEVEL."
+  (interactive "sLevel: ")
+  (insert "log."
+          (capitalize level)
+          "f(\""
+          (file-name-nondirectory buffer-file-name)
+          "|"
+          (krb-go-get-surrounding-fn-name)
+          ": \")")
+  (backward-char 2))
+
+(defun krb-go-insert-log-debug () "Insert a log debug statement." (interactive) (krb-go-insert-log "debug"))
+(defun krb-go-insert-log-info  () "Insert a log debug statement." (interactive) (krb-go-insert-log "info"))
+(defun krb-go-insert-log-warn  () "Insert a log debug statement." (interactive) (krb-go-insert-log "warn"))
+(defun krb-go-insert-log-error () "Insert a log debug statement." (interactive) (krb-go-insert-log "error"))
+(defun krb-go-insert-log-fatal () "Insert a log debug statement." (interactive) (krb-go-insert-log "fatal"))
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; keyboard shortcuts
@@ -86,6 +123,11 @@
         ;; run test for current buffer / run the current test
         (define-key map "\C-t\C-t" #'krb-go-run-tests)
         (define-key map "tt" #'krb-go-jump-between-test-and-file)
+        (define-key map "ld" #'krb-go-insert-log-debug)
+        (define-key map "li" #'krb-go-insert-log-info)
+        (define-key map "lw" #'krb-go-insert-log-warn)
+        (define-key map "le" #'krb-go-insert-log-error)
+        (define-key map "lf" #'krb-go-insert-log-fatal)
         map))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
