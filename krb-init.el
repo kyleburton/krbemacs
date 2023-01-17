@@ -8,7 +8,11 @@
 
 ;; https://elpa.nongnu.org/
 (with-eval-after-load 'package
-  (add-to-list 'package-archives '("nongnu" . "https://elpa.nongnu.org/nongnu/")))
+  (add-to-list 'package-archives '("nongnu" . "https://elpa.nongnu.org/nongnu/"))
+  ;; this was for clojure-snippets
+  ;; NB: as of 2022-07-31T11:34:54 melpa.milkbox.net is not available or active
+  ;; (add-to-list 'package-archives '("melpa" . "http://melpa.milkbox.net/packages/") t)
+  )
 
 (dolist (package '(cider js2-mode rainbow-delimiters))
   (unless (package-installed-p package)
@@ -265,21 +269,29 @@ There are two things you can do about this warning:
 (global-set-key "\C-crg!" 'krb-ag-search-dwim-im-feeling-lucky)
 (global-set-key "\C-crgg" 'krb-ag-search-dwim)
 (global-set-key "\C-crGG" 'krb-ag-search)
+(global-set-key "\C-crr"  'search-forward-regexp)
+
 (global-set-key (kbd "M-<f3>") 'krb-prev-error)
 (global-set-key (kbd "<f3>") 'krb-next-error)
 (global-set-key "\C-crff" #'find-file-in-project)
 
 
-(yas-global-mode 1)
-;; (when (file-exists-p (expand-file-name "~/.emacs.d/snippets"))
-;;   (yas/load-directory (expand-file-name "~/.emacs.d/snippets")))
-;; (add-hook 'yas-mode-hook '(lambda () (setf (make-local-variable 'require-final-newline) nil)))
 ;; (add-to-list 'yas-snippet-dirs (expand-file-name "~/code/github.com/kyleburton/krbemacs/yasnippet/snippets/text-mode"))
-;; yas-snippet-dirs
+;; (add-to-list 'yas-snippet-dirs (expand-file-name "~/code/github.com/kyleburton/clojure-snippets/snippets/text-mode"))
+(add-to-list 'yas-snippet-dirs (expand-file-name "~/code/github.com/kyleburton/clojure-snippets/snippets"))
+(yas-reload-all)
+(yas-recompile-all)
+(yas-global-mode 1)
 
-;; doesn't seem to work?
-;; (yas-load-directory (expand-file-name "~/code/github.com/kyleburton/krbemacs/yasnippet/snippets/text-mode"))
-(add-to-list 'yas-snippet-dirs (expand-file-name "~/code/github.com/kyleburton/krbemacs/yasnippet/snippets/text-mode"))
+'(
+  (progn
+    (setq yas-snippet-dirs '("/home/kyle/code/github.com/kyleburton/clojure-snippets/snippets"))
+    (yas-reload-all)
+    (yas-recompile-all)
+    (yas-global-mode 1))
+  (yas-describe-tables)
+
+  )
 
 ;; (add-to-list 'load-path "~/.emacs.d/users/kburton/")
 ;;(load-directory "~/.emacs.d/users/kburton")
@@ -367,7 +379,7 @@ There are two things you can do about this warning:
     ("718fb4e505b6134cc0eafb7dad709be5ec1ba7a7e8102617d87d3109f56d9615" "f41ecd2c34a9347aeec0a187a87f9668fa8efb843b2606b6d5d92a653abe2439" default)))
  '(package-selected-packages
    (quote
-    (ac-cider cider better-defaults ac-slime ag alchemist align-cljlet anaconda-mode auctex cargo change-inner clojure-snippets  dockerfile-mode edts ein elisp-slime-nav elpy emacs-eclim emacsql-psql erlang flatui-dark-theme flatui-theme flycheck-kotlin flycheck-pyflakes flycheck-rebar3 flymake-python-pyflakes go-autocomplete go-eldoc go-errcheck go-guru go-mode groovy-mode haskell-mode helm-descbinds highlight-parentheses jedi klere-theme kotlin-mode magit malabar-mode markdown-mode matlab-mode nyan-mode paredit pydoc-info pymacs racer rainbow-delimiters rainbow-mode rust-mode rustfmt scss-mode sesman slime slime-docker string-inflection yaml-mode))))
+    (ac-cider cider better-defaults ac-slime ag alchemist align-cljlet anaconda-mode auctex cargo change-inner dockerfile-mode edts ein elisp-slime-nav elpy emacsql-psql erlang flatui-dark-theme flatui-theme flycheck-kotlin flycheck-pyflakes flycheck-rebar3 flymake-python-pyflakes go-autocomplete go-eldoc go-errcheck go-guru go-mode groovy-mode haskell-mode helm-descbinds highlight-parentheses jedi klere-theme kotlin-mode magit malabar-mode markdown-mode matlab-mode nyan-mode paredit pydoc-info pymacs racer rainbow-delimiters rainbow-mode rust-mode rustfmt scss-mode sesman slime slime-docker string-inflection yaml-mode))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -459,6 +471,28 @@ There are two things you can do about this warning:
 ;; CTRL-C 'T'oggle 'C'ase hyphen (aka kebab)
 ;; (global-set-key "\C-ctc\x2D" #'string-inflection-kebab-case)
 (global-set-key "\C-ctck" #'string-inflection-kebab-case)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun krbtmp ()
+  (interactive)
+  (paredit-wrap-round)
+  (insert "scale-from-528 ")
+  (forward-word)
+  (insert " opts")
+  (search-forward-regexp "[[:digit:]]\\{3,\\}")
+  (backward-word))
+
+;; ESC (			;; paredit-wrap-round
+;; sca			;; self-insert-command * 3
+;; ESC /			;; dabbrev-expand
+;; SPC			;; self-insert-command
+;; ESC f			;; forward-word
+;; SPC			;; self-insert-command
+;; opts			;; self-insert-command * 4
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 (provide 'krb-init)

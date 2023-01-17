@@ -1637,7 +1637,5 @@ To insert the bindings, call krb-clojure-let-bindings-to-defs."
 (remove-hook 'clojurescript-mode-hook 'krb-cljs-mode-hook)
 (add-hook    'clojurescript-mode-hook 'krb-cljs-mode-hook t)
 
-
-
 (provide 'krb-clojure)
 ;;; krb-clojure.el ends here
