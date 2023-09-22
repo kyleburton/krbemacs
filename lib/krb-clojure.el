@@ -13,7 +13,8 @@
 (require 'paredit)
 (require 'highlight-parentheses)
 (require 'yasnippet)
-(require 'flycheck-clj-kondo)
+;; 2023-03-13 flycheck-clj-kondo is missing?
+;; (require 'flycheck-clj-kondo)
 (require 'cider)
 (require 'ag)
 (require 'find-file-in-project)
@@ -1606,7 +1607,8 @@ To insert the bindings, call krb-clojure-let-bindings-to-defs."
   (highlight-parentheses-mode t)
   (yas-minor-mode-on)
   (rainbow-delimiters-mode +1)
-  (auto-complete-mode +1)
+  ;; doesn't exist in 28.2?
+  ;; (auto-complete-mode +1)
   (local-set-key "\C-cr"     krb-clj-mode-prefix-map)
   (local-set-key "\C-c\M-i"  'cider-inspect)
   (local-set-key [f2]        'krb-clj-test-run-all-tests)
