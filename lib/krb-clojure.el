@@ -1,13 +1,7 @@
 
 ;; Clojure-mode extensions
 
-;; TODO: need a keybinding / function for fixing the :import, :require
-;; and/or :use statements - something to automatically add them as
-;; needed...the kind of thing eclipse and intellij do automatically...can use the classes / jars from the maven classpath...
-
-;; TODO: run maven in the background (it's outputting to a buffer anyhow)
-;; TODO: fix the maven output so compilation mode knows how to find the freaking files, sigh
-
+(require 'auto-complete)
 (require 'cl-lib)
 (require 'krb-misc)
 (require 'paredit)
@@ -20,13 +14,14 @@
 (require 'find-file-in-project)
 (require 'pcase)
 (require 'seq)
-
+(require 'rainbow-delimiters)
 
 ;;; Code:
 (autoload 'align-cljlet "align-cljlet")
 
 (defmacro -> (x &optional form &rest more)
-  "Emacs Lisp clone of Clojure's threading macro.  Threads X through FORM and then every other form in MORE."
+  "Emacs Lisp clone of Clojure's threading macro.
+Threads X through FORM and then every other form in MORE."
   (cond ((not (null more))
          `(-> (-> ,x ,form) ,@more))
         ((not (null form))
@@ -36,7 +31,8 @@
         (t x)))
 
 (defmacro ->> (x &optional form &rest more)
-  "Emacs Lisp clone of Clojure's \"right\" threading macro.  Threads X through FORM and then every other form in MORE."
+  "Emacs Lisp clone of Clojure's \"right\" threading macro.
+Threads X through FORM and then every other form in MORE."
   (cond ((not (null more)) `(->> (->> ,x ,form) ,@more))
         (t (if (sequencep form)
                `(,(cl-first form) ,@(cl-rest form) ,x)
@@ -58,22 +54,75 @@
 ;; => (:thing 3.14159)
 
 
+(defun krb-clj-cider-eval (exprs)
+  "Get a value from the lein project configuration using EXPRS.
+Examples:
+  (krb-clj-lein-project-config-eval \":test-paths first\") =>\"src/test\""
+  (let* ((form     (concat "(str " exprs ")"))
+         (response (nrepl-sync-request:eval form (cider-current-repl nil 'ensure)))
+         (val      (nrepl-dict-get response "value")))
+    (gsub! val "^\"" "")
+    (gsub! val "\"$" "")
+    ;; (message "krb-clj-cider-eval: exprs=%s; res=%s" exprs val)
+    val))
+
+(defun krb-clj-lein-project-config-eval (exprs)
+  "Get a value from the lein project configuration using EXPRS.
+Examples:
+  (krb-clj-lein-project-config-eval \":test-paths first\") =>\"src/test\""
+  (krb-clj-cider-eval (concat "(->> \"project.clj\" slurp read-string (drop 3) (apply hash-map) " exprs ")")))
+
+'(
+
+  (get-register cider-eval-register)
+
+  (nrepl-send-string "(java.util.Date.)" (nrepl-handler buffer) nrepl-buffer-ns)
+  (defun krbtmp ()
+    (interactive)
+    (message "res=%s" (nrepl-sync-request:eval "(java.util.Date.)" (cider-current-repl nil 'ensure))))
+  )
+
+(defun krb-clj-lein-project-src-path ()
+  "Return the first project source path."
+  (or (krb-clj-lein-project-config-eval ":source-paths first") "src"))
+
+(defun krb-clj-lein-project-test-path ()
+  "Return the first project source path."
+  (or (krb-clj-lein-project-config-eval ":test-paths first") "test"))
+
 (defun krb-clj-ns-for-file-name (file-name)
   "Compute a viable clojure namespace for the given FILE-NAME."
   (interactive)
-  (cond ((or (string-match "/src/" file-name)
-             (string-match "/clj/" file-name)
-             (string-match "/test/" file-name))
-         (gsub! file-name "^.*/clj/" "")
-         (gsub! file-name "^.*/src/" "")
-         (gsub! file-name "^.*/test/" "")
-         (gsub! file-name "/" "."))
-        (t
-         (gsub! file-name "^.+/\\([^/]+\\)$" "\\1")))
-  (gsub! file-name "_" "-")
-  (gsub! file-name "\\.clj$" "")
-  (gsub! file-name "\\.cljs$" "")
-  file-name)
+  (let ((src-path (krb-clj-lein-project-src-path))
+        (file-name (krb-clj-file-name-sans-project-root file-name)))
+    (message "krb-clj-ns-for-file-name: file-name=%s; src=path=%s; match=%s"
+             file-name src-path
+             (if (string-match src-path file-name) 't nil))
+    (cond
+     ((string-match src-path file-name)
+      (progn
+        (message "krb-clj-ns-for-file-name: before file-name=%s" file-name)
+        (gsub! file-name src-path "")
+        (message "krb-clj-ns-for-file-name: after file-name=%s" file-name)))
+     ((or (string-match "/src/" file-name)
+          (string-match "/clj/" file-name)
+          (string-match "/test/" file-name))
+      (gsub! file-name "^.*/clj/" "")
+      (gsub! file-name "^.*/src/" "")
+      (gsub! file-name "^.*/test/" "")
+      (gsub! file-name "/" "."))
+
+     (t
+      (gsub! file-name "^.+/\\([^/]+\\)$" "\\1")))
+    ;; end cond
+    (gsub! file-name "_" "-")
+    (gsub! file-name "\\.clj$" "")
+    (gsub! file-name "\\.cljs$" "")
+    (gsub! file-name "^\/" "")
+    (gsub! file-name "\/" ".")
+    file-name))
+
+;; (krb-clj-ns-for-file-name (buffer-file-name))
 
 ;; (krb-clj-ns-for-file-name "~/personal/projects/sandbox/clj-xpath/src/test/clj/com/github/kyleburton/clj_xpath_test.clj")
 ;; (replace-regexp-in-string "^.+/clj/" "" "~/personal/projects/sandbox/clj-xpath/src/test/clj/com/github/kyleburton/clj_xpath_test.clj")
@@ -94,17 +143,31 @@
 
 (defvar *krb-clj-default-requires*
   nil
-  "For the `yas/expand' `ns' expansion, this list of strings will be added into every namespace declaration.  Typically used for things like logging.")
+  "Default requires added to newly generated clojure files.
+For the `yas/expand' `ns' expansion, this list of strings will be
+added into every namespace declaration.  Typically used for
+things like logging.")
+
+(defun krb-clj-test-is-test-file-path (fname)
+  "Return non-nil (true) if FNAME is a test file name.
+Tests if the file name ends with _test.clj or _test.cljs."
+  (or
+   (string-match "_test\\.clj$" fname)
+   (string-match "_test\\.cljs$" fname)))
 
 (defun krb-clj-in-test-file? ()
-  "Predicate to determine if the current buffer's file name ends with \"_test.clj\" or \"_test.cljs\"."
+  "Test if the file is a clojure test buffer.
+Predicate to determine if the current buffer's file name ends
+with \"_test.clj\" or \"_test.cljs\"."
   (interactive)
-  (or
-   (string-match "_test\\.clj$" (buffer-file-name))
-   (string-match "_test\\.cljs$" (buffer-file-name))))
+  (krb-clj-test-is-test-file-path (buffer-file-name)))
 
 (defun krb-java-find-mvn-proj-root-dir (&optional start-dir)
-  "Locate the first directory, beginning at START-DIR, going up in the directory hierarchy, where we find a pom.xml file - this will be a suitable place from which to execute the maven (mvn) command."
+  "Find a file starting from the maven project root.
+Locate the first directory, beginning at START-DIR, going up in
+the directory hierarchy, where we find a pom.xml file - this will
+be a suitable place from which to execute the maven (mvn)
+command."
   (let ((root-dir (krb-find-containing-parent-directory-of-current-buffer "pom.xml" start-dir)))
     (if root-dir
         root-dir
@@ -112,7 +175,11 @@
              (or start-dir (buffer-file-name))))))
 
 (defun krb-clj-find-lein-proj-root-dir (&optional start-dir)
-  "Locate the first directory, beginning at START-DIR, going up in the directory hierarchy, where we find a project.clj file - this will be a suitable place from which to execute Leiningen (lein) commands."
+  "Find a file starting in the leiningen project root.
+Locate the first directory, beginning at START-DIR, going up in
+the directory hierarchy, where we find a project.clj file - this
+will be a suitable place from which to execute Leiningen (lein)
+commands."
   (let ((root-dir (krb-find-containing-parent-directory-of-current-buffer "project.clj" start-dir)))
     (if root-dir
         root-dir
@@ -177,8 +244,10 @@ For how this is computed, see `krb-clj-calculate-test-name'."
   "Find the test file corresponding to the current buffer.
 If in a test file (ends with _test.clj), attempt to open it's
 corresponding implementation file.  Eg:
-\(.../src/test/com/foo/bar_test.clj => .../src/main/com/foo/bar.clj).
-See `krb-clj-calculate-test-name', and `krb-clj-calculate-base-name-for-test-buffer'."
+\(.../src/test/com/foo/bar_test.clj =>
+.../src/main/com/foo/bar.clj).  See
+`krb-clj-calculate-test-name', and
+`krb-clj-calculate-base-name-for-test-buffer'."
   (interactive)
   (if (krb-clj-in-test-file?)
       (find-file (krb-clj-calculate-base-name-for-test-buffer))
@@ -229,7 +298,9 @@ See `krb-clj-calculate-test-name', and `krb-clj-calculate-base-name-for-test-buf
 ;;     (krb-java-exec-mvn cmd (krb-java-find-mvn-proj-root-dir))))
 
 (defun krb-clj-pom-file-path ()
-  "Get the (constant) location for the mvn pom.xml file in the current project (See: `krb-java-find-mvn-proj-root-dir`)."
+  "Find the pom.xml file.
+Get the (constant) location for the mvn pom.xml file in the
+current project (See: `krb-java-find-mvn-proj-root-dir`)."
   (format "%s/pom.xml" (krb-java-find-mvn-proj-root-dir)))
 
 
@@ -241,7 +312,8 @@ See `krb-clj-calculate-test-name', and `krb-clj-calculate-base-name-for-test-buf
     (find-file pom-file)))
 
 (defun krb-clj-open-project-config-file ()
-  "Find the project configuration file: either a project.clj (prefered) or a pom.xml ifle."
+  "Find the project configuration file.
+This finds either the project.clj (prefered) or the pom.xml file."
   (interactive)
   (let ((proj-dir (krb-clj-find-lein-proj-root-dir)))
     (if proj-dir
@@ -274,7 +346,11 @@ See `krb-clj-calculate-test-name', and `krb-clj-calculate-base-name-for-test-buf
           (krb-reindent-entire-buffer)))))
 
 (defun krb-clj-find-and-goto-last-point-in-form (pat)
-  "Move the point to the last point in the form containing PAT (searching forward for PAT)."
+  "Move the point to the last point in the form containing PAT.
+This first searches forward for PAT.  For exmaple, if you are at
+the top of the source file, calling this wit \"(:require\" will
+put the point inside the end of the require form, where a new
+require would be added."
   (search-forward pat)
   (backward-char (length pat))
   (forward-sexp 1)
@@ -416,7 +492,12 @@ This uses a .config.json file in the project root (adjacent to the project.clj).
 (defvar krb-clj-cider-connect-args nil)
 
 (defun krb-auto-cider-connect ()
-  "Automatically connect to the local CIDER repl (.config.json)."
+  "Automatically connect to the local CIDER repl (.config.json).
+
+Configuration should be in a json file .config.json in the project's root
+directory - adjacent to the project.clj  Here is an example:
+
+{\"nrepl\": {\"portq\": 4011}}"
   (interactive)
   (cond
    ((and krb-clj-cider-connect-fn
@@ -436,7 +517,10 @@ This uses a .config.json file in the project root (adjacent to the project.clj).
       (delete-window)))))
 
 (defun krb-clj-fixup-ns ()
-  "Ok, eventually this should fixup the entire ns (remove unused imports, resolve new ones, etc).  For now, it aligns the :as and :only forms."
+  "Reformat the ns declaration.
+TODO: eventually this should fixup the entire ns (remove unused
+imports, resolve new ones, etc).  For now, it aligns the :as and
+:only forms."
   (interactive)
   (save-excursion
     (goto-char (point-min))
@@ -535,16 +619,35 @@ This uses a .config.json file in the project root (adjacent to the project.clj).
 ;; (defun krb-clj-log-set-fatal-for-buffer () (interactive) (krb-clj-log-set-level "FATAL"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defun krb-clj-test-is-in-test-file? ()
-  "Determine if the current buffer is a test file."
-  (interactive)
-  (let* ((test-path-prefix (concat (krb-clj-find-lein-proj-root-dir) "test/"))
-         (res (string-prefix-p test-path-prefix (buffer-file-name))))
-    (message "krb-clj-test-is-in-test-file?: %s vs %s => %s" test-path-prefix (buffer-file-name) res)
-    res))
+(defun krb-dirname (path)
+  "Return the directory name portion of PATH.  Examples:
+\(krb-dirname \"/this/that/other.txt\") => \"/this/that/\"
+\(krb-dirname \"/this/that/\")          => \"/this/\"
+\(krb-dirname \"/this/that\")           => \"/this/\"
+\(krb-dirname \"/this/\")               => \"/\"
+\(krb-dirname \"/this\")                => \"/\"
+\(krb-dirname \"/\")                    => \"/\""
+  (file-name-directory (directory-file-name path)))
+
+(defun krb-find-file-up-from-dir (fname dname)
+  "Search up the directory structure for FNAME.
+Starting from DNAME, locate the directory containing FNAME,
+searching up the directory hierarchy."
+  (let* ((path     (expand-file-name dname))
+         (fullpath (concat path fname)))
+    (while (and
+            (not (file-exists-p fullpath))
+            (not (string= "/" path)))
+      (setq path     (krb-dirname path))
+      (setq fullpath (concat path "/" fname)))
+    (if (string= "/" path)
+        nil
+      path)))
 
 (defun krb-clj-lein-project-root-dir-for-filename (fname)
-  "From the directory for FNAME, search parent directories until the project.clj is found, returning that path."
+  "Find the directory of FNAME within the project.
+From the directory for FNAME, search parent directories until the
+project.clj is found, returning that path."
   (krb-find-file-up-from-dir "project.clj" (file-name-directory fname)))
 
 (defun krb-clj-file-name-sans-project-root (fname)
@@ -552,22 +655,65 @@ This uses a .config.json file in the project root (adjacent to the project.clj).
   (let ((proj-root (krb-clj-lein-project-root-dir-for-filename fname)))
     (substring fname (length proj-root))))
 
-(defun krb-clj-test-src-fname-to-test-fname (src-fname)
-  "Transform SRC-FNAME from src/ to test/.  \"src/pkg/fname.clj\" becomes \"test/pkg/fname_test.clj\"."
-  (->>
-   src-fname
-   krb-clj-file-name-sans-project-root
-   (replace-regexp-in-string "^src/" "test/")
-   (replace-regexp-in-string "\\.clj$" "_test.clj")
-   (concat (krb-clj-lein-project-root-dir-for-filename src-fname))))
+(defun krb-clj-test-src-fname-to-test-fname (src-fname-full-path)
+  "Transform SRC-FNAME-FULL-PATH from its src/ path to its test/ path.
+This function will attempt to find the project's test folder
+using the following order:
+    ./src/main       ./src/test
+    ./src            ./test
+
+Eg: \"src/main/pkg/fname.clj\" becomes \"test/pkg/fname_test.clj\"."
+  (let ((src-and-test-path-pairs
+         (list
+          (cons (concat "^" (krb-clj-lein-project-src-path)) (krb-clj-lein-project-test-path))
+          '("^src/main/" . "src/test/")
+          '("^src/" . "test/")))
+        (src-fname (krb-clj-file-name-sans-project-root src-fname-full-path))
+        (res nil))
+    (cl-loop for pair in src-and-test-path-pairs
+             for (src-prefix . test-prefix) = pair
+             do
+             (message "krb-clj-test-src-fname-to-test-fname: src-fname=%s; src-prefix=%s; test-prefix=%s; string-match=%s pair=%s"
+                      src-fname
+                      src-prefix
+                      test-prefix
+                      (string-match src-prefix src-fname)
+                      pair)
+             (if (not res)
+                 (if (string-match src-prefix src-fname)
+                     (progn
+                       (message "krb-clj-test-src-fname-to-test-fname: FOUND, transforming src-fname=%s using src-prefix=%s to test-prefix=%s."
+                                src-fname src-prefix test-prefix)
+                       (message "krb-clj-test-src-fname-to-test-fname:     1: %s" src-fname)
+                       (message "krb-clj-test-src-fname-to-test-fname:     2: %s" (->> src-fname (replace-regexp-in-string src-prefix test-prefix)))
+                       (message "krb-clj-test-src-fname-to-test-fname:     3: %s" (->> src-fname (replace-regexp-in-string src-prefix test-prefix) (replace-regexp-in-string "\\.clj$" "_test.clj")))
+                       (message "krb-clj-test-src-fname-to-test-fname:     4: %s" (->>
+                                                                                   src-fname
+                                                                                   ;; krb-clj-file-name-sans-project-root
+                                                                                   (replace-regexp-in-string src-prefix test-prefix)
+                                                                                   (replace-regexp-in-string "\\.clj$" "_test.clj")
+                                                                                   (concat (krb-clj-lein-project-root-dir-for-filename src-fname))))
+                       ;; TODO: the cl-return isn't aborting the loop, though it should be?
+                       (setq res (->>
+                                  src-fname
+                                  ;; krb-clj-file-name-sans-project-root
+                                  (replace-regexp-in-string src-prefix test-prefix)
+                                  (replace-regexp-in-string "\\.clj$" "_test.clj")
+                                  (concat (krb-clj-lein-project-root-dir-for-filename src-fname)))))
+                   (progn
+                     (message "krb-clj-test-src-fname-to-test-fname: NOT MATCHED")))))
+    res))
+
 
 (defun krb-clj-test-test-fname-to-src-fname (test-fname)
-  "Transform TEST-FNAME from test/ to src/.  \"test/pkg/fname_test.clj\" becomes \"src/pkg/fname.clj\"."
+  "Transform TEST-FNAME from test/ to src/.
+Eg: \"test/pkg/fname_test.clj\" becomes \"src/pkg/fname.clj\"."
   (->>
    test-fname
    krb-clj-file-name-sans-project-root
-   (replace-regexp-in-string "^test/" "src/")
+   (replace-regexp-in-string (krb-clj-lein-project-test-path) (krb-clj-lein-project-src-path))
    (replace-regexp-in-string "_test\\.clj$" ".clj")
+   (replace-regexp-in-string "_test\\.cljs$" ".cljs")
    (concat (krb-clj-lein-project-root-dir-for-filename test-fname))))
 
 (defun krb-clj-ensure-path-for-file (fname)
@@ -578,7 +724,7 @@ This uses a .config.json file in the project root (adjacent to the project.clj).
         (make-directory dname t))))
 
 (defun krb-clj-ns-alias-for-ns (ns)
-  "Split NS, returning the last part, eg: 'clojure.data.json' will return 'json'."
+  "Split NS, returning the last part, eg: \\='clojure.data.json\\='will return \\='json\\='."
   (interactive "sNamespace: ")
   (cl-first (reverse (split-string ns "\\."))))
 
@@ -595,19 +741,27 @@ This uses a .config.json file in the project root (adjacent to the project.clj).
      (krb-clj-ns-alias-for-ns ns))))
 
 (defun krb-clj-test-switch-between-test-and-buffer ()
-  "Switch the active buffer between the test and source file, think of this as a toggle allowing you to quickly work on both a test and implementation.."
+  "Switch the active buffer between the test and source file.
+Think of this as a toggle allowing you to quickly work on both a
+test and implementation."
   (interactive)
-  (if (krb-clj-test-is-in-test-file?)
-      (progn
-        (find-file (krb-clj-test-test-fname-to-src-fname (buffer-file-name))))
-    (progn
-      (let* ((test-path (krb-clj-test-src-fname-to-test-fname (buffer-file-name)))
-             (existed? (file-exists-p test-path)))
-        (krb-clj-ensure-path-for-file test-path)
-        (find-file test-path)
-        (when (not existed?)
-          (krb-clj-test-generate-skeleton-test-in-buffer))
-        (message "existed[%s]? %s" test-path existed?)))))
+  ;; detect if we're in the source file or in the test file
+  (if (krb-clj-in-test-file?)
+      ;; jump to the source file
+      (let ((src-fname (krb-clj-test-test-fname-to-src-fname (buffer-file-name))))
+        (message "krb-clj-test-switch-between-test-and-buffer: in test file jumping to src-fname=%s" src-fname)
+        (find-file src-fname))
+    ;; jump to the test file, if it didn't exist, generate a skeleton
+    (let* ((test-fname  (krb-clj-test-src-fname-to-test-fname (buffer-file-name)))
+           (existed?    (file-exists-p test-fname)))
+      (krb-clj-ensure-path-for-file test-fname)
+      (message "krb-clj-test-switch-between-test-and-buffer: in source file jumping to test-fname=%s" test-fname)
+      (find-file test-fname)
+      (when (not existed?)
+        (message "krb-clj-test-switch-between-test-and-buffer: test file is new, generating skeleton")
+        (krb-clj-test-generate-skeleton-test-in-buffer)))))
+
+;; (message "res=%s" (krb-clj-test-src-fname-to-test-fname (buffer-file-name)))
 
 (defun krb-clj-test-run-all-tests ()
   "Execute all the test for the project, call (clojure.test/run-all-tests)."
@@ -615,9 +769,11 @@ This uses a .config.json file in the project root (adjacent to the project.clj).
   (cider-read-and-eval "(clojure.test/run-all-tests)"))
 
 (defun krb-clj-test-run-all-tests-for-buffer ()
-  "Run the test for the current file (if src, first jump to the corresponding test file)."
+  "Run the test for the current file.
+If the buffer is a source file, this will first open the
+corresponding test file."
   (interactive)
-  (let ((was-in-test? (krb-clj-test-is-in-test-file?)))
+  (let ((was-in-test? (krb-clj-in-test-file?)))
     (when (not was-in-test?)
       (krb-clj-test-switch-between-test-and-buffer))
     (cider-read-and-eval "(run-tests)")
@@ -680,7 +836,8 @@ This uses a .config.json file in the project root (adjacent to the project.clj).
 ;; "[a-zA-Z]" parse-symbol
 ;; "&"        parse-rest-form
 (defun krb-clj-args-parser/parse-string (str &optional tokens)
-  "Parse STR into an AST.  TOKENS is an optional set of already parsed tokens (used in recursive parsing)."
+  "Parse STR into an AST.
+TOKENS is an optional set of already parsed tokens (used in recursive parsing)."
   (cond
    ((string-match "^[_a-zA-Z]" str)
     (krb-clj-args-parser/parse-variable str tokens))
@@ -1332,6 +1489,10 @@ To insert the bindings, call krb-clojure-let-bindings-to-defs."
 (make-variable-buffer-local 'krb-clojure-replay-expression-expr)
 
 (defun krb-clojure-set-replay-expression (expression)
+  "Set the \\='replay\\=' form to EXPRESSION.
+This saves a clojure source code form that can be evaluated by
+`krb-clojure-replay-expression`.  This is commonly bound to
+the key CTRL+F6."
   (interactive
    (list
     (read-string
@@ -1351,8 +1512,14 @@ To insert the bindings, call krb-clojure-let-bindings-to-defs."
         (setq krb-clojure-replay-expression-expr expression))))
 
 (defun krb-clojure-replay-expression ()
+  "Evaluate the clojure source code form in `krb-clojure-replay-expression-expr`.
+This is commonly bound to the key F6."
   (interactive)
-  (cider-read-and-eval krb-clojure-replay-expression-expr))
+  ;; (cider-read-and-eval krb-clojure-replay-expression-expr)
+  (cider-interactive-eval krb-clojure-replay-expression-expr
+                          nil
+                          nil
+                          (cider--nrepl-pr-request-map)))
 
 ;; (cider-read-and-eval "(+ 3 2)")
 
@@ -1360,6 +1527,10 @@ To insert the bindings, call krb-clojure-let-bindings-to-defs."
 (make-variable-buffer-local 'krb-clojure-replay-inspect-expression-expr)
 
 (defun krb-clojure-set-replay-inspect-expression (expression)
+  "Set the \\='replay-inspect\\=' form to EXPRESSION.
+This saves a clojure source code form that can be evaluated and inspected by
+`krb-clojure-replay-inspect-expression-expr`.  This is commonly bound to
+the key CTRL+F7."
   (interactive
    (list
     (read-string
@@ -1374,22 +1545,14 @@ To insert the bindings, call krb-clojure-let-bindings-to-defs."
      ;; inherit-input-method
      t)))
   (if (not (= (length expression) 0))
-      (progn
-        (message "updating last expression to: %s" expression)
-        (setq krb-clojure-replay-inspect-expression-expr expression))))
+      (setq krb-clojure-replay-inspect-expression-expr expression)))
 
 (defun krb-clojure-replay-inspect-expression ()
+  "Evaluate and inspect the saved clojure source code form.
+The clojure form is saved in `krb-clojure-replay-inspect-expression-expr`.
+This is commonly bound to the key F7."
   (interactive)
-  (slime-inspect krb-clojure-replay-inspect-expression-expr))
-
-(defun krb-clj-cider-jack-into-curr-project ()
-  (interactive)
-  (let ((local-clj-config-fname (concat (krb-clj-find-lein-proj-root-dir) "/.krb.el")))
-    (if (file-exists-p local-clj-config-fname)
-        (progn
-          (load-file local-clj-config-fname)
-          (krb-clojure-cider-jack-in))
-      (message "this project has no local elisp config: %s" local-clj-config-fname))))
+  (cider-inspect-expr krb-clojure-replay-inspect-expression-expr (cider-current-ns)))
 
 ;; oh yes, the threading macros from clojure: https://www.emacswiki.org/emacs/ThreadMacroFromClojure#toc2
 ;; (defmacro -> (&rest body)
@@ -1425,7 +1588,8 @@ To insert the bindings, call krb-clojure-let-bindings-to-defs."
   )
 
 (defun krb-clj-namespace-for-buffer ()
-  "Get the namespace for the current buffer (from the ns-form at the top of the file)."
+  "Get the namespace for the current buffer.
+This is extracted from the source code from the ns-form at the top of the file."
   (interactive)
   (save-excursion
     (goto-char (point-min))
@@ -1475,8 +1639,8 @@ To insert the bindings, call krb-clojure-let-bindings-to-defs."
     (forward-char -2))
 
    (t
-    (mesage "ERROR: don't know what logging system to use for major-mode=%s; log-level=%s"
-            major-mode log-level))))
+    (message "ERROR: don't know what logging system to use for major-mode=%s; log-level=%s"
+             major-mode log-level))))
 
 
 (defun krb-clj-insert-log-trace ()
@@ -1528,8 +1692,8 @@ To insert the bindings, call krb-clojure-let-bindings-to-defs."
     (forward-char -4))
 
    (t
-    (mesage "ERROR: don't know what error/throw statement to use for major-mode=%s"
-            major-mode))))
+    (message "ERROR: don't know what error/throw statement to use for major-mode=%s"
+             major-mode))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1543,8 +1707,6 @@ To insert the bindings, call krb-clojure-let-bindings-to-defs."
 (setq krb-clj-mode-prefix-map
       (let ((map (make-sparse-keymap)))
         (define-key map "a"    'align-cljlet)
-
-        (define-key map "cji"  'krb-clj-cider-jack-into-curr-project)
 
         ;; or should we use a prefix arg to remove instead of a separate keybinding?
         (define-key map "da"   'krb-clojure-fn-args-to-defs)
