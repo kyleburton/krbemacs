@@ -73,6 +73,9 @@ Examples:
   (krb-clj-cider-eval (concat "(->> \"project.clj\" slurp read-string (drop 3) (apply hash-map) " exprs ")")))
 
 '(
+  (condition-case nil
+      (krb-clj-cider-eval (concat "(->> \"project.clj\" slurp read-string (drop 3) (apply hash-map) " ":source-paths first" ")"))
+    (error 'no-linked-cider-sessions))
 
   (get-register cider-eval-register)
 
@@ -84,11 +87,21 @@ Examples:
 
 (defun krb-clj-lein-project-src-path ()
   "Return the first project source path."
-  (or (krb-clj-lein-project-config-eval ":source-paths first") "src"))
+  '(or (krb-clj-lein-project-config-eval ":source-paths first") "src")
+  (condition-case err
+      (krb-clj-lein-project-config-eval ":source-paths first")
+    (error
+     (message "krb-clj-lein-project-src-path: error getting :source-paths: %s" err)
+     "src")))
 
 (defun krb-clj-lein-project-test-path ()
   "Return the first project source path."
-  (or (krb-clj-lein-project-config-eval ":test-paths first") "test"))
+  '(or (krb-clj-lein-project-config-eval ":test-paths first") "test")
+  (condition-case err
+      (krb-clj-lein-project-config-eval ":test-paths first")
+    (error
+     (message "krb-clj-lein-project-test-path: error getting :source-paths: %s" err)
+     "test")))
 
 (defun krb-clj-ns-for-file-name (file-name)
   "Compute a viable clojure namespace for the given FILE-NAME."
@@ -680,7 +693,9 @@ Eg: \"src/main/pkg/fname.clj\" becomes \"test/pkg/fname_test.clj\"."
                       (string-match src-prefix src-fname)
                       pair)
              (if (not res)
-                 (if (string-match src-prefix src-fname)
+                 ;; protect against :source-paths or :test-paths not being set in the project.clj
+                 (if (and (not (string= "^" src-prefix))
+                          (string-match src-prefix src-fname))
                      (progn
                        (message "krb-clj-test-src-fname-to-test-fname: FOUND, transforming src-fname=%s using src-prefix=%s to test-prefix=%s."
                                 src-fname src-prefix test-prefix)
@@ -703,6 +718,26 @@ Eg: \"src/main/pkg/fname.clj\" becomes \"test/pkg/fname_test.clj\"."
                    (progn
                      (message "krb-clj-test-src-fname-to-test-fname: NOT MATCHED")))))
     res))
+
+'(comment
+
+  (defun ktmp () (interactive) (+ 3 4))
+  (ktmp)
+  (remove-hook 'cider-connected-hook 'cider--maybe-inspire-on-connect)
+
+  (krb-clj-file-name-sans-project-root "/home/kyle/code/snapclean.me/asymmetrical-view.com/artzonewestla.com/artzonewestla-server/src/com/artzonewestla/model/users.clj")
+  "src/com/artzonewestla/model/users.clj"
+  (not (string= "^" (concat "" "^")))
+
+  (krb-clj-test-src-fname-to-test-fname "/home/kyle/code/snapclean.me/asymmetrical-view.com/artzonewestla.com/artzonewestla-server/src/com/artzonewestla/model/users.clj")
+  (cl-assert
+   (string=
+    "/home/kyle/code/snapclean.me/asymmetrical-view.com/artzonewestla.com/artzonewestla-server/test/com/artzonewestla/model/users.clj"
+    (krb-clj-test-src-fname-to-test-fname "/home/kyle/code/snapclean.me/asymmetrical-view.com/artzonewestla.com/artzonewestla-server/src/com/artzonewestla/model/users.clj")))
+
+  )
+
+;; (krb-clj-test-src-fname-to-test-fname "/home/kyle/code/snapclean.me/asymmetrical-view.com/artzonewestla.com/artzonewestla-server/src/com/artzonewestla/model/users.clj")
 
 
 (defun krb-clj-test-test-fname-to-src-fname (test-fname)
@@ -989,14 +1024,14 @@ TOKENS is an optional set of already parsed tokens (used in recursive parsing)."
    ((string-match "\\`[_a-zA-Z]" str)
     (message "krb-clj-args-parser/tokenize-string: FOUND symbol str='%s'" str)
     (cl-destructuring-bind (matched? symbol str)
-        (krb-clj-args-parser/split-string-at-regex "[^a-zA-Z0-9\-_/]" str)
+        (krb-clj-args-parser/split-string-at-regex "[^a-zA-Z0-9\-_/?]" str)
       (krb-clj-args-parser/tokenize-string str (append tokens `((symbol ,symbol))))))
    ;; (krb-clj-args-parser/split-string-at-regex "[^a-zA-Z0-9\-_/]" "foo\nbar")
 
    ((string-match "\\`^" str)
     (message "krb-clj-args-parser/tokenize-string: FOUND typehint str=%s" str)
     (cl-destructuring-bind (matched? symbol str)
-        (krb-clj-args-parser/split-string-at-regex "[^a-zA-Z0-9\-_/]" (substring str 1))
+        (krb-clj-args-parser/split-string-at-regex "[^a-zA-Z0-9\-_/?]" (substring str 1))
       (krb-clj-args-parser/tokenize-string str (append tokens `((typehint ,symbol))))))
 
    ((string-match "\\`:-" str)
@@ -1008,7 +1043,7 @@ TOKENS is an optional set of already parsed tokens (used in recursive parsing)."
    ((string-match "\\`:" str)
     (message "krb-clj-args-parser/tokenize-string: FOUND keyword str=%s" str)
     (cl-destructuring-bind (matched? symbol str)
-        (krb-clj-args-parser/split-string-at-regex "[^a-zA-Z0-9\-_/:]" (substring str 1))
+        (krb-clj-args-parser/split-string-at-regex "[^a-zA-Z0-9\-_/:?]" (substring str 1))
       (krb-clj-args-parser/tokenize-string str (append tokens `((keyword ,(concat ":" symbol)))))))
 
    ((string-match "\\`{" str)
@@ -1039,6 +1074,8 @@ TOKENS is an optional set of already parsed tokens (used in recursive parsing)."
     (error "Error[krb-clj-args-parser/tokenize-string]: unexpected form: str=%s; tokens=%s" str tokens))))
 
 '(
+  (krb-clj-args-parser/tokenize-string "thing1 is-thing?" nil)
+
   (progn
     (message "================================================================================")
     (krb-clj-args-parser/tokenize-string
@@ -1634,8 +1671,10 @@ This is extracted from the source code from the ns-form at the top of the file."
 
    ((string= major-mode "clojure-mode")
     (indent-for-tab-command)
-    (insert (format "(log/%sf \"\")"
-                    (symbol-name log-level)))
+    (insert (format "(log/%sf \"[%s/%s]: \")"
+                    (symbol-name log-level)
+                    (krb-clj-namespace-for-buffer)
+                    (krb-clj-get-current-defn-name)))
     (forward-char -2))
 
    (t
@@ -1694,6 +1733,25 @@ This is extracted from the source code from the ns-form at the top of the file."
    (t
     (message "ERROR: don't know what error/throw statement to use for major-mode=%s"
              major-mode))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun krbtmp ()
+  "Convert a selection of html into hiccup (re-frame style)."
+  (interactive)
+  (let ((res (libxml-parse-html-region (point) (mark))))
+
+    (message "krbtmp: res=%s" res)
+    ;; (<tag> <attr-alist> <children-list>)
+
+    ))
+
+(defun krb-clj-libxml-html-to-hiccup (forms)
+  "Convert a selection of html, FORMS, into hiccup (re-frame style)."
+  (interactive)
+  (pcase-let ((`(,tag ,attr-alist  ,children)))
+    (message "krb-clj-libxml-html-to-hiccup: tag=%s" tag)
+    (message "krb-clj-libxml-html-to-hiccup: attr-alist=%s" attr-alist)
+    (message "krb-clj-libxml-html-to-hiccup: children=%s" children)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
