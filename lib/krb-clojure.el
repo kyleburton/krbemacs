@@ -1,7 +1,8 @@
 
 ;; Clojure-mode extensions
 
-(require 'auto-complete)
+;; 2024-03-02 auto-complete is deprecated (looking for new maintainers)
+;; (require 'auto-complete)
 (require 'cl-lib)
 (require 'krb-misc)
 (require 'paredit)

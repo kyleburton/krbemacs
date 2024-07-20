@@ -31,8 +31,6 @@
 (require 'js2-mode)
 (require 'paredit)
 (require 'rainbow-delimiters)
-;; is this missing in emacs 27?
-;; (require 'auto-complete)
 ;; https://github.com/technomancy/find-file-in-project
 ;; (url-copy-file "https://raw.githubusercontent.com/technomancy/find-file-in-project/master/find-file-in-project.el" "find-file-in-project.el")
 ;; (load "find-file-in-project.el")
@@ -132,8 +130,7 @@ There are two things you can do about this warning:
 (add-hook 'clojure-mode-hook (lambda ()
                                (cider-mode +1)
                                (paredit-mode +1)
-                               (rainbow-delimiters-mode +1)
-                               '(auto-complete-mode +1)))
+                               (rainbow-delimiters-mode +1)))
 
 (add-hook 'emacs-lisp-mode-hook (lambda ()
                                   (paredit-mode +1)
