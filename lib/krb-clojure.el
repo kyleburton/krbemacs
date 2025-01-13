@@ -1500,8 +1500,8 @@ To insert the bindings, call krb-clojure-let-bindings-to-defs."
                   (> (point) binding-startpos))
         (backward-sexp 1)
         (beginning-of-line)
-        (delete-char 1)
-        (paredit-kill))
+        (paredit-kill)
+        (paredit-backward-delete))
       (save-buffer)
       (cider-load-buffer))))
 
@@ -1559,7 +1559,28 @@ This is commonly bound to the key F6."
                           nil
                           (cider--nrepl-pr-request-map)))
 
-;; (cider-read-and-eval "(+ 3 2)")
+
+(defun krb-clojure-get-last-nth-expr (nn)
+  "Return the previous NN'th expression."
+  (interactive "nhow many to go back?: ")
+  (save-excursion
+    (paredit-backward (- nn 1))
+    (cider-last-sexp)))
+
+(defun krb-clojure-eval-to-def (defname)
+  "Create a local binding for DEFNAME from the expression before the point."
+  ;; (interactive "svar name: ")
+  (interactive
+   (list
+    (read-string (format "var name (%s): " (krb-clojure-get-last-nth-expr 2))
+                 nil
+                 nil
+                 (krb-clojure-get-last-nth-expr 2))))
+  (message (format "(def %s %s)" defname (cider-last-sexp)))
+  (cider-interactive-eval (format "(def %s %s)" defname (cider-last-sexp))
+                          nil
+                          nil
+                          (cider--nrepl-pr-request-map)))
 
 (defvar krb-clojure-replay-inspect-expression-expr nil)
 (make-variable-buffer-local 'krb-clojure-replay-inspect-expression-expr)
@@ -1770,6 +1791,7 @@ This is extracted from the source code from the ns-form at the top of the file."
         ;; or should we use a prefix arg to remove instead of a separate keybinding?
         (define-key map "da"   'krb-clojure-fn-args-to-defs)
         (define-key map "dA"   'krb-clojure-remove-fn-args-to-defs)
+        (define-key map "ddl"  'krb-clojure-eval-to-def)
         (define-key map "dl"   'krb-clojure-let-bindings-to-defs)
         (define-key map "dL"   'krb-clojure-remove-let-bindings-defs)
         (define-key map "dv"   'krb-clojure-def-var)
