@@ -12,52 +12,103 @@
   "Insert a skeleton bash script into the current buffer."
   (interactive)
   (goto-char (point-min))
-  (insert "#!/bin/bash\n")
-  (insert "set -eEu -o pipefail\n")
-  (insert "\n")
-  (insert "[[ -n \"${DEBUG:-}\" ]] && set -x\n")
-  (insert "\n")
-  (insert "cmd-new-command () {\n")
-  (insert "  echo \"this could be the start of a beautiful program...\"\n")
-  (insert "}\n")
-  (insert "\n")
-  (insert "")
-  (insert "cmd-show-help () {")
-  (insert "    local bin")
-  (insert "    bin=\"${0##*/}\"")
-  (insert "")
-  (insert "    echo \"$bin\"")
-  (insert "    echo \"\"")
-  (insert "    echo \"  View and clear the RMS published events circular buffer.\"")
-  (insert "    echo \"  NB: this is be enabled/disabled for local development by setting skill.audit.enable=true\"")
-  (insert "    echo \"\"")
-  (insert "")
-  (insert "    awk '/[s]tart-main-commands/{flag=1;next}/end-main-commands/{flag=0}flag' \"$0\" \\")
-  (insert "        | grep -E '[-_.a-zA-Z0-9]+)' \\")
-  (insert "        | cut -f1 -d')' \\")
-  (insert "        | tr -d ' ' \\")
-  (insert "        | while IFS= read -r cmd; do")
-  (insert "        [[ $cmd == \"help\" ]] && continue")
-  (insert "        echo \"  $cmd\"")
-  (insert "        grep \"^# @help.$cmd:\" \"$0\" | cut -f2- -d: | sed -e 's/^/    /'")
-  (insert "        echo \"\"")
-  (insert "    done")
-  (insert "    echo \"\"")
-  (insert "}")
-  (insert "")
-  (insert "main () {")
-  (insert "    local cmd")
-  (insert "    cmd=\"${1:-}\"")
-  (insert "")
-  (insert "    case \"$cmd\" in # start-main-commands")
-  (insert "        command) shift; cmd-view-events  \"$@\" ;;")
-  (insert "        clear)   shift; cmd-clear-events \"$@\" ;;")
-  (insert "        help)    shift; cmd-show-help    \"$@\" ;;")
-  (insert "        *)              cmd-show-help    \"$@\" ;;")
-  (insert "    esac # end-main-commands")
-  (insert "}")
-  (insert "")
-  (insert "main \"$@\"")
+  ;; (insert "#!/bin/bash\n")
+  ;; (insert "set -eEu -o pipefail\n")
+  ;; (insert "\n")
+  ;; (insert "[[ -n \"${DEBUG:-}\" ]] && set -x\n")
+  ;; (insert "\n")
+  ;; (insert "cmd-new-command () {\n")
+  ;; (insert "  echo \"this could be the start of a beautiful program...\"\n")
+  ;; (insert "}\n")
+  ;; (insert "\n")
+  ;; (insert "\n")
+  ;; (insert "cmd-show-help () {\n")
+  ;; (insert "    local bin\n")
+  ;; (insert "    bin=\"${0##*/}\"\n")
+  ;; (insert "\n")
+  ;; (insert "    echo \"$bin\"\n")
+  ;; (insert "    echo \"\"\n")
+  ;; (insert "    echo \"  View and clear the RMS published events circular buffer.\"\n")
+  ;; (insert "    echo \"  NB: this is be enabled/disabled for local development by setting skill.audit.enable=true\"\n")
+  ;; (insert "    echo \"\"\n")
+  ;; (insert "\n")
+  ;; (insert "    awk '/[s]tart-main-commands/{flag=1;next}/end-main-commands/{flag=0}flag' \"$0\" \n")
+  ;; (insert "        | grep -E '[-_.a-zA-Z0-9]+)' \n")
+  ;; (insert "        | cut -f1 -d')' \n")
+  ;; (insert "        | tr -d ' ' \n")
+  ;; (insert "        | while IFS= read -r cmd; do\n")
+  ;; (insert "        [[ $cmd == \"help\" ]] && continue\n")
+  ;; (insert "        echo \"  $cmd\"\n")
+  ;; (insert "        grep \"^# @help.$cmd:\" \"$0\" | cut -f2- -d: | sed -e 's/^/    /'\n")
+  ;; (insert "        echo \"\"\n")
+  ;; (insert "    done\n")
+  ;; (insert "    echo \"\"\n")
+  ;; (insert "}\n")
+  ;; (insert "\n")
+  ;; (insert "main () {\n")
+  ;; (insert "    local cmd\n")
+  ;; (insert "    cmd=\"${1:-}\"\n")
+  ;; (insert "\n")
+  ;; (insert "    case \"$cmd\" in # start-main-commands\n")
+  ;; (insert "        command) shift; cmd-view-events  \"$@\" ;;\n")
+  ;; (insert "        clear)   shift; cmd-clear-events \"$@\" ;;\n")
+  ;; (insert "        help)    shift; cmd-show-help    \"$@\" ;;\n")
+  ;; (insert "        *)              cmd-show-help    \"$@\" ;;\n")
+  ;; (insert "    esac # end-main-commands\n")
+  ;; (insert "}\n")
+  ;; (insert "\n")
+  ;; (insert "main \"$@\"\n")
+  (insert "#!/bin/bash
+set -eEu -o pipefail
+
+[[ -n \"${DEBUG:-}\" ]] && set -x
+
+show_help () {
+    cat<<EOF
+$0
+
+
+Test script for
+
+ process-file  - uppercase the input file, writing to the output file
+
+   --input=fname     specify input file name (default=stdin)
+   --ouptut=fname    specify output file name (default=stdout)
+
+EOF
+}
+
+process-file () {
+    local infile outfile
+    infile=\"/dev/stdin\"
+    outfile=\"/dev/stdout\"
+
+    while [[ \"${1:-}\" == --* ]]; do
+        case \"$1\" in
+            --input=*)    infile=\"${1##*=}\";  shift ;;
+            --output=*)   outfile=\"${1##*=}\"; shift ;;
+            --*)
+                echo \"Error: process-file: unsupported option: '$1'\"
+                show_help
+                return 1
+        esac
+    done
+
+    tr '[:lower:]' '[:upper:]' < \"$infile\" > \"$outfile\"
+}
+
+main () {
+    local cmd
+    cmd=\"${1:-}\"
+
+    case \"$cmd\" in
+        process-file) shift; process-file  \"$@\" ;;
+        *)                    show_help    \"$@\" ;;
+    esac
+}
+
+main \"$@\"
+")
   (search-backward "new-command)"))
 
 (defun krb-bash-get-selection (&optional default)
